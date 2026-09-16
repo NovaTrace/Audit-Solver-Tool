@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Degree planner — firstName lastName</title>
+
+		<!-- LINKS CSS DOC TO HTML DOC -->
+		<link rel='stylesheet' href='styles.css'>
+		
+
+	</head>
+	<body>
+		<div class="sheet">
+
+		  	<div class="titleblock">
+ 		  		 <div class="tb-left">
+					<!-- TITLE TEXT -->
+ 		    			<h1>DEGREE PLANNER — REMAINING REQUIREMENTS</h1>
+ 		    			<p>studentName <br>· major + major (if present) <br>· minor (if present)</p>
+ 		  		 </div>
+
+				<!-- CATALOG/AUDIT DATE/SHEET DATE BLOCKS -->
+  		 		 <div class="tb-right">
+					<!-- CATALOG/AUDIT DATE/SHEET DATE TEXT -->
+  		   			CATALOG YEAR: <b>catYear</b><br>
+   		 			AUDIT PREPARED: <b>auditGenDate</b><br>
+  		 			SHEET GENERATED: <b>sheetGenDate</b>
+  		 		 </div>
+ 		 	</div>
+			
+			<div class="stats">
+				<!-- STATS VARIABLES -->
+    				<div class="stat"><div class="n">hoursEarned</div><div class="l">Hours earned</div></div>
+    				<div class="stat"><div class="n" id="stat-assigned">hoursAssigned</div><div class="l">Hours assigned below</div></div>
+   				<div class="stat"><div class="n" id="stat-total">runningTotal</div><div class="l">Running total (earned + assigned)</div></div>
+  			</div>
+			
+			<div class="note">
+				<!-- SCHEDULE BLOCKS -->
+				<h2 class="sec" style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+    					<span>Your schedule</span>
+   					<span style="font-weight:normal;text-transform:none;letter-spacing:normal;font-size:11px;display:flex;gap:10px;align-items:baseline;">
+   						<span id="save-status" style="color:var(--ink-faint);">Autosaves in this browser</span>
+      						<button id="reset-btn" style="font-family:var(--mono);font-size:11px;background:none;border:1px solid var(--line-strong);border-radius:4px;padding:3px 8px;color:var(--ink-dim);cursor:pointer;">Reset to defaults</button>
+    					</span>
+  				</h2>
+  				<div class="pool-status" id="pool-status"></div>
+  				<div class="sched-grid" id="sched-grid"></div>
+  				<div class="unassigned" id="unassigned"></div>
+
+			<!-- SORTING BUTTONS -->
+			<div class="controls">
+   				<button class="chip active" data-cat="all">All</button>
+   				<button class="chip" data-cat="capstone">degreeAuditSection1</button>
+   				<button class="chip" data-cat="cpen-core">degreeAuditSection2</button>
+    				<button class="chip" data-cat="cpen-elect">degreeAuditSection3</button>
+   				<button class="chip" data-cat="ee-core">degreeAuditSection4</button>
+    				<button class="chip" data-cat="ee-elect">degreeAuditSection5</button>
+   				<button class="chip" data-cat="basic-sci">degreeAuditSection6</button>
+   				<button class="chip" data-cat="math">degreeAuditSection7</button>
+   				<button class="chip" data-cat="writing">degreeAuditSection8</button>
+   				<input type="text" id="search" placeholder="Search course code or title…">
+ 			</div>
+
+			<div id="list"></div>
+			
+			
+		</div>
+
+		<footer>
+			Sources: your uploaded degree audit [insert date of upload]
+		</footer>
+
+	</div>
+
+	<!-- LINKS JAVASCRIPT DOC TO HTML DOC -->
+	<script src='script.js'></script>
+
+	</body>
+</html>
