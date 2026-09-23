@@ -9,76 +9,33 @@ const TERMS = [{key: 'f26', label: 'Fall \u201926'},
 
 //CATAGORY LABELS. THESE ARE ALSO CONSTANTS THAT WILL BE REPLACED
 const catLabels = {
-	capstone: 'Capstone / Summit (CE track only)', 'cpen-core': 'Computer Engineering core', 'cpen-elect': 'Computer Engineering technical elective — pick at least 1 (~4 hrs)',
-	'ee-core': 'Electrical Engineering core (ELEN-ADL)', 'ee-lec': 'EE elective — lecture — pick 2 (6 hrs)', 'ee-lab': 'EE elective — lab — pick 1 (1 hr)',
-	'basic-sci': 'Basic science', math: 'Mathematics minor', writing: 'Writing / administrative'
+	'comp-cur': 'Compass Curriculum', 'cs-core': 'Computer Science', 'cs-math': 'Computer Science: Mathmatics', writing: 'Writing / administrative'
 };
 
 //CATAGORY ORDER. WILL BE REPLACED
-const catOrder = ['capstone', 'cpen-core', 'cpen-elect', 'ee-core', 'ee-lec', 'ee-lab', 'basic-sci', 'math', 'writing'];
+const catOrder = ['comp-cur', 'cs-core', 'cs-math', 'writing'];
 
 
-const chipMap = {capstone: 'capstone', 'cpen-core': 'cpen-core', 'cpen-elect': 'cpen-elect', 'ee-core': 'ee-core', 'ee-lec': 'ee-elect', 'ee-lab': 'ee-elect', 'basic-sci': 'basic-sci', math: 'math', writing: 'writing'};
+const chipMap = {'comp-cur': 'comp-cur', 'cs-core': 'cs-core', 'cs-math': 'cs-math', writing: 'writing'};
+   				
 
-//COURSES PULLED FROM AUDIT. CONSTANTS TO BE REPLACED
+
+//DEFAULTS. CONSTANTS TO BE REPLACED
 const courses = [
-		{id:'ece4891', cat:'capstone', code:'ECE 4891', title:'Senior Seminar', sub:'CE track — the only capstone seminar you need', cr:1, term:'Not on the standard ECE rotation table — confirm with the department', termC:'u', prereq:'ECE 3210, ECE 3430, ECE 3610, ECE 4242, CS 3300 (per your plan) — confirm ECE 3610 timing and D+ grade', preC:'c', dflt:'s27'},
-  		{id:'ece4899', cat:'capstone', code:'ECE 4899', title:'Senior Design Project', sub:'CE track — the only capstone design you need', cr:3, term:'Fall & Spring', termC:'c', prereq:'ECE 4891, taken the prior semester', preC:'c', dflt:'f27'},
-  		{id:'cs4500', cat:'cpen-core', code:'CS 4500', title:'Operating Systems I', sub:'', cr:3, term:'Spring, Fall', termC:'c', prereq:'Confirmed', preC:'c', dflt:'s27'},
-  		{id:'ece3610', cat:'cpen-core', code:'ECE 3610', title:'Engineering Probability & Statistics', sub:'also fulfills EE math + writing-intensive', cr:3, term:'Spring only', termC:'c', prereq:'Confirmed', preC:'c', dflt:'s27'},
-    		{id:'ece2021', cat:'ee-core', code:'ECE 2021', title:'Computer Based Modeling in C', sub:'', cr:3, term:'Spring, Summer, Fall', termC:'c', prereq:'', preC:'c', dflt:'su27'},
-    		{id:'ece2050', cat:'ee-core', code:'ECE 2050', title:'Introduction to Physical Electronics', sub:'', cr:3, term:'Spring only', termC:'c', prereq:'Coreq. PES 2130', preC:'c', dflt:'s28'},
-    		{id:'ece3020', cat:'ee-core', code:'ECE 3020', title:'Semiconductor Devices I', sub:'', cr:3, term:'Fall only', termC:'c', prereq:'ECE 2050, and either ECE 2205 or ECE 2210', preC:'i', dflt:'f27'},
-    		{id:'ece3110', cat:'ee-core', code:'ECE 3110', title:'Electromagnetic Fields I', sub:'', cr:3, term:'Spring only', termC:'c', prereq:'ECE 2205 or ECE 2210 — College of Engineering students only', preC:'c', dflt:'s27'},
-    		{id:'ece3205', cat:'ee-core', code:'ECE 3205', title:'Circuits and Systems II', sub:'', cr:4, term:'Fall only', termC:'c', prereq:'ECE 2205, or consent of instructor', preC:'c', dflt:'f27'},
-    		{id:'ece3220', cat:'ee-core', code:'ECE 3220', title:'Electronics II', sub:'', cr:3, term:'Spring only', termC:'c', prereq:'ECE 3210', preC:'i', dflt:'s27'},
-    		{id:'ece3230', cat:'ee-core', code:'ECE 3230', title:'Electronics Laboratory I', sub:'', cr:1, term:'Fall only', termC:'c', prereq:'Paired with ECE 3210', preC:'i', dflt:'f26'},
-    		{id:'ece3240', cat:'ee-core', code:'ECE 3240', title:'Electronics Laboratory II', sub:'', cr:1, term:'Spring only', termC:'c', prereq:'ECE 3230 - Taken with ECE 3220', preC:'i', dflt:'s27'},
-    		{id:'exitint', cat:'ee-core', code:'Exit interview', title:'ECE department exit interview', sub:'administrative, 0 credits', cr:0, term:'Final semester', termC:'c', prereq:'None — schedule with the ECE department office', preC:'c', dflt:null},
-    		{id:'pes2130', cat:'basic-sci', code:'PES 2130', title:'General Physics III', sub:'', cr:3, term:'Confirm current-term offering (physics dept)', termC:'u', prereq:'PES 1120; coreq. MATH 2350', preC:'c', dflt:'s28'},
-    		{id:'math4420', cat:'math', code:'MATH 4420', title:'Optimization', sub:'your chosen math minor elective', cr:3, term:'Confirm offering term', termC:'u', prereq:'Not confirmed — check catalog', preC:'u', dflt:'su27'},
-    		{id:'tcid2090', cat:'writing', code:'TCID 2090', title:'Technical Writing & Presentation', sub:'often offered online/asynchronous', cr:3, term:'Regularly offered, fall & spring', termC:'i', prereq:'ENGL 1308, 1310, or 1410', preC:'c', dflt:'f26'},
-    		{id:'port4000', cat:'writing', code:'PORT 4000', title:'Professional / Writing Portfolio', sub:'', cr:1, term:'Runs most terms', termC:'i', prereq:'~60+ completed credit hours, typically junior year', preC:'c', dflt:'s27'},
+		//Compass Curriculum
+		{id:'gps1010', cat:'comp-cur', code:'GPS 1010', title:'Gateway Program Seminar', sub:'Required for all UCCS students', cr:3, term:'Fall & Spring', termC:'u', prereq:'None', preC:'c', dflt:'s27'},
+  		{id:'pes1110', cat:'comp-cur', code:'PES 1110', title:'General Physics I - Calc Based', sub:'Part of Compass Curriculum: Explore - Physical & Natural World', cr:4, term:'Fall & Spring', termC:'c', prereq:'Coreq. MATH 1320 or MATH 1330 or MATH 1350', preC:'c', dflt:'f27'},
+  		
+		//Computer Science Core
+		{id:'cs1450', cat:'cs-core', code:'CS 1450', title:'Data Structures and Algorithms', sub:'', cr:3, term:'Spring, Fall', termC:'c', prereq:'Confirmed', preC:'c', dflt:'s27'},
+  		
+		//Computer Science Math
+		{id:'math1350', cat:'cs-math', code:'CS 1350', title:'Calculus I', sub:'', cr:4, term:'Spring only', termC:'u', prereq:'None', preC:'u', dflt:null},
 
-    		{id:'ece3120', cat:'ee-lec', code:'ECE 3120', title:'Electromagnetic Fields II', sub:'EE lecture elective option', cr:3, term:'Fall only', termC:'c', prereq:'ECE 3110', preC:'i', dflt:null},
-    		{id:'ece4020', cat:'ee-lec', code:'ECE 4020', title:'Semiconductor Devices II', sub:'EE lecture elective option', cr:3, term:'Spring only', termC:'c', prereq:'ECE 3020 or equivalent', preC:'c', dflt:null},
-    		{id:'ece4162', cat:'ee-lec', code:'ECE 4162', title:'Electric Machines', sub:'EE lecture elective option', cr:3, term:'Not on standard rotation — confirm', termC:'u', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4340', cat:'ee-lec', code:'ECE 4340', title:'VLSI Circuit Design I', sub:'EE lecture elective option', cr:3, term:'Fall only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4510', cat:'ee-lec', code:'ECE 4510', title:'Feedback Control Systems', sub:'EE lecture elective option', cr:3, term:'Fall only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4625', cat:'ee-lec', code:'ECE 4625', title:'Communication Systems I', sub:'EE lecture elective option', cr:3, term:'Spring only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4650', cat:'ee-lec', code:'ECE 4650', title:'Modern Digital Signal Processing', sub:'EE lecture elective option', cr:3, term:'Fall only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4910', cat:'ee-lec', code:'ECE 4910', title:'Power Systems II', sub:'EE lecture elective option', cr:3, term:'Not on standard rotation — confirm', termC:'u', prereq:'Not confirmed', preC:'u', dflt:null},
+		//writing/admin
+		{id:'port4000', cat:'writing', code:'PORT 4000', title:'Professional / Writing Portfolio', sub:'', cr:1, term:'Runs most terms', termC:'i', prereq:'~60+ completed credit hours, typically junior year', preC:'c', dflt:'s27'},
 
-    		{id:'ece4040', cat:'ee-lab', code:'ECE 4040', title:'Introductory VLSI Fabrication Lab', sub:'EE lab elective option', cr:1, term:'Spring only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4150', cat:'ee-lab', code:'ECE 4150', title:'Microwave Measurements Laboratory', sub:'EE lab elective option', cr:1, term:'Fall only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4160', cat:'ee-lab', code:'ECE 4160', title:'Electric Machines Lab', sub:'EE lab elective option', cr:1, term:'Not on standard rotation — confirm', termC:'u', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4200', cat:'ee-lab', code:'ECE 4200', title:'Advanced Digital Design Laboratory', sub:'EE lab elective option', cr:1, term:'Spring only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4530', cat:'ee-lab', code:'ECE 4530', title:'Control Systems Laboratory', sub:'EE lab elective option', cr:1, term:'Fall only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4560', cat:'ee-lab', code:'ECE 4560', title:'Digital Control Laboratory', sub:'EE lab elective option', cr:1, term:'Not on standard rotation — confirm', termC:'u', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4670', cat:'ee-lab', code:'ECE 4670', title:'Communications Laboratory', sub:'EE lab elective option', cr:1, term:'Spring only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-    		{id:'ece4680', cat:'ee-lab', code:'ECE 4680', title:'Signal Processing Laboratory', sub:'EE lab elective option', cr:1, term:'Fall only', termC:'c', prereq:'Not confirmed', preC:'u', dflt:null},
-
-    		{id:'cs3010', cat:'cpen-elect', code:'CS 3010', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs3020', cat:'cpen-elect', code:'CS 3020', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs3160', cat:'cpen-elect', code:'CS 3160', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs3350', cat:'cpen-elect', code:'CS 3350', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs4100', cat:'cpen-elect', code:'CS 4100', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs4220', cat:'cpen-elect', code:'CS 4220', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs4600', cat:'cpen-elect', code:'CS 4600', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs4700', cat:'cpen-elect', code:'CS 4700', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs4800', cat:'cpen-elect', code:'CS 4800', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'cs4820', cat:'cpen-elect', code:'CS 4820', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'ece3003', cat:'cpen-elect', code:'ECE 3003', title:'Advanced Robotics', sub:'CpE elective pool — non-overlapping with your EE core', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'ece4211', cat:'cpen-elect', code:'ECE 4211', title:'Rapid Prototyping with FPGAs', sub:'CpE elective pool — non-overlapping with your EE core', cr:3, term:'Spring only', termC:'c', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'ece4222', cat:'cpen-elect', code:'ECE 4222', title:'Deep Learning', sub:'CpE elective pool — not on standard rotation, confirm', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-    		{id:'ece4320', cat:'cpen-elect', code:'ECE 4320', title:'Technical elective option', sub:'CpE elective pool', cr:3, term:'Confirm', termC:'u', prereq:'Varies', preC:'u', dflt:null},
-
-    		{id:'ece3210', cat:'ee-core', code:'ECE 3210', title:'Electronics I', sub:'already in progress — added for a complete Fall \u201926 view', cr:3, term:'Fall only', termC:'c', prereq:'ECE 2205 (per your plan)', preC:'c', dflt:'f26'},
-    		{id:'cs3300', cat:'cpen-core', code:'CS 3300', title:'Intro to Software Engineering', sub:'already in progress', cr:3, term:'Spring, Summer, Fall', termC:'c', prereq:'CS 2080, CS 3060 (per your plan)', preC:'c', dflt:'f26'},
-    		{id:'ece4330', cat:'ee-core', code:'ECE 4330', title:'Embedded Systems Design', sub:'already in progress', cr:3, term:'Fall only', termC:'c', prereq:'ECE 3430, CS 1450 (per your plan)', preC:'c', dflt:'f26'},
-    		{id:'cs4420', cat:'cpen-core', code:'CS 4420', title:'Database Systems I', sub:'already in progress — already counts toward your CpE technical elective hours', cr:3, term:'Spring, Summer, Fall', termC:'c', prereq:'Confirmed', preC:'c', dflt:'f26'},
-    		{id:'jpns3000', cat:'writing', code:'JPNS 3000', title:'Advanced Japanese I', sub:'Japanese minor — see note below on category', cr:3, term:'Confirm', termC:'c', prereq:'Confirmed', preC:'c', dflt:'f26'},
-];
+	];
 
 const assignments = {};
 courses.forEach(c => assignments[c.id] = c.dflt);
