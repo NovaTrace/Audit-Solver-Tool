@@ -21,7 +21,7 @@
 }
 
 *{box-sizing:border-box;}
-body{margin:;background:var(--bg);color:var(--ink);font-family:var(--sans);}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);}
 .sheet{
 	max-width:1180px;margin:0 auto;padding:28px 22px 60px;
 	background-image:
@@ -151,4 +151,4 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--line);font-si
 }
 
 .lock-btn.on{background:var(--amber);border-color:var(--red);color:#fff;font-weight:600;}
-.lock-btn:disabled{opaci
+.lock-btn:disabled{opacity:0.4;cursor:not-allowed;}
