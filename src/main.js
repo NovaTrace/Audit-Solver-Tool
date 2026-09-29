@@ -101,7 +101,7 @@ function renderList(filterCat, query) {
 					</div>
 					<div class="pills">
   						${pillsHtml}
-  						<button class="lock-btn${isLocked?' on':''}" data-id="${c.id}" ${!assignments[c.id] && !isLocked ? 'disabled':''}>${isLocked?'Locked':'Lock'}</button>
+  						<button class="lock-btn${isLocked?' on':''}" data-id="${c.id}" ${!assignments[c.id] && !isLocked ? 'disabled':''}>${isLocked?'Locked🔒':'lock🔓'}</button>
 					</div>
   				`;
 			list.appendChild(row);
