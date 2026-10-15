@@ -1,12 +1,5 @@
 import "./styles.css";
 
-// TODO: implementation of dedicated style sheets
-/*import './styles/base.css';
-import './styles/layout.css';
-import './styles/schedule.css';
-import './styles/course-list.css';
-import './styles/popups.css'; */ 
-
 // popup function for import-export-popup
 const importExportPopup = document.querySelector(".import-export-popup");
 const importExportPopupText = document.getElementById("importExportPopup");
