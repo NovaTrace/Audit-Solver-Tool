@@ -7,5 +7,10 @@ cd Audit-Solver-Tool
 npm install
 
 Run the following for the test server:
-
 npm run dev
+
+Run the following for ESLint bug checker:
+npm run lint
+
+Run the following for Prettier styling:
+npm run format

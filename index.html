@@ -4,45 +4,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audit Solver Tool</title>
-    <!-- TODO:(webfonts/ Inter and IBM Plex Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+    />
     <!-- TODO:(favicon/ contact an artist or build) -->
   </head>
   <body>
     <div class="sheet">
-      <header class="title">
-        <!-- TITLE TEXT -->
-        <h1>AUDIT SOLVER</h1>
-      </header>
-
-      <div class="titleblock">
+      <header class="titleblock">
         <div class="tb-left">
+          <h1>AUDIT SOLVER</h1>
           <p>
-            studentName <br />· major + major (if present) <br />· minor (if present)
+            studentName <br />· major + major (if present) <br />· minor (if
+            present)
           </p>
         </div>
 
-        <!-- CATALOG/AUDIT DATE/SHEET DATE BLOCKS -->
-        <div class="tb-center">
-          <!-- CATALOG/AUDIT DATE/SHEET DATE TEXT -->
-          CATALOG YEAR: <b>catYear</b><br />
-          AUDIT PREPARED: <b>auditGenDate</b><br />
-          SHEET GENERATED: <b>sheetGenDate</b>
-        </div>
-
         <div class="tb-right">
-          <!-- IMPORT/EXPORT BUTTONS -->
-          <button type="button">Import</button>
-          <button type="button">Export</button>
+          <div class="info-popup">
+            <button
+              type="button"
+              class="info-btn"
+              aria-label="Import/export help"
+              aria-expanded="false"
+            >
+              ⓘ
+            </button>
+            <span class="info-text">
+              Click 'Import' to add a degree plan.<br />
+              Click 'Export' to download a pdf of your degree plan.
+            </span>
+          </div>
+
+          <div class="tb-btn">
+            <button type="button">Import</button>
+            <button type="button">Export</button>
+          </div>
+
+          <div class="tb-catalogbox">
+            CATALOG YEAR: <b>catYear</b><br />
+            AUDIT PREPARED: <b>auditGenDate</b><br />
+            SHEET GENERATED: <b>sheetGenDate</b>
+          </div>
         </div>
-        <!--Import/EXPORT POPUP	-->
-        <div class="import-export-popup">
-          ⓘ
-          <span class="importExportPopupText" id="importExportPopup">
-            Click 'Import' to add a degree plan.<br />
-            Click 'Export' to download a pdf of your degree plan.
-          </span>
-        </div>
-      </div>
+      </header>
 
       <div class="stats">
         <!-- STATS VARIABLES -->

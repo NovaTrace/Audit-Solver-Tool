@@ -1,0 +1,73 @@
+.titleblock {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-bottom:2px solid var(--accent);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  justify-content: space-between;
+}
+
+.tb-left h1 {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.tb-left p {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.tb-right {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.tb-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tb-btn button {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.tb-btn button:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+  border-radius: 20px;
+}
+
+.tb-catalogbox {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  line-height: 1.7;
+  border: 1px solid var(--line-strong);
+  padding: 8px 14px;
+  border-radius: 2px;
+  background: var(--panel);
+  align-items: right;
+  text-align: right;
+}
+
+.tb-catalogbox b {
+  color: var(--accent-ink);
+  font-weight: 600;
+}

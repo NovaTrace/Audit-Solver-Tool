@@ -1,23 +1,19 @@
-import "./styles.css";
-
+import "./styles.css"; // old | slowly retire //
+import "./styles/base.css";
+import "./styles/layout.css";
+import "./styles/popups.css";
 // TODO: implementation of dedicated style sheets
-/*import './styles/base.css';
-import './styles/layout.css';
+/*
 import './styles/schedule.css';
 import './styles/course-list.css';
-import './styles/popups.css'; */ 
+ */
+
+import { setupPopups } from "./ui/popups.js";
+setupPopups();
 
 // popup function for import-export-popup
 const importExportPopup = document.querySelector(".import-export-popup");
 const importExportPopupText = document.getElementById("importExportPopup");
-
-importExportPopup.addEventListener("click", () => {
-  if (importExportPopupText.style.display === "block") {
-    importExportPopupText.style.display = "none";
-  } else {
-    importExportPopupText.style.display = "block";
-  }
-});
 
 //SEMESTERS. THESE ARE CONSTANTS THAT WILL BE REPLACED
 const TERMS = [
