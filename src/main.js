@@ -11,9 +11,7 @@ import './styles/course-list.css';
 import { setupPopups } from "./ui/popups.js";
 setupPopups();
 
-// popup function for import-export-popup
-const importExportPopup = document.querySelector(".import-export-popup");
-const importExportPopupText = document.getElementById("importExportPopup");
+
 
 //SEMESTERS. THESE ARE CONSTANTS THAT WILL BE REPLACED
 const TERMS = [

@@ -52,23 +52,32 @@
         </div>
       </header>
 
-      <div class="stats">
-        <!-- STATS VARIABLES -->
-        <div class="stat">
-          <div class="n">hoursEarned</div>
-          <div class="l">Hours earned</div>
-        </div>
-        <div class="stat">
-          <div class="n" id="stat-assigned">hoursAssigned</div>
-          <div class="l">Hours assigned below</div>
-        </div>
-        <div class="stat">
-          <div class="n" id="stat-total">runningTotal</div>
-          <div class="l">Running total (earned + assigned)</div>
-        </div>
-      </div>
+      <main>
+        <dl class="stats">
+          <div class="stat">
+            <dt>Hours earned</dt>
+            <dd id="stat-earned">0</dd>
+          </div>
+          <div class="stat">
+            <dt>Hours assigned</dt>
+            <dd id="stat-assigned">0</dd>
+          </div>
+          <div class="stat">
+            <dt>Running total</dt>
+            <dd id="stat-total">0</dd>
+          </div>
+        </dl>
+        <aside class="note">
+          <h2><span aria-hidden="true">⚑</span> A quick note about our website</h2>
+          <p>
+            Disclaimer text goes here. Disclaimer text goes here. Disclaimer text goes here.
+            Disclaimer text goes here. Disclaimer text goes here. Disclaimer text goes here.
+          </p>
+        </aside>
+        <!-- END OF REBUILT CODE: DO NOT WORK FROM THIS POINT ON-->
+      </main>
 
-      <div class="note">
+      <div>
         <!-- SCHEDULE BLOCKS -->
         <h2
           class="sec"
