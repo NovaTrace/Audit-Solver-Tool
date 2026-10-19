@@ -23,20 +23,6 @@ const TERMS = [
   { key: "f28", label: "Fall \u201928" },
 ];
 
-const addRemovePopup = document.querySelector(
-  ".add-remove-semester-blocks-popup",
-);
-const addRemovePopupText = document.getElementById("addRemovePopup");
-
-// popup function for add-remove-semester-blocks-popup
-addRemovePopup.addEventListener("click", () => {
-  if (addRemovePopupText.style.display === "block") {
-    addRemovePopupText.style.display = "none";
-  } else {
-    addRemovePopupText.style.display = "block";
-  }
-});
-
 //CATAGORY LABELS. THESE ARE ALSO CONSTANTS THAT WILL BE REPLACED
 const catLabels = {
   "comp-cur": "Compass Curriculum",

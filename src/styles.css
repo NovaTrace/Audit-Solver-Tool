@@ -31,30 +31,6 @@ body {
   margin-top: 14px;
 }
 
-/* IMPORT AND EXPORT POPUP */
-.import-export-popup {
-  font-size: 10px;
-  font-family: var(--mono);
-  padding: 0px;
-  margin: 0px;
-  border: none;
-  color: var(--accent);
-  display: inline-block;
-  cursor: pointer;
-}
-
-/* IMPORT AND EXPORT POPUP TEXT */
-.importExportPopupText {
-  display: none;
-  color: var(--ink);
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-dim);
-  border-color: var(--ink);
-}
-
 /* IMPORT AND EXPORT TEXT DISPLAY */
 .importExportPopupText.show {
   display: inline-block;

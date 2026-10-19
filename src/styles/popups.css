@@ -15,8 +15,6 @@
   display: none;
   position: absolute;
   bottom: 0%;
-  right: 150%;
-  margin-top: 6px;
   width: max-content;
   max-width: 500px;
   z-index: 10;
@@ -30,11 +28,20 @@
   line-height: 1.5;
 }
 
+.info-popup--right .info-text{
+  right: auto;
+  right: 150%;
+}
+
+.info-popup--left .info-text{
+  right: auto;
+  left: 150%;
+}
+
 .info-popup.open .info-text {
   display: block;
 }
 
-/* The dimming layer: always present, invisible until a popup opens */
 body::before {
   content: "";
   position: fixed;
