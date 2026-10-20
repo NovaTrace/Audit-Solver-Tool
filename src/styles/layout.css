@@ -130,6 +130,23 @@
   color: var(--ink-dim);
 }
 
+.reset-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+  border-radius: 20px;
+}
+
 .section-header {
   display: flex;
   align-items: baseline;
