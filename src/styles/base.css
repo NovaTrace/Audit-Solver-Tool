@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 :root {
   --bg: #eef3f7;
   --panel: #ffffff;
@@ -18,4 +22,30 @@
   --red-bg: rgba(184, 67, 59, 0.09);
   --mono: "IBM Plex Mono", monospace;
   --sans: "Inter", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+.sheet {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 22px 60px;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  line-height: 1.8;
 }

@@ -68,16 +68,19 @@
           </div>
         </dl>
         <aside class="note">
-          <h2><span aria-hidden="true">⚑</span> A quick note about our website</h2>
+          <h2>
+            <span aria-hidden="true">⚑</span> A quick note about our website
+          </h2>
           <p>
-            Disclaimer text goes here. Disclaimer text goes here. Disclaimer text goes here.
-            Disclaimer text goes here. Disclaimer text goes here. Disclaimer text goes here.
+            Disclaimer text goes here. Disclaimer text goes here. Disclaimer
+            text goes here. Disclaimer text goes here. Disclaimer text goes
+            here. Disclaimer text goes here.
           </p>
         </aside>
         <section class="schedule">
           <div class="section-header">
             <h2>Your schedule</h2>
-            <div class ="info-popup info-popup--left">
+            <div class="info-popup info-popup--left">
               <button
                 type="button"
                 class="info-btn"
@@ -91,22 +94,35 @@
                 Click the '-' to remove a semester block.
               </span>
             </div>
-            <span id="save-status" class = "save-status">
+            <span id="save-status" class="save-status">
               Autosaves in browser
             </span>
-            <button type = "button" id="reset-btn" class = "reset-btn">
+            <button type="button" id="reset-btn" class="reset-btn">
               Reset to defaults
             </button>
           </div>
-          
-          <!--check on these 3 later-->
+
+          <!-- Filled by src/render/schedule.js -->
           <div class="pool-status" id="pool-status"></div>
           <div class="sched-grid" id="sched-grid"></div>
           <div class="unassigned" id="unassigned"></div>
+          <!-- Templates: never shown directly; JS copies them to build the term cards -->
+          <template id="term-card-tpl">
+            <article class="term-card">
+              <h3>
+                <span class="term-name"></span><span class="term-cr"></span>
+              </h3>
+              <ul class="term-courses"></ul>
+            </article>
+          </template>
 
+          <template id="term-course-tpl">
+            <li>
+              <span class="course-code"></span><span class="course-cr"></span>
+            </li>
+          </template>
         </section>
         <!-- END OF REBUILT CODE: DO NOT WORK FROM THIS POINT ON-->
-      </main>
 
         <!-- SORTING BUTTONS -->
         <div class="controls">
@@ -145,7 +161,7 @@
         </div>
 
         <div id="list"></div>
-      </div>
+      </main>
 
       <footer>
         Sources: your uploaded degree audit [insert date of upload]

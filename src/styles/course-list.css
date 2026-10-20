@@ -1,0 +1,125 @@
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 22px 0 12px;
+  align-items: center;
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* SEARCH BAR AND COURSE INFO CONTAINER FOR PLACEMENT */
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+#search {
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--ink);
+  min-width: 200px;
+  margin-left: auto;
+}
+
+#search::placeholder {
+  color: var(--ink-faint);
+}
+
+.cat-head {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--accent-ink);
+  background: var(--panel-alt);
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  margin-top: 14px;
+}
+
+.cat-head + .row {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 100px 1fr 300px;
+  gap: 14px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: none;
+  padding: 10px 12px;
+}
+
+.row:last-of-type {
+  border-radius: 0 0 6px 6px;
+}
+.row.pool {
+  background: var(--panel-alt);
+}
+.r-code {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--accent-ink);
+  font-size: 13px;
+}
+.r-cr {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+.r-title {
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.r-sub {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  margin-top: 1px;
+  line-height: 1.4;
+}
+.r-term {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-top: 4px;
+}

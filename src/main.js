@@ -1,142 +1,38 @@
-import "./styles.css"; // old | slowly retire //
+// =====================================================================
+// main.js — entry point
+// =====================================================================
+
+// ---------- Styles ----------
+// Order matters: when two files style the same thing, the later one wins.
+import "./styles.css"; // old | remove once fully converted
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/popups.css";
-// TODO: implementation of dedicated style sheets
-/*
-import './styles/schedule.css';
-import './styles/course-list.css';
- */
+import "./styles/schedule.css";
+// import "./styles/course-list.css";
 
+// ---------- Modules ----------
+import {
+  TERMS,
+  catLabels,
+  catOrder,
+  poolGroups,
+  EARNED_HOURS,
+  courses,
+} from "./data/defaults.js";
 import { setupPopups } from "./ui/popups.js";
-setupPopups();
+import { renderSchedule } from "./render/schedule.js";
+import { renderStats } from "./render/stats.js";
 
+// =====================================================================
+// STATE — which term each course is in, and which are locked
+// (candidate to move into state.js later)
+// =====================================================================
+const STORAGE_KEY = "audit-solver-state-v1";
 
-
-//SEMESTERS. THESE ARE CONSTANTS THAT WILL BE REPLACED
-const TERMS = [
-  { key: "f26", label: "Fall \u201926" },
-  { key: "s27", label: "Spring \u201927" },
-  { key: "su27", label: "Summer \u201927" },
-  { key: "f27", label: "Fall \u201927" },
-  { key: "s28", label: "Spring \u201928" },
-  { key: "f28", label: "Fall \u201928" },
-];
-
-//CATAGORY LABELS. THESE ARE ALSO CONSTANTS THAT WILL BE REPLACED
-const catLabels = {
-  "comp-cur": "Compass Curriculum",
-  "cs-core": "Computer Science",
-  "cs-math": "Computer Science: Mathmatics",
-  writing: "Writing / administrative",
-};
-
-// popup function for course info and adding and removing them
-const courseInfoAddRemove = document.querySelector(
-  ".course-info-and-locking-terms-popup",
-);
-const courseInfoAddRemoveText = document.getElementById("courseInfoAndLocking");
-
-// popup function for add-remove-semester-blocks-popup
-courseInfoAddRemove.addEventListener("click", () => {
-  if (courseInfoAddRemoveText.style.display === "block") {
-    courseInfoAddRemoveText.style.display = "none";
-  } else {
-    courseInfoAddRemoveText.style.display = "block";
-  }
-});
-
-//CATAGORY ORDER. WILL BE REPLACED
-const catOrder = ["comp-cur", "cs-core", "cs-math", "writing"];
-
-const chipMap = {
-  "comp-cur": "comp-cur",
-  "cs-core": "cs-core",
-  "cs-math": "cs-math",
-  writing: "writing",
-};
-
-//DEFAULTS. CONSTANTS TO BE REPLACED
-const courses = [
-  //Compass Curriculum
-  {
-    id: "gps1010",
-    cat: "comp-cur",
-    code: "GPS 1010",
-    title: "Gateway Program Seminar",
-    sub: "Required for all UCCS students",
-    cr: 3,
-    term: "Fall & Spring",
-    termC: "u",
-    prereq: "None",
-    preC: "c",
-    dflt: "s27",
-  },
-  {
-    id: "pes1110",
-    cat: "comp-cur",
-    code: "PES 1110",
-    title: "General Physics I - Calc Based",
-    sub: "Part of Compass Curriculum: Explore - Physical & Natural World",
-    cr: 4,
-    term: "Fall & Spring",
-    termC: "c",
-    prereq: "Coreq. MATH 1320 or MATH 1330 or MATH 1350",
-    preC: "c",
-    dflt: "f27",
-  },
-
-  //Computer Science Core
-  {
-    id: "cs1450",
-    cat: "cs-core",
-    code: "CS 1450",
-    title: "Data Structures and Algorithms",
-    sub: "",
-    cr: 3,
-    term: "Spring, Fall",
-    termC: "c",
-    prereq: "Confirmed",
-    preC: "c",
-    dflt: "s27",
-  },
-
-  //Computer Science Math
-  {
-    id: "math1350",
-    cat: "cs-math",
-    code: "CS 1350",
-    title: "Calculus I",
-    sub: "",
-    cr: 4,
-    term: "Spring only",
-    termC: "u",
-    prereq: "None",
-    preC: "u",
-    dflt: null,
-  },
-
-  //writing/admin
-  {
-    id: "port4000",
-    cat: "writing",
-    code: "PORT 4000",
-    title: "Professional / Writing Portfolio",
-    sub: "",
-    cr: 1,
-    term: "Runs most terms",
-    termC: "i",
-    prereq: "~60+ completed credit hours, typically junior year",
-    preC: "c",
-    dflt: "s27",
-  },
-];
-
-const assignments = {};
+const assignments = {}; // course id -> term key (or null)
 courses.forEach((c) => (assignments[c.id] = c.dflt));
-const locked = {};
-
-const STORAGE_KEY = "ce-ece-planner-v1";
+const locked = {}; // course id -> true when locked
 
 function loadState() {
   try {
@@ -161,19 +57,97 @@ function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ assignments, locked }));
     const s = document.getElementById("save-status");
     if (s) {
-      s.textContent = "Saved " + new Date().toLocalTimeString();
+      s.textContent = "Saved " + new Date().toLocaleTimeString();
     }
   } catch (e) {
     console.warn("Could not save planner state:", e);
   }
 }
-loadState();
 
-const poolGroups = {
-  "ee-lec": { label: "EE lecture elective", need: 2 },
-  "ee-lab": { label: "EE lab elective", need: 1 },
-  "cpen-elect": { label: "CpE technical elective", need: 1 },
+// =====================================================================
+// REDRAWING — call these after anything changes the state
+// =====================================================================
+
+// Stats tiles + schedule section
+function refreshSchedule() {
+  const data = { terms: TERMS, courses, assignments, locked, poolGroups };
+  renderSchedule(data);
+  renderStats({ ...data, earnedHours: EARNED_HOURS });
+}
+
+// Course list, keeping the current filter chip and search text
+function refreshList() {
+  const activeCat = document.querySelector(".chip.active").dataset.cat;
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  renderList(activeCat, query);
+}
+
+// Everything
+function refreshAll() {
+  refreshList();
+  refreshSchedule();
+}
+
+// =====================================================================
+// HEADER + ALL ⓘ POPUPS
+// =====================================================================
+setupPopups(); // handles every .info-popup on the page
+
+// =====================================================================
+// SCHEDULE SECTION (#pool-status, #sched-grid, #unassigned)
+// Drawing lives in render/schedule.js; only the Reset button is wired here.
+// =====================================================================
+document.getElementById("reset-btn").addEventListener("click", () => {
+  if (
+    !confirm(
+      "Clear all saved term picks and locks, and go back to the built-in defaults?",
+    )
+  )
+    return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    console.error("Could not clear saved data from localStorage.");
+  }
+  courses.forEach((c) => (assignments[c.id] = c.dflt));
+  Object.keys(locked).forEach((id) => delete locked[id]);
+  const s = document.getElementById("save-status");
+  if (s) s.textContent = "Autosaves in this browser";
+  refreshAll();
+});
+
+// =====================================================================
+// COURSE LIST SECTION (chips, search, #list)
+// Not rebuilt yet — next candidate to move into render/courseList.js
+// =====================================================================
+
+// Old-style ⓘ popup for the course list (remove once converted to .info-popup)
+const courseInfoPopup = document.querySelector(
+  ".course-info-and-locking-terms-popup",
+);
+const courseInfoPopupText = document.getElementById("courseInfoAndLocking");
+courseInfoPopup.addEventListener("click", () => {
+  if (courseInfoPopupText.style.display === "block") {
+    courseInfoPopupText.style.display = "none";
+  } else {
+    courseInfoPopupText.style.display = "block";
+  }
+});
+
+const chipMap = {
+  "comp-cur": "comp-cur",
+  "cs-core": "cs-core",
+  "cs-math": "cs-math",
+  writing: "writing",
 };
+
+function termClass(c) {
+  return c === "c" ? "term-c" : c === "i" ? "term-i" : "term-u";
+}
+
+function confClass(c) {
+  return c === "c" ? "conf-c" : c === "i" ? "conf-i" : "conf-u";
+}
 
 function renderList(filterCat, query) {
   const list = document.getElementById("list");
@@ -233,11 +207,7 @@ function renderList(filterCat, query) {
       if (locked[id]) return;
       assignments[id] = assignments[id] === term ? null : term;
       saveState();
-      renderList(
-        document.querySelector(".chip.active").dataset.cat,
-        document.getElementById("search").value.trim().toLowerCase(),
-      );
-      renderSchedule();
+      refreshAll();
     });
   });
   list.querySelectorAll(".lock-btn").forEach((b) => {
@@ -246,103 +216,29 @@ function renderList(filterCat, query) {
       if (!assignments[id] && !locked[id]) return;
       locked[id] = !locked[id];
       saveState();
-      renderList(
-        document.querySelector(".chip.active").dataset.cat,
-        document.getElementById("search").value.trim().toLowerCase(),
-      );
-      renderSchedule();
+      refreshAll();
     });
   });
 }
 
-function termClass(c) {
-  return c === "c" ? "term-c" : c === "i" ? "term-i" : "term-u";
-}
-function confClass(c) {
-  return c === "c" ? "conf-c" : c === "i" ? "conf-i" : "conf-u";
-}
-
-function renderSchedule() {
-  const grid = document.getElementById("sched-grid");
-  grid.innerHTML = "";
-  let totalAssigned = 0;
-  TERMS.forEach((t) => {
-    const items = courses.filter((c) => assignments[c.id] === t.key);
-    const sub = items.reduce((s, c) => s + c.cr, 0);
-    totalAssigned += sub;
-    const card = document.createElement("div");
-    card.className = "term-card";
-    card.innerHTML = `<h3>${t.label}<span>${sub} cr</span></h3>
-  			<ul>${items.length ? items.map((c) => `<li><span${locked[c.id] ? ' style="color:var(--green);font-weight:600;"' : ""}>${locked[c.id] ? "\u2713 " : ""}${c.code}</span><span>${c.cr} cr</span></li>`).join("") : '<li class="empty">Nothing assigned</li>'}</ul>`;
-    grid.appendChild(card);
-  });
-  document.getElementById("stat-assigned").textContent = totalAssigned;
-  document.getElementById("stat-total").textContent = 126 + totalAssigned;
-
-  const poolStatus = document.getElementById("pool-status");
-  poolStatus.innerHTML = "";
-  Object.keys(poolGroups).forEach((key) => {
-    const g = poolGroups[key];
-    const chosen = courses.filter(
-      (c) => c.cat === key && assignments[c.id],
-    ).length;
-    const el = document.createElement("div");
-    el.className = "ps " + (chosen >= g.need ? "done" : "pending");
-    el.textContent = `${g.label}: ${chosen} of ${g.need} selected`;
-    poolStatus.appendChild(el);
-  });
-
-  const required = courses.filter(
-    (c) => !["ee-lec", "ee-lab", "cpen-elect"].includes(c.cat),
-  );
-  const missing = required.filter(
-    (c) => !assignments[c.id] && c.id !== "exitint",
-  );
-  const un = document.getElementById("unassigned");
-  un.innerHTML = missing.length
-    ? `<b>Not yet placed in a term:</b> ${missing.map((c) => c.code).join(", ")}`
-    : `<b>Everything required has a term.</b> Elective picks above still show 0 until you check them off.`;
-}
-
+// Filter chips
 document.querySelectorAll(".chip").forEach((chip) => {
   chip.addEventListener("click", () => {
     document
       .querySelectorAll(".chip")
       .forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
-    renderList(
-      chip.dataset.cat,
-      document.getElementById("search").value.trim().toLowerCase(),
-    );
+    refreshList();
   });
 });
-document.getElementById("search").addEventListener("input", (e) => {
-  const active = document.querySelector(".chip.active").dataset.cat;
-  renderList(active, e.target.value.trim().toLowerCase());
+
+// Search box
+document.getElementById("search").addEventListener("input", () => {
+  refreshList();
 });
 
-renderList("all", "");
-renderSchedule();
-
-document.getElementById("reset-btn").addEventListener("click", () => {
-  if (
-    !confirm(
-      "Clear all saved term picks and locks, and go back to the built-in defaults?",
-    )
-  )
-    return;
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    console.error("Could not clear saved data from localStorage.");
-  }
-  courses.forEach((c) => (assignments[c.id] = c.dflt));
-  Object.keys(locked).forEach((id) => delete locked[id]);
-  const s = document.getElementById("save-status");
-  if (s) s.textContent = "Autosaves in this browser";
-  renderList(
-    document.querySelector(".chip.active").dataset.cat,
-    document.getElementById("search").value.trim().toLowerCase(),
-  );
-  renderSchedule();
-});
+// =====================================================================
+// STARTUP
+// =====================================================================
+loadState(); // restore saved picks from this browser
+refreshAll(); // first draw
