@@ -80,41 +80,6 @@
   justify-content: left;
 }
 
-/* COURSE INFO AND LOCKING TERMS POPUP */
-.course-info-and-locking-terms-popup {
-  padding: 0px;
-  margin: 0px;
-  border: none;
-  font-weight: normal;
-  text-transform: none;
-  color: var(--ink);
-  display: inline-block;
-  cursor: pointer;
-}
-
-/* COURSE INFO AND LOCKING TERMS TEXT */
-.courseInfoAndLockingTermsText {
-  display: none;
-  text-transform: none;
-  font-weight: normal;
-  color: var(--ink);
-  font-size: 10px;
-  color: var(--ink);
-  font-family: var(--mono);
-  position: absolute;
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-dim);
-  border-color: var(--ink);
-}
-
-/* COURSE INFO AND LOCKING TERMS TEXT DISPLAY */
-.courseInfoAndLockingTermsText.show {
-  display: inline-block;
-}
-
 .legend {
   display: flex;
   gap: 18px;

@@ -9,7 +9,7 @@ import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/popups.css";
 import "./styles/schedule.css";
-// import "./styles/course-list.css";
+import "./styles/course-list.css";
 
 // ---------- Modules ----------
 import {
@@ -120,19 +120,6 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 // COURSE LIST SECTION (chips, search, #list)
 // Not rebuilt yet — next candidate to move into render/courseList.js
 // =====================================================================
-
-// Old-style ⓘ popup for the course list (remove once converted to .info-popup)
-const courseInfoPopup = document.querySelector(
-  ".course-info-and-locking-terms-popup",
-);
-const courseInfoPopupText = document.getElementById("courseInfoAndLocking");
-courseInfoPopup.addEventListener("click", () => {
-  if (courseInfoPopupText.style.display === "block") {
-    courseInfoPopupText.style.display = "none";
-  } else {
-    courseInfoPopupText.style.display = "block";
-  }
-});
 
 const chipMap = {
   "comp-cur": "comp-cur",

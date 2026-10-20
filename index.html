@@ -90,7 +90,7 @@
                 ⓘ
               </button>
               <span class="info-text">
-                Click the '+' icon to add a semster block.<br />
+                Click the '+' icon to add a semester block.<br />
                 Click the '-' to remove a semester block.
               </span>
             </div>
@@ -122,7 +122,7 @@
             </li>
           </template>
         </section>
-        <!-- END OF REBUILT CODE: DO NOT WORK FROM THIS POINT ON-->
+        <!-- END OF REBUILT CODE -->
 
         <!-- SORTING BUTTONS -->
         <div class="controls">
@@ -136,27 +136,26 @@
 
           <!-- SEARCH BAR AND CLASS INFO POPUP-->
           <div class="search-container">
-            <div class="course-info-and-locking-terms-popup">
-              ⓘ
-              <span
-                class="courseInfoAndLockingTermsText"
-                id="courseInfoAndLocking"
+            <div class="info-popup info-popup--right">
+              <button
+                type="button"
+                class="info-btn"
+                aria-label="Class selection help"
+                aria-expanded="false"
               >
-                Here is where your class information is displayed.<br />
-                This is where you can lock the terms for your classes<br />
-                Click on a term to add the class to the corresponding semester.
-                The term will be highlighted blue when it is selected<br />
-                Once you have a class selected click the 'lock' button to lock
-                the class in that semester block. The button will turn orange
-                when the class is locked.
+                ⓘ
+              </button>
+              <span class="info-text">
+                Click on a term to add the class to the corresponding semester.<br />
+                click the 'lock' button to lock the class in that semester block.
               </span>
             </div>
-
             <input
-              type="text"
-              id="search"
-              placeholder="Search course code or title…"
+            type="text"
+            id="search"
+            placeholder="Search course code or title…"
             />
+
           </div>
         </div>
 
