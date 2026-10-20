@@ -4,7 +4,6 @@
 
 // ---------- Styles ----------
 // Order matters: when two files style the same thing, the later one wins.
-import "./styles.css"; // old | remove once fully converted
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/popups.css";
@@ -23,6 +22,7 @@ import {
 import { setupPopups } from "./ui/popups.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
+import { renderList } from "./render/courseList.js";
 
 // =====================================================================
 // STATE — which term each course is in, and which are locked

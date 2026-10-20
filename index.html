@@ -40,8 +40,9 @@
           </div>
 
           <div class="tb-btn">
-            <button type="button">Import</button>
-            <button type="button">Export</button>
+            <button type="button" id="import-btn">Import</button>
+            <input type="file" id="import-file" accept=".pdf, .json" hidden />
+            <button type="button" id="export-btn">Export</button>
           </div>
 
           <div class="tb-catalogbox">
@@ -122,9 +123,8 @@
             </li>
           </template>
         </section>
-        <!-- END OF REBUILT CODE -->
 
-        <!-- SORTING BUTTONS -->
+        <!-- SORTING BUTTONS - Should be replaced with dynamic solution-->
         <div class="controls">
           <button class="chip active" data-cat="all">All</button>
           <button class="chip" data-cat="comp-cur">Compass Curriculum</button>
@@ -155,7 +155,6 @@
             id="search"
             placeholder="Search course code or title…"
             />
-
           </div>
         </div>
 
