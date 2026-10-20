@@ -22,7 +22,6 @@ import {
 import { setupPopups } from "./ui/popups.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
-import { renderList } from "./render/courseList.js";
 
 // =====================================================================
 // STATE — which term each course is in, and which are locked
