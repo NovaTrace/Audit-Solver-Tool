@@ -22,6 +22,7 @@ import {
 import { setupPopups } from "./ui/popups.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
+import { renderCourseList } from "./render/courseList.js";
 
 // =====================================================================
 // STATE — which term each course is in, and which are locked
@@ -75,11 +76,19 @@ function refreshSchedule() {
 }
 
 // Course list, keeping the current filter chip and search text
-function refreshList() {
-  const activeCat = document.querySelector(".chip.active").dataset.cat;
-  const query = document.getElementById("search").value.trim().toLowerCase();
-  renderList(activeCat, query);
-}
+   function refreshList() {
+     renderCourseList({
+       terms: TERMS,
+       courses,
+       catOrder,
+       catLabels,
+       poolGroups,
+       assignments,
+       locked,
+       filterCat: document.querySelector(".chip.active").dataset.cat,
+       query: document.getElementById("search").value.trim().toLowerCase(),
+     });
+   }
 
 // Everything
 function refreshAll() {
@@ -116,81 +125,9 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 });
 
 // =====================================================================
-// COURSE LIST SECTION (chips, search, #list)
-// Not rebuilt yet — next candidate to move into render/courseList.js
+// COURSE LIST SECTION (chips, search)
+// Drawing lives in render/courseList.js; clicks are handled here.”
 // =====================================================================
-
-function renderList(filterCat, query) {
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-  const grouped = {};
-  courses.forEach((c) => {
-    if (!grouped[c.cat]) grouped[c.cat] = [];
-    grouped[c.cat].push(c);
-  });
-  catOrder.forEach((cat) => {
-    if (cat !== filterCat) return;
-    const items = (grouped[cat] || []).filter((c) => {
-      if (!query) return true;
-      const hay = (c.code + " " + c.title + " " + c.sub).toLowerCase();
-      return hay.includes(query);
-    });
-    if (items.length === 0) return;
-    const head = document.createElement("div");
-    head.className = "cat-head";
-    head.textContent = catLabels[cat];
-    list.appendChild(head);
-    items.forEach((c) => {
-      const row = document.createElement("div");
-      const isLocked = !!locked[c.id];
-      row.className =
-        "row" +
-        (cat === "ee-lec" || cat === "ee-lab" || cat === "cpen-elect"
-          ? " pool"
-          : "") +
-        (isLocked ? " locked" : "");
-      const pillsHtml = TERMS.map(
-        (t) =>
-          `<button class="pill${assignments[c.id] === t.key ? " on" : ""}" data-id="${c.id}" data-term="${t.key}" ${isLocked ? "disabled" : ""}>${t.label}</button>`,
-      ).join("");
-      row.innerHTML = `
-					<div><span class="r-code">${c.code}</span><span class="r-cr">${c.cr} cr</span></div>
-					<div>
-  						<span class="r-title">${c.title}</span>
-  							${c.sub ? `<span class="r-sub">${c.sub}</span>` : ""}
-  						<span class="r-term">${c.term}</span>
-  						<span class="r-prereq">${c.prereq}</span>
-					</div>
-					<div class="pills">
-  						${pillsHtml}
-
-  						<button class="lock-btn${isLocked ? " on" : ""}" data-id="${c.id}" ${!assignments[c.id] && !isLocked ? "disabled" : ""}>${isLocked ? "Locked🔒" : "lock🔓"}</button>
-
-					</div>
-  				`;
-      list.appendChild(row);
-    });
-  });
-  list.querySelectorAll(".pill").forEach((p) => {
-    p.addEventListener("click", () => {
-      const id = p.dataset.id,
-        term = p.dataset.term;
-      if (locked[id]) return;
-      assignments[id] = assignments[id] === term ? null : term;
-      saveState();
-      refreshAll();
-    });
-  });
-  list.querySelectorAll(".lock-btn").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.dataset.id;
-      if (!assignments[id] && !locked[id]) return;
-      locked[id] = !locked[id];
-      saveState();
-      refreshAll();
-    });
-  });
-}
 
 // Filter chips
 document.querySelectorAll(".chip").forEach((chip) => {
@@ -202,6 +139,27 @@ document.querySelectorAll(".chip").forEach((chip) => {
     refreshList();
   });
 });
+
+   // Term pills and lock buttons: ONE listener on the whole list.
+   document.getElementById("list").addEventListener("click", (e) => {
+     const pill = e.target.closest(".pill");
+     const lockBtn = e.target.closest(".lock-btn");
+
+     if (pill) {
+       const { id, term } = pill.dataset;
+       if (locked[id]) return;
+       assignments[id] = assignments[id] === term ? null : term; // toggle
+     } else if (lockBtn) {
+       const id = lockBtn.dataset.id;
+       if (!assignments[id] && !locked[id]) return;
+       locked[id] = !locked[id]; // toggle
+     } else {
+       return; // the click wasn't on a pill or a lock button
+     }
+
+     saveState();
+     refreshAll();
+   });
 
 // Search box
 document.getElementById("search").addEventListener("input", refreshList);
