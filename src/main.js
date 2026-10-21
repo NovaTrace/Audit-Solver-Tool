@@ -111,7 +111,7 @@ document.getElementById("reset-btn").addEventListener("click", () => {
   courses.forEach((c) => (assignments[c.id] = c.dflt));
   Object.keys(locked).forEach((id) => delete locked[id]);
   const s = document.getElementById("save-status");
-  if (s) s.textContent = "Autosaves in this browser";
+  if (s) s.textContent = "Autosaves in browser";
   refreshAll();
 });
 
