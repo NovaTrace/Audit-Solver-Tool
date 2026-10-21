@@ -1,6 +1,6 @@
 // Pure helpers for the course list: which courses to show.
 // No `document` here, so these can be tested with Vitest (see courses.test.js).
- 
+
 /** True if the course matches the search text (empty search matches all). */
 export function matchesQuery(course, query) {
   if (!query) return true;
@@ -8,7 +8,7 @@ export function matchesQuery(course, query) {
     `${course.code} ${course.title} ${course.sub ?? ""}`.toLowerCase();
   return haystack.includes(query);
 }
- 
+
 /**
  * The categories and courses to display, in display order.
  * Returns [{ cat, items: [course, ...] }, ...], skipping empty categories.

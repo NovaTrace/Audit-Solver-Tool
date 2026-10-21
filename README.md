@@ -14,3 +14,6 @@ npm run lint
 
 Run the following for Prettier styling:
 npm run format
+
+Run the following to run test files:
+npm test

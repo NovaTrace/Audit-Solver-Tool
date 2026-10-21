@@ -1,7 +1,7 @@
 /*Testing only, not a site element*/
 
 import { describe, it, expect } from "vitest";
-import { matchesQuery, visibleCourseGroups } from "./courses.js";
+import { matchesQuery, visibleCourseGroups } from "../logic/courses.js";
 
 const courses = [
   { id: "a", cat: "core", code: "CS 1450", title: "Data Structures", sub: "" },
