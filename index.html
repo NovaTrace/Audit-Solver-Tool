@@ -146,26 +146,48 @@
                 ⓘ
               </button>
               <span class="info-text">
-                Click on a term to add the class to the corresponding semester.<br />
-                click the 'lock' button to lock the class in that semester block.
+                Click on a term to add the class to the corresponding
+                semester.<br />
+                click the 'lock' button to lock the class in that semester
+                block.
               </span>
             </div>
             <input
-            type="text"
-            id="search"
-            placeholder="Search course code or title…"
+              type="text"
+              id="search"
+              placeholder="Search course code or title…"
             />
           </div>
         </div>
 
+        <!-- Filled by src/render/courseList.js -->
         <div id="list"></div>
+
+        <!-- Template: one course row (never shown directly; JS copies it) -->
+        <template id="course-row-tpl">
+          <div class="row">
+            <div>
+              <span class="r-code"></span>
+              <span class="r-cr"></span>
+            </div>
+            <div>
+              <span class="r-title"></span>
+              <span class="r-sub"></span>
+              <span class="r-term"></span>
+              <span class="r-prereq"></span>
+            </div>
+            <div class="pills">
+              <!-- term pills are inserted here by JS -->
+              <button type="button" class="lock-btn"></button>
+            </div>
+          </div>
+        </template>
       </main>
 
       <footer>
         Sources: your uploaded degree audit [insert date of upload]
       </footer>
     </div>
-    <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

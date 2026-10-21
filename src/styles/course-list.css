@@ -131,22 +131,6 @@
   border-radius: 2px;
   margin-top: 4px;
 }
-
-.term-c {
-  background: var(--accent-bg);
-  color: var(--accent-ink);
-}
-.term-i {
-  background: rgba(81, 105, 122, 0.1);
-  color: var(--ink-dim);
-}
-.term-u {
-  background: var(--amber-bg);
-  color: var(--amber);
-}
-
-
-
 .term-card ul {
   list-style: none;
   margin: 0;
@@ -234,3 +218,11 @@
   cursor: not-allowed;
 }
 
+@media (max-width: 760px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+  .pills {
+    margin-top: 6px;
+  }
+}

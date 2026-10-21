@@ -120,21 +120,6 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 // Not rebuilt yet — next candidate to move into render/courseList.js
 // =====================================================================
 
-const chipMap = {
-  "comp-cur": "comp-cur",
-  "cs-core": "cs-core",
-  "cs-math": "cs-math",
-  writing: "writing",
-};
-
-function termClass(c) {
-  return c === "c" ? "term-c" : c === "i" ? "term-i" : "term-u";
-}
-
-function confClass(c) {
-  return c === "c" ? "conf-c" : c === "i" ? "conf-i" : "conf-u";
-}
-
 function renderList(filterCat, query) {
   const list = document.getElementById("list");
   list.innerHTML = "";
@@ -144,7 +129,7 @@ function renderList(filterCat, query) {
     grouped[c.cat].push(c);
   });
   catOrder.forEach((cat) => {
-    if (filterCat !== "all" && chipMap[cat] !== filterCat) return;
+    if (cat !== filterCat) return;
     const items = (grouped[cat] || []).filter((c) => {
       if (!query) return true;
       const hay = (c.code + " " + c.title + " " + c.sub).toLowerCase();
@@ -173,8 +158,8 @@ function renderList(filterCat, query) {
 					<div>
   						<span class="r-title">${c.title}</span>
   							${c.sub ? `<span class="r-sub">${c.sub}</span>` : ""}
-  						<span class="r-term ${termClass(c.termC)}">${c.term}</span>
-  						<span class="r-prereq"><i class="conf-dot ${confClass(c.preC)}" style="margin-right:5px;"></i>${c.prereq}</span>
+  						<span class="r-term">${c.term}</span>
+  						<span class="r-prereq">${c.prereq}</span>
 					</div>
 					<div class="pills">
   						${pillsHtml}
@@ -219,9 +204,7 @@ document.querySelectorAll(".chip").forEach((chip) => {
 });
 
 // Search box
-document.getElementById("search").addEventListener("input", () => {
-  refreshList();
-});
+document.getElementById("search").addEventListener("input", refreshList);
 
 // =====================================================================
 // STARTUP

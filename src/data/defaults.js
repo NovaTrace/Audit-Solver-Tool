@@ -45,9 +45,7 @@ export const courses = [
     sub: "Required for all UCCS students",
     cr: 3,
     term: "Fall & Spring",
-    termC: "u",
     prereq: "None",
-    preC: "c",
     dflt: "s27",
   },
   {
@@ -58,9 +56,7 @@ export const courses = [
     sub: "Part of Compass Curriculum: Explore - Physical & Natural World",
     cr: 4,
     term: "Fall & Spring",
-    termC: "c",
     prereq: "Coreq. MATH 1320 or MATH 1330 or MATH 1350",
-    preC: "c",
     dflt: "f27",
   },
 
@@ -73,9 +69,7 @@ export const courses = [
     sub: "",
     cr: 3,
     term: "Spring, Fall",
-    termC: "c",
     prereq: "Confirmed",
-    preC: "c",
     dflt: "s27",
   },
 
@@ -88,9 +82,7 @@ export const courses = [
     sub: "",
     cr: 4,
     term: "Spring only",
-    termC: "u",
     prereq: "None",
-    preC: "u",
     dflt: null,
   },
 
@@ -103,9 +95,7 @@ export const courses = [
     sub: "",
     cr: 1,
     term: "Runs most terms",
-    termC: "i",
     prereq: "~60+ completed credit hours, typically junior year",
-    preC: "c",
     dflt: "s27",
   },
 ];
