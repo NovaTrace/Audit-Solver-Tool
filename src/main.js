@@ -100,6 +100,31 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 });
 
 // =====================================================================
+// IMPORT + PARSE PDF FILE
+// =====================================================================
+const importBtn = document.getElementById("import-btn");
+const importFile = document.getElementById("import-file");
+
+importBtn.addEventListener("click", () => {
+  importFile.click();
+});
+
+importFile.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  console.log("Selected file:", file.name);
+  console.log("File type:", file.type);
+  console.log("File size:", file.size, "bytes");
+
+  alert(`Selected file: ${file.name}`);
+});
+
+
+// =====================================================================
 // COURSE LIST SECTION (chips, search, #list)
 // Drawing lives in render/courseList.js; clicks are handled here.
 // =====================================================================
