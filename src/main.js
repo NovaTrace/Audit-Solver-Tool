@@ -30,6 +30,7 @@ import {
   toggleLock,
 } from "./state.js";
 import { setupPopups } from "./ui/popups.js";
+import { setupImport } from "./ui/importer.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
 import { renderCourseList } from "./render/courseList.js";
@@ -80,9 +81,15 @@ function setSaveStatus(text) {
 }
 
 // =====================================================================
-// HEADER + ALL ⓘ POPUPS
+// HEADER + POPUPS
 // =====================================================================
 setupPopups(); // handles every .info-popup on the page
+// Import button: ui/importer.js checks the file, then calls this
+
+setupImport((raw) => {
+  console.log("Imported:", raw.kind, raw.content);
+  // Later: loadAudit(parseAudit(raw)); saveAndRefresh();
+});
 
 // =====================================================================
 // SCHEDULE SECTION (#pool-status, #sched-grid, #unassigned)
@@ -100,29 +107,8 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 });
 
 // =====================================================================
-// IMPORT + PARSE PDF FILE
+//  PARSE
 // =====================================================================
-const importBtn = document.getElementById("import-btn");
-const importFile = document.getElementById("import-file");
-
-importBtn.addEventListener("click", () => {
-  importFile.click();
-});
-
-importFile.addEventListener("change", (event) => {
-  const file = event.target.files[0];
-
-  if (!file) {
-    return;
-  }
-
-  console.log("Selected file:", file.name);
-  console.log("File type:", file.type);
-  console.log("File size:", file.size, "bytes");
-
-  alert(`Selected file: ${file.name}`);
-});
-
 
 // =====================================================================
 // COURSE LIST SECTION (chips, search, #list)
