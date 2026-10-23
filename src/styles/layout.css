@@ -9,6 +9,7 @@
   justify-content: space-between;
 }
 
+/* ---------- Title block Pannel ---------- */
 .tb-left h1 {
   font-family: var(--mono);
   font-size: 26px;
@@ -64,13 +65,101 @@
   border-radius: 2px;
   background: var(--panel);
   text-align: right;
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 1ch;
 }
 
-.tb-catalogbox b {
+.tb-catalogbox dt {
+  margin: 0;
+}
+
+.tb-catalogbox dd {
+  margin: 0;
   color: var(--accent-ink);
   font-weight: 600;
 }
 
+/* ---------- Get started panel ---------- */
+.get-started {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 0 40px 18px;
+}
+
+.get-started h2 {
+  margin: 0 0 12px;
+  font: 600 14px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-ink);
+}
+
+.get-started ol {
+  list-style: none;
+  counter-reset: step;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.get-started li {
+  counter-increment: step;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.get-started li::before {
+  content: counter(step);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--accent);
+  color: var(--accent-ink);
+  font: 600 12px var(--mono);
+}
+
+.get-started p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.get-started p button {
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.bookmarklet {
+  font: 600 12px var(--mono);
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--panel);
+  text-decoration: none;
+  cursor: grab;
+}
+
+.bookmarklet:hover {
+  background: var(--accent-ink);
+  border-radius: 10px;
+}
+
+/* ---------- Stats Pannel ---------- */
 .stats {
   display: flex;
   flex-wrap: wrap;

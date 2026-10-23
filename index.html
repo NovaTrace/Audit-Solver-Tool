@@ -34,8 +34,8 @@
               ⓘ
             </button>
             <span class="info-text">
-              Click 'Import' to add a degree plan.<br />
-              Click 'Export' to download a pdf of your degree plan.
+              Click 'Import' to add a degree plan (.json) or audit (.pdf).<br />
+              Click 'Export' to download your degree plan (.json).
             </span>
           </div>
 
@@ -45,15 +45,37 @@
             <button type="button" id="export-btn">Export</button>
           </div>
 
-          <div class="tb-catalogbox">
-            CATALOG YEAR: <b>catYear</b><br />
-            AUDIT PREPARED: <b>auditGenDate</b><br />
-            SHEET GENERATED: <b>sheetGenDate</b>
-          </div>
+          <dl class="tb-catalogbox">
+            <dt>CATALOG YEAR:</dt>
+            <dd id="stat-catalog">catYear</dd>
+            <dt>AUDIT PREPARED:</dt>
+            <dd id="stat-audit">auditGenDate</dd>
+            <dt>SHEET GENERATED:</dt>
+            <dd id="stat-sheet">sheetGenDate</dd>
+          </dl>
         </div>
       </header>
 
       <main>
+        <section class="get-started" id="get-started">
+          <h2>Load your degree audit</h2>
+          <ol>
+            <li>
+              Drag
+              <a class="bookmarklet" id="bookmarklet-link">⤓ Grab my audit</a>
+              to your bookmarks bar
+            </li>
+            <li>
+              Open your degree audit in the portal and run it with HTML output.
+            </li>
+            <li>Click the bookmark. Your plan opens here.</li>
+          </ol>
+          <p class="alt">
+            No bookmarks bar? Press Ctrl+Shift+B  ·  Can't drag it?
+            <button id="copy-bookmarklet">Copy code</button> · Or
+            <button id="import-alt">upload a PDF/JSON</button>
+          </p>
+        </section>
         <dl class="stats">
           <div class="stat">
             <dt>Hours earned</dt>
@@ -162,7 +184,7 @@
         </div>
 
         <!-- Filled by src/render/courseList.js -->
-        <div id="list"></div>
+        <section id="list" aria-label="Courses"></section>
 
         <!-- Template: one course row (never shown directly; JS copies it) -->
         <template id="course-row-tpl">
