@@ -35,15 +35,6 @@
   border-color: var(--ink);
 }
 
-@media (max-width: 760px) {
-  .row {
-    grid-template-columns: 1fr;
-  }
-  .pills {
-    margin-top: 6px;
-  }
-}
-
 .term-card {
   background: var(--panel);
   border: 1px solid var(--ink-faint);
@@ -108,34 +99,4 @@
 
 .unassigned b {
   color: var(--ink);
-}
-
-.legend {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin: 4px 0 16px;
-  font-size: 11.5px;
-  color: var(--ink-faint);
-  font-family: var(--mono);
-}
-.legend span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.conf-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-.conf-c {
-  background: var(--accent);
-}
-.conf-i {
-  background: var(--ink);
-}
-.conf-u {
-  background: var(--lock);
 }
