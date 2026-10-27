@@ -3,24 +3,21 @@
 }
 
 :root {
-  --bg: #eef3f7;
-  --panel: #ffffff;
-  --panel-alt: #f4f8fa;
-  --line: rgba(28, 53, 71, 0.1);
-  --line-strong: rgba(28, 53, 71, 0.22);
-  --ink: #1c3547;
-  --ink-dim: #51697a;
-  --ink-faint: #8298a6;
-  --accent: #1f7a8c;
-  --accent-bg: rgba(31, 122, 140, 0.1);
-  --accent-ink: #0f4e59;
-  --amber: #a05e10;
-  --amber-bg: rgba(181, 104, 15, 0.09);
-  --green: #2b7a4f;
-  --green-bg: rgba(43, 122, 79, 0.1);
-  --red: #ad3f38;
-  --red-bg: rgba(184, 67, 59, 0.09);
-  --mono: "IBM Plex Mono", monospace;
+  --bg: #3c7fba;
+  --panel: #1e5b90;
+  --panel-alt: #133a61;
+  --line: rgba(183, 215, 243, 0.1);
+  --line-strong: rgba(183, 215, 243);
+  --ink-header: #1d639f;
+  --ink: #ebfbf8;
+  --ink-dim: #cedbd8;
+  --ink-faint: #90a8c0;
+  --accent: rgba(11, 1, 77);
+  --accent-bg: rgba(236, 239, 239, 0.09);
+  --accent-ink: #162f55;
+  --lock: #0b274f;
+  --lock-bg: rgba(97, 98, 101, 0.6);
+  --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 }
 
@@ -32,13 +29,13 @@ body {
 }
 
 .sheet {
-  max-width: 1180px;
+  max-width: 1380px;
   margin: 0 auto;
-  padding: 28px 22px 60px;
+  padding: 10px 5px 60px;
   background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(var(--line) 1px, transparent .1px),
+    linear-gradient(90deg, var(--line) 1px, transparent .1px);
+  background-size: 50px 50px;
 }
 
 footer {
