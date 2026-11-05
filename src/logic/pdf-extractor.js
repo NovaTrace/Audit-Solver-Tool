@@ -1,5 +1,6 @@
+
 /**
- * Extracts course-history records from the text of a UCCS DASE degree audit.
+ * Extracts course-history records from degree-audit text.
  * This handles course history only; requirement interpretation comes next.
  */
 export function parseAuditCourses(pageText) {
@@ -32,20 +33,17 @@ export function parseAuditCourses(pageText) {
 
 /**
  * Extracts the text from the degree requirement pages.
- * This is an initial extraction step, not the final requirement evaluator.
  */
 export function extractRequirementPages(pages) {
-  return pages.slice(4, 10).map((text, index) => ({
-    pageNumber: index + 5,
+  return pages.map((text, index) => ({
+    pageNumber: index + 1,
     text: text.replace(/\s+/g, " ").trim(),
   }));
 }
 
 /**
- * Identifies requirement markers in the extracted degree-audit text.
- * Captures only the short text immediately following each NEEDS marker.
+ * Identifies requirement markers in extracted degree-audit text.
  */
-
 export function parseRequirementMarkers(requirementPages) {
   return requirementPages.map(({ pageNumber, text }) => {
     const needsHours = text.match(/\bNEEDS:\s*(\d+(?:\.\d+)?)\s*HOURS\b/i);
@@ -68,7 +66,7 @@ export function parseRequirementMarkers(requirementPages) {
 }
 
 /**
- * Finds recognizable requirement headings in the audit text.
+ * Finds recognizable requirement headings in the extracted audit text.
  * This is for inspection; it does not determine completion status.
  */
 export function extractRequirementHeadings(requirementPages) {
@@ -101,29 +99,23 @@ export function extractRequirementHeadings(requirementPages) {
  */
 export function extractRequirementStatuses(pages) {
   const statusPattern =
-    /Data Analytics & Systems Engineering\s*-\s*([^]+?)\s+(NO|IP|OK)\b/g;
+    /([A-Z][A-Za-z&'’./-]*(?:\s+[A-Z][A-Za-z&'’./-]*){0,8})\s*-\s*([^]+?)\s+(NO|IP|OK)\b/g;
 
   return pages.flatMap((text, index) => {
     const isWorkNotAppliedPage = /WORK NOT APPLIED TO THIS PROGRAM/i.test(text);
 
     return [...text.matchAll(statusPattern)].map((match) => ({
       pageNumber: index + 1,
-      requirement: match[1].trim(),
-      status: match[2],
+      program: match[1].trim(),
+      requirement: match[2].trim(),
+      status: match[3],
       isWorkNotAppliedPage,
     }));
   });
 }
 
 /**
- * Groups explicit audit statuses into a simple summary.
- * This does not yet determine missing courses or credits.
- */
-
-/**
  * Groups degree requirements by their explicit audit status.
- * Program Information is retained separately because it is
- * not a course requirement.
  */
 export function summarizeRequirementStatuses(requirementStatuses) {
   return requirementStatuses.reduce(
@@ -153,12 +145,11 @@ export function summarizeRequirementStatuses(requirementStatuses) {
 }
 
 /**
- * Extracts the page-level summary and Required Core section
- * from page 7 of the degree audit.
+ * Extracts the page-level summary and Required Core section.
  */
 export function extractRequiredCoreText(requirementPages) {
-  const requiredCorePage = requirementPages.find(
-    (page) => page.pageNumber === 7,
+  const requiredCorePage = requirementPages.find((page) =>
+    /\bRequired Core\s+(?:NO|IP|OK)\b/i.test(page.text),
   );
 
   if (!requiredCorePage) {
@@ -172,11 +163,11 @@ export function extractRequiredCoreText(requirementPages) {
   );
 
   const coreStart = text.search(
-    /Data Analytics & Systems Engineering\s*-\s*Required Core\s+NO\b/i,
+    /\bRequired Core\s+(?:NO|IP|OK)\b/i,
   );
 
   return {
-    pageNumber: 7,
+    pageNumber: requiredCorePage.pageNumber,
     summary: summaryMatch
       ? {
           inProgressHours: Number(summaryMatch[1]),
@@ -189,8 +180,7 @@ export function extractRequiredCoreText(requirementPages) {
 }
 
 /**
- * Extracts the course record explicitly shown under Required Core.
- * This does not decide which courses are still needed.
+ * Extracts course records explicitly shown under Required Core.
  */
 export function parseRequiredCoreCourse(coreSection) {
   if (!coreSection) {
@@ -200,57 +190,100 @@ export function parseRequiredCoreCourse(coreSection) {
   const coursePattern =
     /\b(FA|SP|SU)\d{2}\s+([A-Z]{2,5}\s?\d{4})\s+(\d+(?:\.\d+)?)\s+([A-F][+-]?|\*{3})\s+(.+?)(?=\s+(?:FA|SP|SU)\d{2}\s+[A-Z]{2,5}\s?\d{4}\b|$)/gi;
 
-  const excludedCourses = new Set(["TCID3080", "CS3050"]);
+  return [...coreSection.matchAll(coursePattern)].map((match) => {
+    const title = match[5]
+      .split(/>>MATCHED AS:|\+\s*(?:DASE|CS)\s+\d{4}\b/i)[0]
+      .trim();
 
-  return [...coreSection.matchAll(coursePattern)]
-    .filter((match) => !excludedCourses.has(match[2].replace(/\s/g, "")))
-    .map((match) => {
-  const title = match[5]
-    .split(/>>MATCHED AS:|\+\s*(?:DASE|CS)\s+\d{4}\b/i)[0]
-    .trim();
-
-  return {
-    term: match[1].toUpperCase() + match[0].match(/(?:FA|SP|SU)\d{2}/i)[0].slice(2),
-    courseCode: match[2].trim(),
-    credits: Number(match[3]),
-    grade: match[4],
-    title,
-  };
-});
+    return {
+      term: match[1].toUpperCase() + match[0].match(/(?:FA|SP|SU)\d{2}/i)[0].slice(2),
+      courseCode: match[2].trim(),
+      credits: Number(match[3]),
+      grade: match[4],
+      title,
+    };
+  });
 }
 
 /**
  * Splits degree-audit pages into requirement sections.
- * Marks specialty tracks as alternatives rather than separate requirements.
+ * Specialty-track options are marked as alternatives when a
+ * Required Specialty Track parent exists.
  */
 export function extractRequirementSections(requirementPages) {
-  const headingPattern =
-    /\+\s*GATEWAY PROGRAM SEMINAR|\+\s*SUSTAINABILITY|\+\s*INCLUSIVENESS|-\s*SUMMIT|\+\s*NAVIGATE|\+\s*EXPLORE\s*-\s*[^+]+?(?=\s+Complete\b)|Data Analytics & Systems Engineering\s*-\s*[^+]{1,80}?\s+(?:NO|IP|OK)\b|\+\s*UPPER-DIVISION WRITING INTENSIVE COURSE\b|\+\s*WRITING INTENSIVE COURSE\b|\bREQUIRED SPECIALTY TRACK\b|\bGENERAL TRACK\b|\bSYSTEMS ENGINEERING TRACK\b|\bDATA ANALYTICS TRACK\b|\bTECHNICAL ELECTIVES\b|\bDASE\s*-\s*REQUIRED MATHEMATICS\b/g;
-  const alternativeTracks = new Set([
-    "GENERAL TRACK",
-    "SYSTEMS ENGINEERING TRACK",
-    "DATA ANALYTICS TRACK",
-  ]);
+
+  const hasSpecialtyParent = requirementPages.some((page) =>
+    /\bREQUIRED SPECIALTY TRACK\b/i.test(page.text),
+  );
 
   return requirementPages.flatMap(({ pageNumber, text }) => {
-    const headings = [...text.matchAll(headingPattern)];
+    const matches = [];
 
-    return headings.map((match, index) => {
-      const heading = match[0].trim();
+    // Match minor headings independently.
+const minorHeadingPattern =
+  /(?<![A-Za-z&'’./-])([A-Z][A-Za-z&'’./-]*(?:\s+[A-Z][A-Za-z&'’./-]*){0,2}\s+Minor)\s+(NO|IP|OK)\b/g;
+
+for (const match of text.matchAll(minorHeadingPattern)) {
+  const heading = match[0].replace(/^GPA\s+/, "");
+  const offset = match[0].indexOf(heading);
+
+  matches.push({
+    index: match.index + offset,
+    text: heading,
+  });
+}
+
+    // Match the other known heading patterns.
+    const otherHeadingPattern = /\+\s*GATEWAY PROGRAM SEMINAR|\+\s*SUSTAINABILITY|\+\s*INCLUSIVENESS|-\s*SUMMIT|\+\s*NAVIGATE|\+\s*EXPLORE\s*-\s*[^+]+?(?=\s+Complete\b)|\+\s*UPPER-DIVISION WRITING INTENSIVE COURSE\b|\+\s*WRITING INTENSIVE COURSE\b|\bREQUIRED SPECIALTY TRACK\b|\bTECHNICAL ELECTIVES\b|\b(?<![\w-])(?!(?:SUB-GROUPS?|HOURS)\b)[A-Z][A-Za-z&'’./-]*(?:\s+(?!SUB-GROUPS?\b|HOURS\b)[A-Z][A-Za-z&'’./-]*){0,8}?\s*-\s*[^+]{1,80}?\s+(?:NO|IP|OK)\b/g;
+
+    for (const match of text.matchAll(otherHeadingPattern)) {
+      matches.push({
+        index: match.index,
+        text: match[0],
+      });
+    }
+
+    // Remove duplicate matches and sort by their original text position.
+    const headings = [
+      ...new Map(
+        matches.map((match) => [
+          `${match.index}:${match.text}`,
+          match,
+        ]),
+      ).values(),
+    ].sort((a, b) => a.index - b.index);
+
+    // Remove overlapping matches, keeping the earliest/most specific heading.
+    const filteredHeadings = headings.filter((heading, index) => {
+      const previous = headings[index - 1];
+
+      return (
+        !previous ||
+        heading.index >= previous.index + previous.text.length
+      );
+    });
+
+    return filteredHeadings.map((match, index) => {
+      const heading = match.text.trim();
       const normalizedHeading = heading.replace(/^\+\s*/, "").toUpperCase();
 
       const start = match.index;
-      const nextHeading = headings[index + 1];
+      const nextHeading = filteredHeadings[index + 1];
       const end = nextHeading ? nextHeading.index : text.length;
 
-      const isAlternativeTrack = alternativeTracks.has(normalizedHeading);
+      const isSpecialtyOption =
+        hasSpecialtyParent &&
+        normalizedHeading !== "REQUIRED SPECIALTY TRACK" &&
+        /\b(?:TRACK|SPECIALTY AREA)\b/i.test(heading);
 
       return {
         pageNumber,
         heading,
-        content: text.slice(start + match[0].length, end).trim(),
-        sectionType: isAlternativeTrack ? "alternative-track" : "requirement",
-        parentRequirement: isAlternativeTrack
+        content: text.slice(start + match.text.length, end).trim(),
+        sectionType: isSpecialtyOption
+          ? "alternative-track"
+          : "requirement",
+        parentRequirement: isSpecialtyOption
           ? "REQUIRED SPECIALTY TRACK"
           : null,
       };
@@ -260,7 +293,6 @@ export function extractRequirementSections(requirementPages) {
 
 /**
  * Groups specialty-track options under their shared requirement.
- * The student needs to complete one track, not all three.
  */
 export function getSpecialtyTrackOptions(requirementSections) {
   return requirementSections.filter(
@@ -272,7 +304,7 @@ export function getSpecialtyTrackOptions(requirementSections) {
 
 /**
  * Extracts remaining hours and course records printed within each
- * specialty-track option. The options remain separate alternatives.
+ * specialty-track option.
  */
 export function getSpecialtyTrackNeeds(requirementSections) {
   return getSpecialtyTrackOptions(requirementSections).map((section) => {
@@ -302,24 +334,10 @@ export function getSpecialtyTrackNeeds(requirementSections) {
 }
 
 /**
- * Extracts eligible course codes from a specialty-track section.
- * These are course options, not necessarily courses the student
- * has completed or registered for.
- */
-
-/**
  * Extracts eligible course codes from specialty-track options.
  * Expands abbreviated lists such as DASE3009,4435,4470.
  */
-
-/**
- * Extracts eligible course codes from specialty-track options.
- * Expands abbreviated lists such as DASE3009,4435,4470.
- * The General Track is split into its two required categories.
- */
-
 export function getTrackEligibleCourses(requirementSections) {
-  // Expands abbreviated course lists into complete course codes.
   function parseCourseCodes(courseList) {
     const eligibleCourses = [];
 
@@ -345,7 +363,6 @@ export function getTrackEligibleCourses(requirementSections) {
     return [...new Set(eligibleCourses)];
   }
 
-  // Extracts the SELECT FROM course list from a section.
   function getCourseList(section) {
     const match = section?.content.match(
       /SELECT FROM:\s*([\s\S]*?)(?=NEEDS:|$)/i,
@@ -364,15 +381,12 @@ export function getTrackEligibleCourses(requirementSections) {
     section.heading.toUpperCase().includes("SYSTEMS ENGINEERING TRACK"),
   );
 
-  // The PDF extraction places these two course lists under the
-  // following headings, rather than their corresponding track headings.
   const systemsEngineeringCourses = getCourseList(generalTrack);
   const dataAnalyticsCourses = getCourseList(systemsTrack);
 
   return options.map((section) => {
     const heading = section.heading.toUpperCase();
 
-    // General Track requires 9 credits from each category.
     if (heading.includes("GENERAL TRACK")) {
       const categories = [
         {
@@ -423,15 +437,13 @@ export function getTrackEligibleCourses(requirementSections) {
   });
 }
 
-
-
 /**
  * Extracts course choices and equivalent-course groups
- * from the Required Track section of a UCCS degree audit.
+ * from the Required Track section of a degree audit.
  */
 export function parseRequiredTrackSection(requirementSections) {
-  const section = requirementSections.find(
-    (item) => item.heading.includes("Required Track") && item.pageNumber === 8,
+  const section = requirementSections.find((item) =>
+    /Required Track/i.test(item.heading),
   );
 
   if (!section) {
@@ -440,7 +452,6 @@ export function parseRequiredTrackSection(requirementSections) {
 
   const text = section.content;
 
-  // Extract standalone course choices.
   const standaloneCourses = [];
 
   const selectMatches = text.matchAll(
@@ -454,10 +465,7 @@ export function parseRequiredTrackSection(requirementSections) {
     });
   }
 
-  // Extract course records shown in the audit.
   const courseRecords = parseAuditCourses(text);
-
-  // Extract course equivalency groups before cleaning titles.
   const courseGroups = [];
 
   for (const record of courseRecords) {
@@ -477,7 +485,6 @@ export function parseRequiredTrackSection(requirementSections) {
     }
   }
 
-  // Remove equivalency information from the course titles.
   for (const record of courseRecords) {
     record.title = record.title.split(/\s+\+\s+(?=DASE\s*\d{4})/i)[0].trim();
   }
