@@ -1,3 +1,4 @@
+
 // Validates and normalizes imported degree audit data.
 
 export function parseAudit(rawAudit) {
@@ -177,6 +178,14 @@ export function parseAudit(rawAudit) {
       Array.isArray(ids) &&
       ids.every((id) => typeof id === "string" && courseIds.has(id));
 
+      const validCourseCodes = (codes) =>
+  Array.isArray(codes) &&
+  codes.every(
+    (code) =>
+      typeof code === "string" &&
+      /^[A-Z]{2,5}\s\d{4}$/i.test(code.trim()),
+  );
+
     if (!validCourseIds(requirement.courseIds)) {
       throw new Error(
         `Requirement ${requirement.id} contains an invalid course ID.`,
@@ -263,16 +272,26 @@ export function parseAudit(rawAudit) {
           );
         }
 
+        // Required credits must be numeric.
+        // Earned and remaining credits may be null when unknown.
         for (const field of [
           "requiredCredits",
           "earnedCredits",
           "remainingCredits",
         ]) {
-          if (
-            typeof subgroup[field] !== "number" ||
-            !Number.isFinite(subgroup[field]) ||
-            subgroup[field] < 0
-          ) {
+          const value = subgroup[field];
+
+          const isValid =
+            field === "requiredCredits"
+              ? typeof value === "number" &&
+                Number.isFinite(value) &&
+                value >= 0
+              : value === null ||
+                (typeof value === "number" &&
+                  Number.isFinite(value) &&
+                  value >= 0);
+
+          if (!isValid) {
             throw new Error(
               `Subgroup ${subgroup.id} has an invalid ${field} value.`,
             );
@@ -284,6 +303,15 @@ export function parseAudit(rawAudit) {
             `Subgroup ${subgroup.id} contains an invalid eligible course ID.`,
           );
         }
+
+        if (
+  subgroup.eligibleCourseCodes !== undefined &&
+  !validCourseCodes(subgroup.eligibleCourseCodes)
+) {
+  throw new Error(
+    `Subgroup ${subgroup.id} contains invalid eligible course codes.`,
+  );
+}
 
         if (subgroup.courseGroups !== undefined) {
           if (!Array.isArray(subgroup.courseGroups)) {
@@ -358,16 +386,26 @@ export function parseAudit(rawAudit) {
               );
             }
 
+            // Required credits must be numeric.
+            // Earned and remaining credits may be null when unknown.
             for (const field of [
               "requiredCredits",
               "earnedCredits",
               "remainingCredits",
             ]) {
-              if (
-                typeof category[field] !== "number" ||
-                !Number.isFinite(category[field]) ||
-                category[field] < 0
-              ) {
+              const value = category[field];
+
+              const isValid =
+                field === "requiredCredits"
+                  ? typeof value === "number" &&
+                    Number.isFinite(value) &&
+                    value >= 0
+                  : value === null ||
+                    (typeof value === "number" &&
+                      Number.isFinite(value) &&
+                      value >= 0);
+
+              if (!isValid) {
                 throw new Error(
                   `Category ${category.id} has an invalid ${field} value.`,
                 );
@@ -379,6 +417,15 @@ export function parseAudit(rawAudit) {
                 `Category ${category.id} contains an invalid eligible course ID.`,
               );
             }
+
+            if (
+  category.eligibleCourseCodes !== undefined &&
+  !validCourseCodes(category.eligibleCourseCodes)
+) {
+  throw new Error(
+    `Category ${category.id} contains invalid eligible course codes.`,
+  );
+}
           }
         }
       }
@@ -480,6 +527,9 @@ export function parseAudit(rawAudit) {
               subgroup.eligibleCourseIds.includes(course.id) ||
               (subgroup.courseGroups ?? []).some((group) =>
                 group.courseIds.includes(course.id),
+              ) ||
+              (subgroup.categories ?? []).some((category) =>
+                category.eligibleCourseIds.includes(course.id),
               ),
           ))
       ) {

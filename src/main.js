@@ -1,3 +1,4 @@
+
 // =====================================================================
 // main.js — entry point
 // =====================================================================
@@ -36,16 +37,14 @@ import {
 import { setupPopups } from "./ui/popups.js";
 import { setupImport } from "./ui/importer.js";
 
+import { parseAudit } from "./logic/parser.js";
+
 import {
   extractRequirementPages,
   extractRequiredCoreText,
-  extractRequirementStatuses,
-  summarizeRequirementStatuses,
   parseAuditCourses,
   parseRequiredCoreCourse,
   extractRequirementSections,
-  getSpecialtyTrackOptions,
-  getSpecialtyTrackNeeds,
   getTrackEligibleCourses,
   parseRequiredTrackSection,
 } from "./logic/pdf-extractor.js";
@@ -109,8 +108,6 @@ setupPopups();
 // =====================================================================
 
 setupImport((raw) => {
-  console.log("Imported:", raw.kind);
-
   // ---------------------------------------------------------------
   // PDF IMPORT
   // ---------------------------------------------------------------
@@ -120,8 +117,6 @@ setupImport((raw) => {
 
     // First page contains student and overall credit information.
     const firstPageText = auditData.pages[0] ?? "";
-
-    console.log("FIRST PAGE TEXT:", firstPageText);
 
     // -------------------------------------------------------------
     // STUDENT INFORMATION
@@ -135,19 +130,24 @@ setupImport((raw) => {
       /EARNED:\s*([\d.]+)\s*HOURS/,
     );
 
-    const neededCreditsMatch = firstPageText.match(/NEEDS:\s*([\d.]+)\s*HOURS/);
+    const neededCreditsMatch = firstPageText.match(
+      /NEEDS:\s*([\d.]+)\s*HOURS/,
+    );
 
     const majorMatch = firstPageText.match(/BS in (.+?)\s+\d{9,}/);
 
     const studentInfo = {
       name: studentNameMatch ? studentNameMatch[1].trim() : null,
-      earnedCredits: earnedCreditsMatch ? Number(earnedCreditsMatch[1]) : null,
-      neededCredits: neededCreditsMatch ? Number(neededCreditsMatch[1]) : null,
+      earnedCredits: earnedCreditsMatch
+        ? Number(earnedCreditsMatch[1])
+        : null,
+      neededCredits: neededCreditsMatch
+        ? Number(neededCreditsMatch[1])
+        : null,
     };
 
     const major = majorMatch ? majorMatch[1].trim() : null;
 
-    // Prepare student and credit information for the shared JSON format.
     const student = {
       name: studentInfo.name,
       majors: major ? [major] : [],
@@ -158,136 +158,123 @@ setupImport((raw) => {
       earned: studentInfo.earnedCredits,
     };
 
-    console.log("Extracted student information:", studentInfo);
-    console.log("Extracted major:", major);
-    console.log("Student object:", student);
-    console.log("Credits object:", credits);
-
-    // -------------------------------------------------------------
-    // REQUIREMENT STATUSES
-    // -------------------------------------------------------------
-
-    const requirementStatuses = extractRequirementStatuses(auditData.pages);
-
-    const requirementSummary =
-      summarizeRequirementStatuses(requirementStatuses);
-
-    console.log("Requirement summary:", requirementSummary);
-    console.log(
-      "NOT SATISFIED REQUIREMENTS:",
-      JSON.stringify(requirementSummary.notSatisfied, null, 2),
-    );
-
-    console.log(
-      "IN-PROGRESS REQUIREMENTS:",
-      JSON.stringify(requirementSummary.inProgress, null, 2),
-    );
-    console.log("Satisfied requirements:", requirementSummary.satisfied);
-    console.log("In-progress requirements:", requirementSummary.inProgress);
-    console.log("Not-satisfied requirements:", requirementSummary.notSatisfied);
-    console.log("Requirements needing review:", requirementSummary.needsReview);
-
     // -------------------------------------------------------------
     // REQUIREMENT PAGES AND SECTIONS
     // -------------------------------------------------------------
 
-    console.log(
-      "ALL PDF PAGE TEXT:",
-      auditData.pages.map((text, index) => ({
-        page: index + 1,
-        preview: text.slice(0, 300),
-      })),
-    );
-
-    console.log(
-      "PAGES 4-6 FULL TEXT:",
-      auditData.pages.slice(3, 6).map((text, index) => ({
-        page: index + 4,
-        text,
-      })),
-    );
-
-    console.log("PAGE 5 FULL TEXT:", auditData.pages[4]);
-    console.log("PAGE 6 FULL TEXT:", auditData.pages[5]);
-
     const requirementPages = extractRequirementPages(auditData.pages);
 
-    const requirementSections = extractRequirementSections(requirementPages);
+    const requirementSections =
+      extractRequirementSections(requirementPages);
 
-    const requiredTrack = parseRequiredTrackSection(requirementSections);
+    // -------------------------------------------------------------
+    // REQUIRED TRACK INFORMATION
+    // -------------------------------------------------------------
 
-    console.log("REQUIRED TRACK DATA:", requiredTrack);
+    const requiredTrack =
+      parseRequiredTrackSection(requirementSections);
 
-    console.log("Required Track:", JSON.stringify(requiredTrack, null, 2));
+    if (!requiredTrack) {
+      throw new Error(
+        "Could not find the Required Track section in this degree audit.",
+      );
+    }
 
-    console.log("Extracted requirement sections:", requirementSections);
+    const sharedRequiredTrackCourses =
+      requiredTrack.courseRecords.map((course, index) => ({
+        id: `required-track-course-${index + 1}`,
+        code: course.courseCode,
+        title: course.title,
+        credits: course.credits,
+        requirementIds: ["required-track"],
+      }));
 
-    console.table(
-      requirementSections.map((section) => ({
-        page: section.pageNumber,
-        heading: section.heading,
-        contentPreview: section.content.slice(0, 180),
-      })),
+    // Normalize course codes so equivalent courses can be matched
+    // even when the PDF uses different spacing.
+    const normalizeCourseCode = (courseCode) =>
+      courseCode.replace(/\s+/g, "").toUpperCase();
+
+    const requiredTrackCourseIds = new Map(
+      sharedRequiredTrackCourses.map((course) => [
+        normalizeCourseCode(course.code),
+        course.id,
+      ]),
     );
+
+    // Connect equivalent courses to the matching imported course IDs.
+    const sharedRequiredTrackGroups = requiredTrack.courseGroups
+      .map((group) => ({
+        courseIds: group.courseCodes
+          .map((courseCode) =>
+            requiredTrackCourseIds.get(
+              normalizeCourseCode(courseCode),
+            ),
+          )
+          .filter(Boolean),
+      }))
+      .filter((group) => group.courseIds.length > 0);
 
     // -------------------------------------------------------------
     // SPECIALTY TRACK INFORMATION
     // -------------------------------------------------------------
 
-    const specialtyTrackOptions = getSpecialtyTrackOptions(requirementSections);
+    const trackEligibleCourses =
+      getTrackEligibleCourses(requirementSections);
 
-    console.log(
-      "FULL SPECIALTY TRACK OPTIONS:",
-      JSON.stringify(specialtyTrackOptions, null, 2),
-    );
+    // Convert extracted track information into shared audit subgroups.
+    const sharedSpecialtyTrackSubgroups = trackEligibleCourses.map(
+      (track, index) => {
+        const trackId = `specialty-track-${index + 1}`;
 
-    console.log("Specialty track options:", specialtyTrackOptions);
+        const subgroup = {
+          id: trackId,
+          name: track.heading,
+          requiredCredits: track.requiredCredits,
+          earnedCredits: null,
+          remainingCredits: null,
+          courseIds: [],
+          eligibleCourseIds: [],
+          eligibleCourseCodes: track.eligibleCourses,
+        };
 
-    const specialtyTrackNeeds = getSpecialtyTrackNeeds(requirementSections);
+        // General Track contains two separate 9-credit categories.
+        if (track.categories) {
+          subgroup.categories = track.categories.map(
+            (category, categoryIndex) => ({
+              id: `${trackId}-category-${categoryIndex + 1}`,
+              name: category.name,
+              requiredCredits: category.requiredCredits,
+              earnedCredits: null,
+              remainingCredits: null,
+              eligibleCourseIds: [],
+              eligibleCourseCodes: category.eligibleCourses,
+            }),
+          );
+        }
 
-    console.log("Specialty track hours needed:", specialtyTrackNeeds);
-
-    const trackEligibleCourses = getTrackEligibleCourses(requirementSections);
-
-    console.log(
-      "FULL TRACK ELIGIBLE COURSES:",
-      JSON.stringify(trackEligibleCourses, null, 2),
-    );
-
-    console.log("Track eligible courses:", trackEligibleCourses);
-
-    // -------------------------------------------------------------
-    // PAGE 9 DEBUGGING
-    // -------------------------------------------------------------
-
-    console.log("FULL PAGE 9 SECTIONS:");
-
-    requirementSections
-      .filter((section) => section.pageNumber === 9)
-      .forEach((section) => {
-        console.log(`--- ${section.heading} ---`, section.content);
-      });
-
-    console.log(
-      "Page 9 text:",
-      requirementPages.find((page) => page.pageNumber === 9)?.text,
+        return subgroup;
+      },
     );
 
     // -------------------------------------------------------------
     // REQUIRED CORE INFORMATION
     // -------------------------------------------------------------
 
-    const requiredCoreData = extractRequiredCoreText(requirementPages);
-
-    console.log("Required Core data:", requiredCoreData);
-    console.log("Required Core summary:", requiredCoreData?.summary);
-    console.log("Required Core section:", requiredCoreData?.coreSection);
+    const requiredCoreData =
+      extractRequiredCoreText(requirementPages);
 
     const requiredCoreCourses = parseRequiredCoreCourse(
       requiredCoreData?.coreSection,
     );
 
-    console.log("Parsed Required Core courses:", requiredCoreCourses);
+    const sharedRequiredCoreCourses =
+      requiredCoreCourses.map((course, index) => ({
+        id: `required-core-course-${index + 1}`,
+        code: course.courseCode,
+        title: course.title,
+        credits: course.credits,
+        requirementIds: ["required-core"],
+      }));
 
     // -------------------------------------------------------------
     // COURSE HISTORY
@@ -297,20 +284,6 @@ setupImport((raw) => {
     const pageTwoText = auditData.pages[1] ?? "";
 
     const auditCourses = parseAuditCourses(pageTwoText);
-
-    console.log("Extracted audit courses:", auditCourses);
-    console.table(auditCourses);
-
-    console.table(
-      auditCourses.map((course) => ({
-        term: course.term,
-        courseCode: course.courseCode,
-        credits: course.credits,
-        grade: course.grade,
-        status: course.status,
-        title: course.title,
-      })),
-    );
 
     // -------------------------------------------------------------
     // SHARED AUDIT JSON
@@ -328,59 +301,59 @@ setupImport((raw) => {
 
       credits: {
         earned: credits.earned,
-        required: null, // Not yet identified in the PDF.
+        required: null,
       },
 
-      courses: [],
+      courses: [
+        ...sharedRequiredCoreCourses,
+        ...sharedRequiredTrackCourses,
+      ],
 
-      requirements: [],
+      requirements: [
+        {
+          id: "required-core",
+          name: "Required Core",
+          selection: {
+            type: "all",
+          },
+          requiredCredits: null,
+          earnedCredits:
+            requiredCoreData?.summary?.earnedHours ?? null,
+          remainingCredits:
+            requiredCoreData?.summary?.needsHours ?? null,
+          courseIds: sharedRequiredCoreCourses.map(
+            (course) => course.id,
+          ),
+          eligibleCourseIds: [],
+        },
+        {
+          id: "required-track",
+          name: "Required Track",
+          selection: {
+            type: "choose",
+            subgroupsRequired: 1,
+          },
+          requiredCredits: 18,
+          earnedCredits: null,
+          remainingCredits: null,
+          courseIds: sharedRequiredTrackCourses.map(
+            (course) => course.id,
+          ),
+          eligibleCourseIds: [],
+          courseGroups: sharedRequiredTrackGroups,
+          subgroups: sharedSpecialtyTrackSubgroups,
+        },
+      ],
 
       courseCatalog: [],
     };
 
-    console.log("SHARED AUDIT JSON:", JSON.stringify(sharedAudit, null, 2));
+    // Validate the shared audit against the project schema.
+    parseAudit(sharedAudit);
 
     // -------------------------------------------------------------
     // IMPORT SUMMARY
     // -------------------------------------------------------------
-
-    console.log("PDF student:", student);
-    console.log("PDF credits:", credits);
-    console.log("PDF course count:", auditCourses.length);
-    console.log("PDF requirement section count:", requirementSections.length);
-
-    console.table(
-      requirementSections.map((section) => ({
-        heading: section.heading,
-        pageNumber: section.pageNumber,
-        contentLength: section.content.length,
-      })),
-    );
-
-    console.log(
-      "REQUIRED TRACK CONTENT:",
-      requirementSections.find((section) =>
-        section.heading.includes("Required Track"),
-      )?.content,
-    );
-
-    console.log(
-      "REQUIRED TRACK RAW TEXT:",
-      JSON.stringify(
-        requirementSections.find((section) =>
-          section.heading.includes("Required Track"),
-        )?.content,
-        null,
-        2,
-      ),
-    );
-
-    console.log(
-      "MATHEMATICS CONTENT:",
-      requirementSections.find((section) =>
-        section.heading.includes("Mathematics"),
-      )?.content,
-    );
 
     alert(
       `PDF read successfully. Found ${auditCourses.length} course records.`,
@@ -394,8 +367,6 @@ setupImport((raw) => {
   // ---------------------------------------------------------------
 
   if (raw.kind === "json") {
-    console.log("Imported JSON:", raw.content);
-
     alert(
       "JSON file read successfully. JSON import processing is not implemented yet.",
     );

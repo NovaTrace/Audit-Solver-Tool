@@ -175,8 +175,6 @@ export function extractRequiredCoreText(requirementPages) {
     /Data Analytics & Systems Engineering\s*-\s*Required Core\s+NO\b/i,
   );
 
-  const writingStart = text.search(/\+\s*WRITING INTENSIVE COURSE\b/i);
-
   return {
     pageNumber: 7,
     summary: summaryMatch
@@ -186,10 +184,7 @@ export function extractRequiredCoreText(requirementPages) {
           earnedHours: Number(summaryMatch[3]),
         }
       : null,
-    coreSection:
-      coreStart !== -1 && writingStart > coreStart
-        ? text.slice(coreStart, writingStart).trim()
-        : null,
+    coreSection: coreStart !== -1 ? text.slice(coreStart) : null,
   };
 }
 
@@ -203,22 +198,25 @@ export function parseRequiredCoreCourse(coreSection) {
   }
 
   const coursePattern =
-    /\b([A-Z]{2,5}\s?\d{4})\s+(\d+(?:\.\d+)?)\s+([A-F][+-]?|\*{3})\s+(.+?)(?=$)/i;
+    /\b(FA|SP|SU)\d{2}\s+([A-Z]{2,5}\s?\d{4})\s+(\d+(?:\.\d+)?)\s+([A-F][+-]?|\*{3})\s+(.+?)(?=\s+(?:FA|SP|SU)\d{2}\s+[A-Z]{2,5}\s?\d{4}\b|$)/gi;
 
-  const match = coreSection.match(coursePattern);
+  const excludedCourses = new Set(["TCID3080", "CS3050"]);
 
-  if (!match) {
-    return [];
-  }
+  return [...coreSection.matchAll(coursePattern)]
+    .filter((match) => !excludedCourses.has(match[2].replace(/\s/g, "")))
+    .map((match) => {
+  const title = match[5]
+    .split(/>>MATCHED AS:|\+\s*(?:DASE|CS)\s+\d{4}\b/i)[0]
+    .trim();
 
-  return [
-    {
-      courseCode: match[1].trim(),
-      credits: Number(match[2]),
-      grade: match[3],
-      title: match[4].trim(),
-    },
-  ];
+  return {
+    term: match[1].toUpperCase() + match[0].match(/(?:FA|SP|SU)\d{2}/i)[0].slice(2),
+    courseCode: match[2].trim(),
+    credits: Number(match[3]),
+    grade: match[4],
+    title,
+  };
+});
 }
 
 /**
@@ -313,47 +311,119 @@ export function getSpecialtyTrackNeeds(requirementSections) {
  * Extracts eligible course codes from specialty-track options.
  * Expands abbreviated lists such as DASE3009,4435,4470.
  */
-export function getTrackEligibleCourses(requirementSections) {
-  return getSpecialtyTrackOptions(requirementSections).map((section) => {
-    const selectMatch = section.content.match(
-      /SELECT FROM:\s*([\s\S]*?)(?=NEEDS:|$)/i,
-    );
 
+/**
+ * Extracts eligible course codes from specialty-track options.
+ * Expands abbreviated lists such as DASE3009,4435,4470.
+ * The General Track is split into its two required categories.
+ */
+
+export function getTrackEligibleCourses(requirementSections) {
+  // Expands abbreviated course lists into complete course codes.
+  function parseCourseCodes(courseList) {
     const eligibleCourses = [];
 
-    if (selectMatch) {
-      const courseList = selectMatch[1];
-      const tokens =
-        courseList.match(/\b[A-Z]{2,5}\s*\d{4}\b|\b\d{4}\b/g) ?? [];
+    const tokens =
+      courseList.match(/\b[A-Z]{2,5}\s*\d{4}\b|\b\d{4}\b/g) ?? [];
 
-      let previousDepartment = "";
+    let previousDepartment = "";
 
-      for (const token of tokens) {
-        const match = token.match(/^([A-Z]{2,5})?\s*(\d{4})$/);
+    for (const token of tokens) {
+      const match = token.match(/^([A-Z]{2,5})?\s*(\d{4})$/);
 
-        if (!match) continue;
+      if (!match) continue;
 
-        if (match[1]) {
-          previousDepartment = match[1];
-        }
+      if (match[1]) {
+        previousDepartment = match[1];
+      }
 
-        if (previousDepartment) {
-          eligibleCourses.push(`${previousDepartment} ${match[2]}`);
-        }
+      if (previousDepartment) {
+        eligibleCourses.push(`${previousDepartment} ${match[2]}`);
       }
     }
 
-    const needsMatch = section.content.match(
-      /NEEDS:\s*(\d+(?:\.\d+)?)\s*HOURS?/i,
+    return [...new Set(eligibleCourses)];
+  }
+
+  // Extracts the SELECT FROM course list from a section.
+  function getCourseList(section) {
+    const match = section?.content.match(
+      /SELECT FROM:\s*([\s\S]*?)(?=NEEDS:|$)/i,
     );
+
+    return match ? parseCourseCodes(match[1]) : [];
+  }
+
+  const options = getSpecialtyTrackOptions(requirementSections);
+
+  const generalTrack = options.find((section) =>
+    section.heading.toUpperCase().includes("GENERAL TRACK"),
+  );
+
+  const systemsTrack = options.find((section) =>
+    section.heading.toUpperCase().includes("SYSTEMS ENGINEERING TRACK"),
+  );
+
+  // The PDF extraction places these two course lists under the
+  // following headings, rather than their corresponding track headings.
+  const systemsEngineeringCourses = getCourseList(generalTrack);
+  const dataAnalyticsCourses = getCourseList(systemsTrack);
+
+  return options.map((section) => {
+    const heading = section.heading.toUpperCase();
+
+    // General Track requires 9 credits from each category.
+    if (heading.includes("GENERAL TRACK")) {
+      const categories = [
+        {
+          name: "Data Analytics",
+          requiredCredits: 9,
+          eligibleCourses: dataAnalyticsCourses,
+        },
+        {
+          name: "Systems Engineering",
+          requiredCredits: 9,
+          eligibleCourses: systemsEngineeringCourses,
+        },
+      ];
+
+      return {
+        heading: section.heading,
+        requiredCredits: 18,
+        categories,
+        eligibleCourses: [
+          ...new Set(
+            categories.flatMap((category) => category.eligibleCourses),
+          ),
+        ],
+      };
+    }
+
+    if (heading.includes("DATA ANALYTICS TRACK")) {
+      return {
+        heading: section.heading,
+        requiredCredits: 18,
+        eligibleCourses: dataAnalyticsCourses,
+      };
+    }
+
+    if (heading.includes("SYSTEMS ENGINEERING TRACK")) {
+      return {
+        heading: section.heading,
+        requiredCredits: 18,
+        eligibleCourses: systemsEngineeringCourses,
+      };
+    }
 
     return {
       heading: section.heading,
-      eligibleCourses: [...new Set(eligibleCourses)],
-      hoursNeeded: needsMatch ? Number(needsMatch[1]) : null,
+      requiredCredits: 18,
+      eligibleCourses: [],
     };
   });
 }
+
+
 
 /**
  * Extracts course choices and equivalent-course groups
