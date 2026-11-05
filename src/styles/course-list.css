@@ -1,205 +1,288 @@
+/* =====================================================================
+   course-list.css — filter chips, search, course rows, term pills, lock
+   ===================================================================== */
+
+/* ---------- Filters + search ---------- */
 .controls {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  margin: 22px 0 12px;
   align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
 }
 
 .chip {
-  font-family: var(--mono);
-  font-size: 12px;
-  padding: 6px 12px;
-  border-radius: 20px;
+  min-height: 2rem;
+  padding: 0 var(--s-3);
   border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-dim);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.12s;
+  transition:
+    background-color 150ms var(--ease),
+    color 150ms var(--ease);
 }
 
 .chip:hover {
-  border-color: var(--accent);
+  background: var(--surface-hover);
   color: var(--ink);
 }
 
 .chip.active {
-  background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-ink);
   font-weight: 600;
 }
 
-/* SEARCH BAR AND COURSE INFO CONTAINER FOR PLACEMENT */
-.search-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.search {
+  flex: 1 1 14rem;
+  max-width: 20rem;
   margin-left: auto;
 }
 
 #search {
-  font-family: var(--sans);
-  font-size: 13px;
-  padding: 7px 12px;
-  border-radius: 20px;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 var(--s-3) 0 var(--s-8);
   border: 1px solid var(--line-strong);
-  background: var(--panel);
+  border-radius: var(--radius);
+  /* magnifier icon, drawn in blue-300 */
+  background: var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2393c5fd' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m14 14-3.5-3.5'/%3E%3C/svg%3E")
+    no-repeat var(--s-3) center;
   color: var(--ink);
-  min-width: 200px;
-  margin-left: auto;
 }
 
 #search::placeholder {
-  color: var(--ink-faint);
+  color: var(--ink-subtle);
 }
 
+@media (max-width: 40rem) {
+  .search {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+/* ---------- Category groups ---------- */
 .cat-head {
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
-  color: var(--ink);
-  background: var(--panel-alt);
-  padding: 7px 12px;
+  margin-top: var(--s-5);
+  padding: var(--s-2) var(--s-4);
   border: 1px solid var(--line);
   border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  margin-top: 14px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.cat-head:first-child {
+  margin-top: 0;
+}
+
+/* ---------- Course rows ---------- */
+.row {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) 21.5rem; /* fits "Summer ’27" ×4 */
+  gap: var(--s-4);
+  align-items: center;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line);
+  border-top: none;
+  background: var(--surface);
+  transition: background-color 150ms var(--ease);
 }
 
 .cat-head + .row {
   border-top: 1px solid var(--line);
-  border-radius: 0;
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 100px 1fr 300px;
-  gap: 14px;
-  align-items: center;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-top: none;
-  padding: 10px 12px;
+/* Last row of each group gets the rounded bottom */
+.row:last-child,
+.row:has(+ .cat-head) {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
-.row.locked {
-  background: var(--lock-bg);
-}
-
-.row.locked .r-code {
-  color: var(--lock);
-}
-
-.row:last-of-type {
-  border-radius: 0 0 6px 6px;
-}
+/* Elective-pool rows: a dashed left edge marks "pick some of these" */
 .row.pool {
-  background: var(--panel-alt);
+  box-shadow: inset 3px 0 0 rgb(252 211 77 / 0.6);
 }
+
+/* Locked rows: accent edge so they read as pinned */
+.row.locked {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.r-id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
 .r-code {
   font-family: var(--mono);
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--ink);
-  font-size: 13px;
+  white-space: nowrap;
 }
+
 .r-cr {
-  display: block;
+  align-self: flex-start;
+  padding: 0 var(--s-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
   font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-faint);
-  margin-top: 2px;
+  font-size: 0.6875rem;
 }
+
+.r-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
 .r-title {
-  color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
+
 .r-sub {
-  display: block;
-  color: var(--ink-faint);
-  font-size: 11.5px;
-  margin-top: 1px;
-  line-height: 1.4;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
 }
+
+.r-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-3);
+  margin-top: var(--s-1);
+  font-size: var(--text-xs);
+}
+
+/* When the course is offered */
 .r-term {
-  display: inline-block;
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
   font-family: var(--mono);
-  background: var(--accent-bg);
-  color: var(--accent-ink);
-  font-size: 10px;
-  padding: 2px 6px;
-  margin-top: 4px;
+  font-size: 0.6875rem;
 }
 
 .r-prereq {
-  display: block;
-  color: var(--ink-dim);
-  font-size: 11.5px;
-  margin-top: 4px;
-  line-height: 1.4;
+  color: var(--ink-subtle);
 }
+
+/* ---------- Term pills + lock (4 per row, lock fills the last slot) ---------- */
 .pills {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-1);
 }
 
-.pill {
+.pill,
+.lock-btn {
+  min-height: 2rem;
+  padding: 0 var(--s-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-muted);
   font-family: var(--mono);
-  font-size: 10.5px;
-  padding: 5px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-faint);
+  font-size: 0.6875rem;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.1s;
-  user-select: none;
+  transition:
+    background-color 150ms var(--ease),
+    border-color 150ms var(--ease),
+    color 150ms var(--ease);
 }
 
-.pill:hover {
-  border-color: var(--accent);
+.pill:hover:not(:disabled),
+.lock-btn:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--surface-hover);
   color: var(--ink);
 }
+
 .pill.on {
+  border-color: var(--accent);
   background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   font-weight: 600;
 }
 
-.lock-btn {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  padding: 5px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-faint);
-  cursor: pointer;
-}
-
-.lock-btn.on {
-  background: var(--lock);
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
-.lock-btn:disabled {
+.pill:disabled:not(.on) {
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-.pill[disabled] {
-  opacity: 0.5;
+.pill.on:disabled {
   cursor: not-allowed;
 }
 
-@media (max-width: 760px) {
+.lock-btn {
+  border-style: dashed;
+}
+
+.lock-btn.on {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.lock-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* No results */
+#list:empty::after {
+  content: "No courses match. Try another filter or search.";
+  display: block;
+  padding: var(--s-6);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+  color: var(--ink-subtle);
+  text-align: center;
+}
+
+/* ---------- Narrower screens: stack the row ---------- */
+@media (max-width: 48rem) {
   .row {
     grid-template-columns: 1fr;
+    gap: var(--s-2);
   }
+
+  .r-id {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
   .pills {
-    margin-top: 6px;
+    margin-top: var(--s-1);
+  }
+
+  .pill,
+  .lock-btn {
+    min-height: 2.5rem; /* 40px touch targets */
   }
 }

@@ -91,7 +91,10 @@ function buildRow(template, course, { terms, assignments, locked, isPool }) {
   lockBtn.classList.toggle("on", isLocked);
   lockBtn.setAttribute("aria-pressed", isLocked);
   lockBtn.disabled = !assignedTerm && !isLocked; // nothing to lock yet
-  lockBtn.textContent = isLocked ? "Locked🔒" : "lock🔓";
+  lockBtn.textContent = isLocked ? "Locked" : "Lock";
+  lockBtn.title = isLocked
+    ? "Unlock so this course can move"
+    : "Keep this course in its term";
 
   return fragment;
 }

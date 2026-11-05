@@ -1,58 +1,62 @@
+/* =====================================================================
+   popups.css — ⓘ help popups (.info-popup)
+   The main page now shows short inline hints instead, but this component
+   is kept for longer help text. Markup:
+     <div class="info-popup info-popup--right">
+       <button type="button" class="info-btn" aria-label="…" aria-expanded="false">ⓘ</button>
+       <span class="info-text">…</span>
+     </div>
+   ui/popups.js opens/closes it (click, or Escape to close).
+   ===================================================================== */
+
 .info-popup {
   position: relative;
+  display: inline-flex;
 }
 
 .info-btn {
-  background: none;
-  border: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
-  font-size: 14px;
-  color: var(--ink);
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-subtle);
+  font-size: var(--text-sm);
   cursor: pointer;
+}
+.info-btn:hover,
+.info-popup.open .info-btn {
+  background: var(--surface-hover);
+  color: var(--ink);
 }
 
 .info-text {
   display: none;
   position: absolute;
-  bottom: 0%;
-  width: max-content;
-  max-width: 500px;
+  top: calc(100% + var(--s-2));
   z-index: 10;
-  padding: 8px 12px;
-  border: 1px solid var(--ink-faint);
-  background: var(--panel);
-  color: var(--ink-dim);
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.5;
+  width: max-content;
+  max-width: min(22rem, 80vw);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 10px 25px -5px rgb(2 6 23 / 0.5); /* shadow-lg, slate-950 */
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  line-height: 1.6;
 }
 
 .info-popup--right .info-text {
-  right: auto;
-  right: 150%;
+  right: 0;
 }
-
 .info-popup--left .info-text {
-  right: auto;
-  left: 150%;
+  left: 0;
 }
 
 .info-popup.open .info-text {
   display: block;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: var(--panel);
-  z-index: 5;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
-}
-
-body.popup-open::before {
-  opacity: 0.25;
-  pointer-events: auto; /* while shown, it catches clicks */
 }

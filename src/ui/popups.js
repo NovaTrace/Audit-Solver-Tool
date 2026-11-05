@@ -16,6 +16,14 @@ export function setupPopups() {
       keepOnScreen(popup.querySelector(".info-text"));
     }
   });
+
+  // Escape closes any open popup and returns focus to its button
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const open = document.querySelector(".info-popup.open .info-btn");
+    closeAll();
+    open?.focus();
+  });
 }
 
 function closeAll() {

@@ -33,7 +33,9 @@ function renderPoolStatus(courses, assignments, poolGroups) {
   const badges = poolProgress(courses, assignments, poolGroups).map((pool) => {
     const badge = document.createElement("div");
     badge.className = `ps ${pool.done ? "done" : "pending"}`;
-    badge.textContent = `${pool.label}: ${pool.chosen} of ${pool.need} selected`;
+    // ✓ marks a finished pool so "done" isn't shown by color alone
+    const mark = pool.done ? "✓ " : "";
+    badge.textContent = `${mark}${pool.label}: ${pool.chosen} of ${pool.need}`;
     return badge;
   });
 
@@ -50,6 +52,7 @@ function renderTermCards(terms, courses, assignments, locked) {
 
     // Fresh copy of the card markup from <template id="term-card-tpl">
     const card = cardTemplate.content.cloneNode(true);
+    card.querySelector(".term-card").dataset.term = term.key; // used by the flash in main.js
     card.querySelector(".term-name").textContent = term.label;
     card.querySelector(".term-cr").textContent = `${sumCredits(items)} cr`;
 
@@ -58,7 +61,7 @@ function renderTermCards(terms, courses, assignments, locked) {
     if (items.length === 0) {
       const empty = document.createElement("li");
       empty.className = "empty";
-      empty.textContent = "Nothing assigned";
+      empty.textContent = "Nothing planned";
       list.append(empty);
     }
 
@@ -83,6 +86,7 @@ function renderUnassigned(courses, assignments, poolGroups) {
   const box = document.getElementById("unassigned");
   const missing = unplacedRequired(courses, assignments, poolGroups);
   const label = document.createElement("b");
+  box.classList.toggle("is-complete", missing.length === 0);
 
   if (missing.length > 0) {
     label.textContent = "Not yet placed in a term:";

@@ -124,15 +124,40 @@ document.getElementById("list").addEventListener("click", (e) => {
   const pill = e.target.closest(".pill");
   const lockBtn = e.target.closest(".lock-btn");
 
+  const id = pill?.dataset.id ?? lockBtn?.dataset.id;
+  const termBefore = assignments[id]; // so the card it LEFT flashes too
+
   let changed = false;
   if (pill) {
-    changed = toggleTerm(pill.dataset.id, pill.dataset.term);
+    changed = toggleTerm(id, pill.dataset.term);
   } else if (lockBtn) {
-    changed = toggleLock(lockBtn.dataset.id);
+    changed = toggleLock(id);
   }
 
-  if (changed) saveAndRefresh();
+  if (changed) {
+    saveAndRefresh();
+    flashTerms([termBefore, assignments[id]]);
+  }
 });
+
+// Briefly highlight the term card(s) a click changed, so the result is
+// visible even when the card is off to the side.
+function flashTerms(termKeys) {
+  new Set(termKeys).forEach((key) => {
+    if (!key) return;
+    const card = document.querySelector(`.term-card[data-term="${key}"]`);
+    card?.classList.add("flash");
+  });
+}
+
+// =====================================================================
+// FIRST-RUN BANNER — its Import button opens the same file picker
+// =====================================================================
+document
+  .querySelector('[data-action="import"]')
+  ?.addEventListener("click", () =>
+    document.getElementById("import-btn").click(),
+  );
 
 // =====================================================================
 // STARTUP

@@ -16,7 +16,7 @@ export const TERMS = [
 export const catLabels = {
   "comp-cur": "Compass Curriculum",
   "cs-core": "Computer Science",
-  "cs-math": "Computer Science: Mathmatics",
+  "cs-math": "Computer Science: Mathematics",
   writing: "Writing / administrative",
 };
 
@@ -77,7 +77,7 @@ export const courses = [
   {
     id: "math1350",
     cat: "cs-math",
-    code: "CS 1350",
+    code: "MATH 1350",
     title: "Calculus I",
     sub: "",
     cr: 4,
