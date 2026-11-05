@@ -11,6 +11,7 @@
 import { courses, TERMS } from "./data/defaults.js";
 
 const STORAGE_KEY = "audit-solver-state-v1";
+const IMPORTED_COURSES_KEY = "audit-solver-imported-courses-v1";
 
 // Other files may READ these. To CHANGE them, use the functions below,
 // so the rules (e.g. "locked courses can't move") live in one place.
@@ -19,6 +20,57 @@ export const locked = {}; // course id -> true (only locked courses are listed)
 
 // Valid ids and term keys, used to reject bad clicks and bad saved data
 const courseIds = new Set(courses.map((c) => c.id));
+
+/** Register newly imported courses without changing existing assignments. */
+export function registerImportedCourses(importedCourses) {
+  importedCourses.forEach((course) => {
+    if (!course?.id) return;
+
+    courseIds.add(course.id);
+
+    // Only initialize courses that don't already have a saved assignment.
+    if (!Object.hasOwn(assignments, course.id)) {
+      assignments[course.id] = course.dflt ?? null;
+    }
+  });
+}
+
+/** Save imported audit courses separately from the planner assignments. */
+export function saveImportedCourses(importedCourses) {
+  try {
+    localStorage.setItem(IMPORTED_COURSES_KEY, JSON.stringify(importedCourses));
+    return true;
+  } catch (error) {
+    console.warn("Could not save imported audit courses:", error);
+    return false;
+  }
+}
+
+/** Load previously imported audit courses from this browser. */
+export function loadImportedCourses() {
+  try {
+    const raw = localStorage.getItem(IMPORTED_COURSES_KEY);
+    if (!raw) return [];
+
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return [];
+
+    return saved.filter(
+      (course) =>
+        course &&
+        typeof course.id === "string" &&
+        course.cat === "audit-import" &&
+        typeof course.code === "string" &&
+        typeof course.title === "string" &&
+        Number.isFinite(course.cr) &&
+        course.cr >= 0,
+    );
+  } catch (error) {
+    console.warn("Could not load imported audit courses:", error);
+    return [];
+  }
+}
+
 const termKeys = new Set(TERMS.map((t) => t.key));
 
 // ---------- Changing the plan ----------

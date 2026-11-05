@@ -13,15 +13,23 @@ export const TERMS = [
 ];
 
 // Category names shown as headings in the course list
+
 export const catLabels = {
   "comp-cur": "Compass Curriculum",
   "cs-core": "Computer Science",
   "cs-math": "Computer Science: Mathmatics",
   writing: "Writing / administrative",
+  "audit-import": "Imported Audit Courses",
 };
 
 // Order the categories appear in the course list
-export const catOrder = ["comp-cur", "cs-core", "cs-math", "writing"];
+export const catOrder = [
+  "comp-cur",
+  "cs-core",
+  "cs-math",
+  "writing",
+  "audit-import",
+];
 
 // Elective pools: courses with one of these `cat` values count toward the
 // pool instead of being individually required

@@ -43,7 +43,24 @@ async function readFile(file) {
 }
 
 async function readPdfText(file) {
-  // Later: load pdf.js only when someone actually picks a PDF, e.g.
-  //   const pdfjs = await import("pdfjs-dist");
-  throw new Error(`PDF import isn't built yet (${file.name})`);
+  const pdfjsLib = await import("pdfjs-dist");
+  const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  const pages = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+
+    pages.push(textContent.items.map((item) => item.str).join(" "));
+  }
+
+  return JSON.stringify({
+    pages,
+  });
 }

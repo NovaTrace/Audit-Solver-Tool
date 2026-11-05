@@ -20,5 +20,8 @@
     "prettier": "^3.9.9",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.4.299"
   }
 }

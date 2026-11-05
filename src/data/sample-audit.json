@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "source": "pdf",
+  "student": {
+    "name": "Example Student",
+    "majors": ["Data Analytics"],
+    "minors": ["Mathematics"]
+  },
+  "credits": {
+    "earned": 60,
+    "required": 120
+  },
+  "courses": [
+    {
+      "id": "CS 3020",
+      "code": "CS 3020",
+      "title": "Advanced Object-Oriented Programming",
+      "credits": 3,
+      "requirementIds": ["required-core"]
+    },
+    {
+      "id": "CS 3050",
+      "code": "CS 3050",
+      "title": "Software Engineering",
+      "credits": 3,
+      "requirementIds": ["required-core"]
+    },
+    {
+      "id": "CS 4100",
+      "code": "CS 4100",
+      "title": "Example Technical Elective",
+      "credits": 3,
+      "requirementIds": ["technical-electives"]
+    },
+    {
+      "id": "CS 4200",
+      "code": "CS 4200",
+      "title": "Example Technical Elective 2",
+      "credits": 3,
+      "requirementIds": ["technical-electives"]
+    },
+    {
+      "id": "ENGR 4300",
+      "code": "ENGR 4300",
+      "title": "Example Engineering Elective",
+      "credits": 3,
+      "requirementIds": ["technical-electives"]
+    },
+    {
+      "id": "ECON 1010",
+      "code": "ECON 1010",
+      "title": "Example Economics Course",
+      "credits": 3,
+      "requirementIds": ["general-electives"]
+    },
+    {
+      "id": "PSY 1000",
+      "code": "PSY 1000",
+      "title": "Example Psychology Course",
+      "credits": 3,
+      "requirementIds": ["general-electives"]
+    },
+    {
+      "id": "SOC 1010",
+      "code": "SOC 1010",
+      "title": "Example Sociology Course",
+      "credits": 3,
+      "requirementIds": ["general-electives"]
+    }
+  ],
+  "requirements": [
+    {
+      "id": "required-core",
+      "name": "Required Core",
+      "selection": {
+        "type": "all"
+      },
+      "requiredCredits": 32,
+      "earnedCredits": 26,
+      "remainingCredits": 6,
+      "courseIds": ["CS 3020", "CS 3050"],
+      "eligibleCourseIds": []
+    },
+    {
+      "id": "technical-electives",
+      "name": "Technical Electives",
+      "selection": {
+        "type": "credits",
+        "creditsRequired": 9
+      },
+      "requiredCredits": 9,
+      "earnedCredits": 0,
+      "remainingCredits": 9,
+      "courseIds": [],
+      "eligibleCourseIds": ["CS 4100", "CS 4200", "ENGR 4300"]
+    },
+    {
+      "id": "general-electives",
+      "name": "General Electives",
+      "selection": {
+        "type": "choose",
+        "coursesRequired": 2
+      },
+      "requiredCredits": null,
+      "earnedCredits": null,
+      "remainingCredits": null,
+      "courseIds": [],
+      "eligibleCourseIds": ["ECON 1010", "PSY 1000", "SOC 1010"]
+    }
+  ],
+  "courseCatalog": [
+    {
+      "courseId": "CS 3020",
+      "availableTerms": ["Fall", "Spring"],
+      "availabilityKnown": true,
+      "prerequisites": [],
+      "corequisites": []
+    },
+    {
+      "courseId": "CS 3050",
+      "availableTerms": ["Spring"],
+      "availabilityKnown": true,
+      "prerequisites": ["CS 3020"],
+      "corequisites": []
+    },
+    {
+      "courseId": "CS 4100",
+      "availableTerms": ["Fall"],
+      "availabilityKnown": true,
+      "prerequisites": [],
+      "corequisites": []
+    },
+    {
+      "courseId": "CS 4200",
+      "availableTerms": ["Spring"],
+      "availabilityKnown": true,
+      "prerequisites": [],
+      "corequisites": []
+    },
+    {
+      "courseId": "ENGR 4300",
+      "availableTerms": [],
+      "availabilityKnown": false,
+      "prerequisites": [],
+      "corequisites": []
+    },
+    {
+      "courseId": "ECON 1010",
+      "availableTerms": ["Fall", "Spring"],
+      "availabilityKnown": true,
+      "prerequisites": [],
+      "corequisites": []
+    },
+    {
+      "courseId": "PSY 1000",
+      "availableTerms": ["Fall"],
+      "availabilityKnown": true,
+      "prerequisites": [],
+      "corequisites": []
+    },
+    {
+      "courseId": "SOC 1010",
+      "availableTerms": ["Spring"],
+      "availabilityKnown": true,
+      "prerequisites": [],
+      "corequisites": []
+    }
+  ]
+}
