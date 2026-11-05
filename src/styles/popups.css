@@ -53,6 +53,6 @@ body::before {
 }
 
 body.popup-open::before {
-  opacity: 0.25;
+  opacity: 0.4;
   pointer-events: auto; /* while shown, it catches clicks */
 }
