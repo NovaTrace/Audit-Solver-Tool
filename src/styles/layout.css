@@ -3,13 +3,16 @@
   align-items: flex-end;
   gap: 20px;
   flex-wrap: wrap;
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 2px dashed var(--accent);
   padding-bottom: 16px;
   margin-bottom: 16px;
   justify-content: space-between;
 }
 
-
+.logo{
+  display: flex;
+  justify-content: center;
+}
 
 .tb-left p {
   margin: 0;
@@ -35,7 +38,7 @@
   font-family: var(--mono);
   font-size: 12px;
   padding: 6px 12px;
-  border-radius: 10px;
+  border-radius: 5px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
   color: var(--ink-dim);
@@ -45,7 +48,7 @@
 .tb-btn button:hover {
   border-color: var(--accent);
   color: var(--ink);
-  border-radius: 20px;
+  border-radius: 10px;
 }
 
 .tb-catalogbox {
@@ -61,7 +64,8 @@
 }
 
 .tb-catalogbox b {
-  color: var(--accent-ink);
+  color: var(--ink);
+  font-weight: bolder;
   font-weight: 600;
 }
 
@@ -143,7 +147,7 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: 10px;
-  border-bottom: 3px solid var(--accent);
+  border-bottom: 2px dashed var(--accent);
   padding-bottom: 8px;
   margin: 15px 0 12px;
 }
