@@ -1,47 +1,74 @@
-// bookmarklet/scrape/student.js — the audit's header numbers, read from
-// the page's text (document.body.innerText). The patterns follow the
-// audit's printed layout; check them against the live page.
+// bookmarklet/scrape/student.js — the audit's header and overall totals.
+//
+//   name / degree     the two headings at the top (.h5, then h1.h5)
+//   header fields     "Prepared On <br> 11/05/2026 01:32 PM" style blocks
+//   totals            the MINIMUM HOURS and UNIVERSITY OF COLORADO GPA
+//                     sub-requirements
 
-/** Page text -> the `student` object (see the Audit JSON Data Guide). */
-export function scrapeStudent(text) {
-  // "Last, First" on one line, the degree ("BS in ...") on the next
-  const who = text.match(/^\s*([^\n,]+,[^\n]+)\n\s*([A-Z]{2,4} in [^\n]+)/m);
+import { auditRoot, text, num, requirementBlocks } from "./dom.js";
 
-  // Header table: Prepared On | Program Code | Catalog Year | Graduation Date
-  const header = text.match(
-    /Prepared On[^\n]*\n\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)\s+(\S+)\s+((?:Spring|Summer|Fall)\s+\d{4})/,
+/** The audit page -> the `student` object (see the Audit JSON Data Guide). */
+export function scrapeStudent(doc) {
+  const degree = doc.querySelector("h1.h5");
+  const field = headerFields(doc);
+  const prepared = field["Prepared On"]?.match(
+    /(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)/,
+  );
+  const programs = text(doc.querySelector(".includeTopText")).match(
+    /Program:\s*([A-Z0-9, -]+?)(?:\s+AT LEAST|\s*$|\s{2})/,
   );
 
-  const programs = text.match(/Program:\s*([A-Z0-9, -]+)/);
-  const required = text.match(/minimum of (\d+) applicable hours/i);
-  const earned = text.match(/EARNED:\s*([\d.]+)\s*HOURS/);
-  const inProgress = text.match(/IN PROGRESS\s+([\d.]+)\s+HOURS/);
-  const gpa = text.match(
-    /([\d.]+)\s+ATTEMPTED HOURS\s+[\d.]+\s+POINTS\s+([\d.]+)\s+GPA/,
-  );
+  const subs = requirementBlocks(auditRoot(doc)).flatMap((r) => [
+    ...r.querySelectorAll(".subrequirement"),
+  ]);
+  const subTitled = (re) =>
+    subs.find((s) => re.test(text(s.querySelector(".subreqTitle"))));
+  const minimum = subTitled(/MINIMUM HOURS/);
+  const gpa = subTitled(/UNIVERSITY OF COLORADO GPA/);
 
   return {
-    name: who?.[1].trim() ?? "Unknown student",
-    degreeTitle: who?.[2].trim() ?? "",
-    programCode: header?.[7] ?? null,
+    name: text(degree?.previousElementSibling) || "Unknown student",
+    degreeTitle: text(degree),
+    programCode: field["Program Code"] || null,
     programs: programs
       ? programs[1]
           .split(",")
           .map((p) => p.trim())
           .filter(Boolean)
       : [],
-    catalogYear: header?.[8] ?? null,
-    preparedOn: header ? toIsoLocal(header) : null,
-    graduationDate: null,
-    allRequirementsMet: !/AT LEAST ONE REQUIREMENT HAS NOT BEEN SATISFIED/.test(
-      text,
-    ),
-    hoursRequired: required ? Number(required[1]) : null,
-    hoursEarned: earned ? Number(earned[1]) : null,
-    hoursInProgress: inProgress ? Number(inProgress[1]) : null,
-    gpa: gpa ? Number(gpa[2]) : null,
-    attemptedHours: gpa ? Number(gpa[1]) : null,
+    catalogYear: field["Catalog Year"] || null,
+    preparedOn: prepared ? toIsoLocal(prepared) : null,
+    graduationDate: field["Graduation Date"] || null,
+    allRequirementsMet: !doc.querySelector(".completionTextNO"),
+    hoursRequired:
+      Number(
+        text(minimum?.querySelector(".subreqTitle")).match(
+          /minimum of (\d+)/i,
+        )?.[1],
+      ) || null,
+    hoursEarned: num(minimum?.querySelector(".subreqEarned .hours")),
+    hoursInProgress: num(minimum?.querySelector(".subreqIpHours .hours")),
+    gpa: num(gpa?.querySelector(".gpaDetail .gpa")),
+    attemptedHours: num(gpa?.querySelector(".gpaDetail .hours")),
   };
+}
+
+// The header's "Label <br> value" blocks -> { "Prepared On": "11/05/...", ... }
+function headerFields(doc) {
+  const fields = {};
+  for (const b of doc.querySelectorAll(".col-auto > b")) {
+    const [label, ...rest] = b.innerHTML.split(/<br\s*\/?>/i);
+    const key = label
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    fields[key] = rest
+      .join(" ")
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  return fields;
 }
 
 // "11/05/2026 01:32 PM" pieces -> "2026-11-05T13:32:00"

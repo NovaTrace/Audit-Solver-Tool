@@ -1,84 +1,82 @@
-// bookmarklet/scrape/courses.js — every course the audit mentions, read
-// from the page's text:
-//   - course lines   "FA22 MATH2350 4.0 A Calculus III"  -> attempts
-//   - SELECT FROM    "SELECT FROM: ECE 3120,4020,4162"   -> courses to take
-// Which requirement each course belongs to comes from requirements.js.
+// bookmarklet/scrape/courses.js — every course the audit mentions.
+//
+//   scrapeCourses(doc)    attempts from the Course History block, which
+//                         lists each attempt once with full credits
+//   linkCourses(...)      ties courses to the requirements that list them,
+//                         adds courses that only appear as options, and
+//                         works out each course's status
 
+import { auditRoot, requirementBlocks, readTakenRow } from "./dom.js";
 import { normalizeCode, idFromCode } from "../../src/logic/courseText.js";
 
-// term, code, credits, grade, optional flags (">S", ">E"), title
-const COURSE_LINE =
-  /^\s*(FA|SP|SU)(\d{2})\s+([A-Z]{2,4}\s?\d{4}[A-Z]*)\s+(\d+\.\d)\s+(\*\*\*|[A-Z]{1,2}[+-]?)\s*((?:>[A-Z]\s*)*)\s*(.*?)\s*$/;
+/** The audit page -> the `courses` object, from course history. */
+export function scrapeCourses(doc) {
+  const blocks = requirementBlocks(auditRoot(doc));
+  const history = blocks.find((b) => b.getAttribute("rname") === "CRSHIST");
+  // Without a Course History block, fall back to every taken-course row
+  const rows = [
+    ...(history ?? auditRoot(doc)).querySelectorAll(".takenCourse"),
+  ];
 
-/** Page text -> the `courses` object (see the Audit JSON Data Guide). */
-export function scrapeCourses(text) {
   const courses = {};
-  const course = (code) => {
-    const c = normalizeCode(code);
-    return (courses[idFromCode(c)] ??= {
-      id: idFromCode(c),
-      code: c,
-      title: null,
-      credits: null,
-      attempts: [],
-      transferNote: null,
-      requirementIds: [],
-      selectedFrom: [], // sizes of the SELECT FROM lists it appeared in
-    });
-  };
-
-  // Course lines repeat in every requirement they count toward, sometimes
-  // with split hours. The "Course History" section lists each attempt once,
-  // with full credits, so read from there when the page has it.
-  const historyStart = text.search(/^\s*Course History\s*$/m);
-  const historyText = historyStart >= 0 ? text.slice(historyStart) : text;
-
-  const lines = historyText.split("\n");
   const seen = new Set();
-  lines.forEach((line, i) => {
-    const m = line.match(COURSE_LINE);
-    if (!m) return;
-    const [, season, year, code, credits, grade, flags, title] = m;
-    const term = season + year;
-    const key = `${term} ${normalizeCode(code)} ${grade}`;
-    if (seen.has(key)) return;
+  for (const row of rows.map(readTakenRow)) {
+    if (!row.term || !row.code) continue;
+    const key = `${row.term} ${normalizeCode(row.code)} ${row.grade}`;
+    if (seen.has(key)) continue;
     seen.add(key);
 
-    const c = course(code);
-    c.attempts.push({
-      term,
-      grade,
-      credits: Number(credits),
-      flags: flags.trim() ? flags.trim().split(/\s+/) : [],
-      transfer: /^T/.test(grade),
+    const course = courseFor(courses, row.code);
+    course.attempts.push({
+      term: row.term,
+      grade: row.grade,
+      credits: row.credits,
+      flags: row.flags,
+      transfer: /^T[A-F]/.test(row.grade),
     });
-    if (title && !c.title) c.title = title;
-    // A transfer course's equivalent sits on the next line
-    const next = lines[i + 1]?.trim() ?? "";
-    if (next.startsWith("CO-") && !c.transferNote) c.transferNote = next;
-  });
-
-  // SELECT FROM lists: "ECE 3120,4020,4162" -> ECE 3120, ECE 4020, ECE 4162
-  for (const m of text.matchAll(/SELECT FROM:\s*([A-Z0-9 ,]+)/g)) {
-    const codes = expandList(m[1]);
-    codes.forEach((code) => course(code).selectedFrom.push(codes.length));
-  }
-
-  for (const c of Object.values(courses)) {
-    c.status = statusOf(c);
-    delete c.selectedFrom;
+    // Credits until the course details say otherwise: the most recent
+    // attempt that carried credit (a W carries 0)
+    if (row.credits > 0) course.credits = row.credits;
+    course.title ??= row.lines.find((l) => !l.startsWith("CO-")) ?? null;
+    course.transferNote ??= row.lines.find((l) => l.startsWith("CO-")) ?? null;
   }
   return courses;
 }
 
-// A course is completed if any attempt passed, registered if it has a
-// "***" attempt, needed if the audit lists it alone (SELECT FROM one
-// course), and otherwise one option among several.
-function statusOf(c) {
-  if (c.attempts.some(passed)) return "completed";
-  if (c.attempts.some((a) => a.grade === "***")) return "registered";
-  if (c.selectedFrom.includes(1)) return "needed";
-  return c.selectedFrom.length ? "option" : "needed";
+/**
+ * Point courses and requirements at each other (requirementIds), and set
+ * every course's status. Changes `courses` in place.
+ */
+export function linkCourses(courses, requirements) {
+  for (const req of requirements) {
+    const codes = [...req.applied.map((a) => a.code), ...req.options];
+    for (const code of new Set(codes)) {
+      const course = courseFor(courses, code);
+      if (!course.requirementIds.includes(req.id)) {
+        course.requirementIds.push(req.id);
+      }
+    }
+  }
+
+  for (const course of Object.values(courses)) {
+    course.status = statusOf(course, requirements);
+  }
+  return courses;
+}
+
+// Completed if any attempt passed; registered if it has a "***" attempt;
+// needed if an unfinished requirement asks for exactly this course;
+// otherwise one option among several.
+function statusOf(course, requirements) {
+  if (course.attempts.some(passed)) return "completed";
+  if (course.attempts.some((a) => a.grade === "***")) return "registered";
+  const neededAlone = requirements.some(
+    (r) =>
+      r.status !== "complete" &&
+      r.options.length === 1 &&
+      r.options[0] === course.code,
+  );
+  return neededAlone ? "needed" : "option";
 }
 
 function passed(attempt) {
@@ -86,15 +84,16 @@ function passed(attempt) {
   return /^T?([A-D][+-]?|S|P)$/.test(attempt.grade);
 }
 
-// "ECE 3120,4020, CS 4500" -> ["ECE 3120", "ECE 4020", "CS 4500"]
-function expandList(list) {
-  let dept = "";
-  const codes = [];
-  for (const token of list.split(",")) {
-    const m = token.trim().match(/^(?:([A-Z]{2,4})\s*)?(\d{4})$/);
-    if (!m) continue;
-    if (m[1]) dept = m[1];
-    if (dept) codes.push(`${dept} ${m[2]}`);
-  }
-  return codes;
+// The course entry for a code, created on first use
+function courseFor(courses, code) {
+  const c = normalizeCode(code);
+  return (courses[idFromCode(c)] ??= {
+    id: idFromCode(c),
+    code: c,
+    title: null,
+    credits: null,
+    attempts: [],
+    transferNote: null,
+    requirementIds: [],
+  });
 }

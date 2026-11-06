@@ -49,15 +49,22 @@ export function visibleSections({ audit, filterSection, query }) {
           courses: plannable.filter((c) => c.requirementIds.length === 0),
         };
       }
+      // A course shows under a section while one of its requirements there
+      // is unfinished, or once the student has placed it in a term
+      const inSection = (id) =>
+        audit.requirements.some((r) => r.id === id && r.section === section);
       const reqIds = new Set(
         audit.requirements
           .filter((r) => r.section === section)
+          .filter((r) => r.status !== "complete")
           .map((r) => r.id),
       );
       return {
         section,
-        courses: plannable.filter((c) =>
-          c.requirementIds.some((id) => reqIds.has(id)),
+        courses: plannable.filter(
+          (c) =>
+            c.requirementIds.some((id) => reqIds.has(id)) ||
+            (c.plannedTerm && c.requirementIds.some((id) => inSection(id))),
         ),
       };
     })

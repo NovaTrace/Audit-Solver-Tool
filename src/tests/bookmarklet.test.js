@@ -1,24 +1,36 @@
-// Tests for the bookmarklet's scrapers, run against a made-up audit page's
-// text (fixtures/audit-page.txt, same layout as the real audit) and saved
+// @vitest-environment happy-dom
+// (happy-dom gives these tests a browser-like `document` to read pages with)
+
+// Tests for the bookmarklet's scrapers, run against a made-up audit page
+// with the real page's structure (fixtures/audit-page.html) and saved
 // course-details responses (fixtures/course-details.json).
 
 import { describe, it, expect, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import { scrapeStudent } from "../../bookmarklet/scrape/student.js";
-import { scrapeCourses } from "../../bookmarklet/scrape/courses.js";
+import { scrapeRequirements } from "../../bookmarklet/scrape/requirements.js";
+import {
+  scrapeCourses,
+  linkCourses,
+} from "../../bookmarklet/scrape/courses.js";
 import {
   toCourseDetails,
   fetchCourseDetails,
   addCourseDetails,
+  SessionExpiredError,
 } from "../../bookmarklet/scrape/courseDetails.js";
 import { parseAudit, SCHEMA } from "../logic/parser.js";
 import responses from "./fixtures/course-details.json";
+import pageHtml from "./fixtures/audit-page.html?raw";
 
-const pageText = readFileSync(
-  new URL("./fixtures/audit-page.txt", import.meta.url),
-  "utf8",
-);
+const page = new DOMParser().parseFromString(pageHtml, "text/html");
 const BASE = "https://datc.prod.cu.edu/selfservice-cuspg/audit/read.html";
+
+// Everything the collector builds from the page, before course details
+function collect() {
+  const requirements = scrapeRequirements(page);
+  const courses = linkCourses(scrapeCourses(page), requirements);
+  return { requirements, courses };
+}
 
 // A stand-in for fetch() that answers from the saved responses
 function fakeFetch() {
@@ -26,14 +38,18 @@ function fakeFetch() {
     const dept = body.get("courseDept");
     const key = `${dept.trim()} ${body.get("courseNum")}`;
     // Like the real site might: only the padded department finds a course
-    const found = dept.length === 4 || dept === "ECE " ? responses[key] : null;
-    return { ok: true, json: async () => found ?? { title: "" } };
+    const found = dept.length === 4 ? responses[key] : null;
+    return {
+      ok: true,
+      type: "basic",
+      json: async () => found ?? { title: "" },
+    };
   });
 }
 
 describe("scrapeStudent", () => {
   it("reads the header and totals", () => {
-    expect(scrapeStudent(pageText)).toEqual({
+    expect(scrapeStudent(page)).toEqual({
       name: "Curly, Brace",
       degreeTitle: "BS in Computer Engineering",
       programCode: "ESBS---CPEN",
@@ -51,36 +67,114 @@ describe("scrapeStudent", () => {
   });
 });
 
-describe("scrapeCourses", () => {
-  const courses = scrapeCourses(pageText);
+describe("scrapeRequirements", () => {
+  const { requirements } = collect();
+  const titled = (t) => requirements.find((r) => r.title === t);
 
-  it("reads every attempt once, from the Course History section", () => {
+  it("reads only the desktop copy of the audit", () => {
+    expect(requirements.some((r) => r.title.includes("CS 9999"))).toBe(false);
+  });
+
+  it("skips information blocks, finished rules and course history", () => {
+    const titles = requirements.map((r) => r.title);
+    expect(titles).not.toContain("COMPUTER ENGINEERING PROGRAM INFORMATION");
+    expect(titles).not.toContain("TOTAL HOUR RESIDENCY");
+    expect(titles).not.toContain("MINIMUM HOURS"); // in progress, no list
+    expect(titles).not.toContain("SP2023");
+  });
+
+  it("reads a single required course", () => {
+    expect(titled("CS 4500 Operating Systems I")).toMatchObject({
+      section: "Computer Engineering - Core",
+      type: "course",
+      status: "needs",
+      options: ["CS 4500"],
+      applied: [],
+    });
+  });
+
+  it("reads an either/or requirement and its note", () => {
+    const req = titled(
+      "ECE 4480 Computer Architecture and Design OR CS 4200 Computer Architecture I",
+    );
+    expect(req).toMatchObject({
+      type: "course",
+      status: "complete",
+      options: ["ECE 4480", "CS 4200"],
+      applied: [{ code: "ECE 4480", hours: 3 }],
+    });
+    expect(req.description).toMatch(/^NOTE: Beginning fall 2023/);
+  });
+
+  it("reads a pool with its NEEDS row and options", () => {
+    expect(titled("ELECTRICAL ENGINEERING ELECTIVES - LECTURE")).toMatchObject({
+      type: "pool",
+      status: "needs",
+      needHours: 3,
+      needCourses: 1,
+      earnedHours: 3,
+      options: ["ECE 4020", "ECE 4910"],
+    });
+  });
+
+  it("reads a rule with no course list", () => {
+    expect(titled("MATHEMATICS ELECTIVES")).toMatchObject({
+      type: "rule",
+      needHours: 6,
+      options: [],
+      applied: [{ code: "MATH 3400", hours: 3 }],
+    });
+  });
+
+  it("gives every requirement its own id", () => {
+    const ids = requirements.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toContain(
+      "computer-engineering-core-cs-4500-operating-systems-i",
+    );
+  });
+});
+
+describe("scrapeCourses and linkCourses", () => {
+  const { courses } = collect();
+
+  it("reads every attempt once, from Course History", () => {
     expect(courses.math3400.attempts.map((a) => a.grade)).toEqual([
       "W",
       "C-",
       "B",
     ]);
     expect(courses.math3400.attempts[1].flags).toEqual([">E"]);
-    expect(courses.ece4480.attempts).toHaveLength(1); // listed 3 times on the page
+    expect(courses.ece4480.attempts).toHaveLength(1); // also listed in 3 requirements
+  });
+
+  it("takes credits from the latest attempt that carried any", () => {
+    expect(courses.math3400.credits).toBe(3); // not the W's 0
+    expect(courses.cs3300.credits).toBe(3); // registered
+    expect(courses.cs4500.credits).toBeNull(); // never taken: details fill it in
   });
 
   it("keeps transfer details", () => {
     expect(courses.math1350.code).toBe("MATH 1350"); // printed as MATH1350
     expect(courses.math1350.attempts[0].transfer).toBe(true);
     expect(courses.math1350.transferNote).toBe("CO-PPCC: MAT201");
+    expect(courses.math1350.title).toBe("Calculus I");
   });
 
   it("works out each course's status", () => {
     expect(courses.math3400.status).toBe("completed"); // B after a W and a forgiven C-
     expect(courses.cs3300.status).toBe("registered");
     expect(courses.ece2050.status).toBe("registered");
-    expect(courses.cs4500.status).toBe("needed"); // SELECT FROM: CS 4500 alone
+    expect(courses.cs4500.status).toBe("needed"); // required on its own
     expect(courses.ece4020.status).toBe("option"); // one of a list
+    expect(courses.cs4200.status).toBe("option"); // the other half of an either/or
   });
 
-  it("expands SELECT FROM lists that share a department", () => {
-    expect(courses.ece4910.code).toBe("ECE 4910");
-    expect(courses.cs4200.code).toBe("CS 4200");
+  it("links courses and requirements both ways", () => {
+    expect(courses.ece4480.requirementIds).toHaveLength(2); // either/or + electives pool
+    expect(courses.cs4500.requirementIds).toEqual([
+      "computer-engineering-core-cs-4500-operating-systems-i",
+    ]);
   });
 });
 
@@ -136,9 +230,30 @@ describe("course details", () => {
   });
 });
 
+describe("an expired login", () => {
+  it("stops after the first redirect to the login page", async () => {
+    // fetch with redirect: "manual" reports a redirect as "opaqueredirect"
+    const fetchImpl = vi.fn(async () => ({
+      ok: false,
+      type: "opaqueredirect",
+    }));
+    const list = [
+      "CS 4500",
+      "ECE 3020",
+      "ECE 4020",
+      "ECE 4910",
+      "PES 2130",
+    ].map((code) => ({ code }));
+    await expect(
+      addCourseDetails(list, { fetchImpl, baseUrl: BASE }),
+    ).rejects.toThrow(SessionExpiredError);
+    expect(fetchImpl.mock.calls.length).toBeLessThanOrEqual(3); // not all 5
+  });
+});
+
 describe("the whole collection", () => {
   it("builds an audit that passes parseAudit", async () => {
-    const courses = scrapeCourses(pageText);
+    const { requirements, courses } = collect();
     vi.spyOn(console, "warn").mockImplementation(() => {});
     await addCourseDetails(Object.values(courses), {
       fetchImpl: fakeFetch(),
@@ -147,8 +262,8 @@ describe("the whole collection", () => {
     const audit = {
       schema: SCHEMA,
       source: { type: "bookmarklet" },
-      student: scrapeStudent(pageText),
-      requirements: [],
+      student: scrapeStudent(page),
+      requirements,
       courses,
     };
     const parsed = parseAudit(audit, null, new Date(2026, 10, 6));

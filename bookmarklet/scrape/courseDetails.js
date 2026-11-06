@@ -11,6 +11,17 @@ import {
 } from "../../src/logic/courseText.js";
 
 const ENDPOINT = "populate-course-cat-details.ajax";
+
+/** Thrown when the audit site answers with its login page: the student's
+ *  session ran out. Every other request would fail the same way. */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super(
+      "Your audit session has expired. Reload the audit page (log in again if asked), then click the bookmark again.",
+    );
+    this.name = "SessionExpiredError";
+  }
+}
 const AT_ONCE = 3; // requests in flight at a time: be polite to the server
 
 /**
@@ -51,6 +62,9 @@ export async function fetchCourseDetails(
     fetchImpl(url, {
       method: "POST",
       credentials: "include",
+      // A logged-out request is redirected to the CU login page. Don't
+      // follow it: the redirect itself tells us the session expired.
+      redirect: "manual",
       headers: {
         accept: "application/json",
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -63,6 +77,9 @@ export async function fetchCourseDetails(
         courseId: "",
       }),
     }).then((res) => {
+      if (res.type === "opaqueredirect" || res.redirected) {
+        throw new SessionExpiredError();
+      }
       if (!res.ok) throw new Error(`${code}: HTTP ${res.status}`);
       return res.json();
     });
@@ -79,12 +96,14 @@ export async function fetchCourseDetails(
  * Add details to every course, AT_ONCE at a time, calling
  * onProgress(done, total) as they finish. A course whose request fails
  * keeps detailsLoaded: false; returns the codes that failed.
+ * Stops and throws SessionExpiredError if the login has run out.
  */
 export async function addCourseDetails(courses, options = {}) {
   const { onProgress = () => {}, ...fetchOptions } = options;
   const queue = [...courses];
   const failed = [];
   let done = 0;
+  let expired = null;
 
   async function worker() {
     while (queue.length) {
@@ -95,6 +114,11 @@ export async function addCourseDetails(courses, options = {}) {
           await fetchCourseDetails(course.code, fetchOptions),
         );
       } catch (e) {
+        if (e instanceof SessionExpiredError) {
+          expired = e;
+          queue.length = 0; // no point asking again
+          return;
+        }
         console.warn("Audit Solver:", e.message);
         failed.push(course.code);
       }
@@ -103,5 +127,6 @@ export async function addCourseDetails(courses, options = {}) {
   }
 
   await Promise.all(Array.from({ length: AT_ONCE }, worker));
+  if (expired) throw expired;
   return failed;
 }

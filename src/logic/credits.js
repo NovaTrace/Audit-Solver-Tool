@@ -45,6 +45,7 @@ export function requirementProgress(audit) {
   return audit.requirements
     .filter((r) => r.status === "needs")
     .filter((r) => r.type === "pool" || r.type === "rule")
+    .filter((r) => r.type !== "rule" || r.needHours > 0) // e.g. a GPA rule
     .map((r) => {
       const applied = new Set(r.applied.map((a) => a.code));
       const planned = r.options

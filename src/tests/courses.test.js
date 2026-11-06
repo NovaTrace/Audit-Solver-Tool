@@ -82,7 +82,7 @@ describe("visibleSections", () => {
     expect(codes(groups)).toEqual([
       [
         "Computer Engineering - Core",
-        ["CS 3300", "CS 4200", "CS 4500", "ECE 4891", "ECE 4899"],
+        ["CS 3300", "CS 4500", "ECE 4891", "ECE 4899"],
       ],
     ]);
   });
@@ -96,6 +96,19 @@ describe("visibleSections", () => {
       query: "",
     });
     expect(codes(groups).at(-1)).toEqual([UNLINKED, ["ECE 4020"]]);
+  });
+
+  it("hides options of a finished requirement until they're planned", () => {
+    const a = audit(); // cpe-arch is complete (ECE 4480), CS 4200 was an option
+    const core = (x) =>
+      visibleSections({
+        audit: x,
+        filterSection: "Computer Engineering - Core",
+        query: "",
+      })[0].courses.map((c) => c.code);
+    expect(core(a)).not.toContain("CS 4200");
+    a.courses.cs4200.plannedTerm = "FA27";
+    expect(core(a)).toContain("CS 4200");
   });
 
   it("skips sections with nothing left to show", () => {

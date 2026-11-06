@@ -13,13 +13,16 @@
 import { showOverlay } from "./overlay.js";
 import { sendToApp, downloadJson, copyJson } from "./send.js";
 import { scrapeStudent } from "./scrape/student.js";
-import { scrapeCourses } from "./scrape/courses.js";
+import { scrapeCourses, linkCourses } from "./scrape/courses.js";
 import { scrapeRequirements } from "./scrape/requirements.js";
-import { addCourseDetails } from "./scrape/courseDetails.js";
+import {
+  addCourseDetails,
+  SessionExpiredError,
+} from "./scrape/courseDetails.js";
 import { parseAudit, SCHEMA } from "../src/logic/parser.js";
 
 // Bump when the bookmarklet changes, so the app can tell old bookmarks
-const COLLECTOR_VERSION = "0.2.0";
+const COLLECTOR_VERSION = "0.3.0";
 
 // Replaced with the planner's real address when the student drags the
 // link from the planner (bookmarkletPanel.js), so the bookmark always
@@ -40,10 +43,10 @@ async function run() {
   const ui = showOverlay();
   try {
     ui.status("Reading your audit…");
-    const text = document.body.innerText;
-    const student = scrapeStudent(text);
-    const courses = scrapeCourses(text);
+    // The scrapers read the page's elements, so collapsed sections count too
+    const student = scrapeStudent(document);
     const requirements = scrapeRequirements(document);
+    const courses = linkCourses(scrapeCourses(document), requirements);
 
     const list = Object.values(courses);
     const failed = await addCourseDetails(list, {
@@ -97,6 +100,10 @@ async function run() {
     ]);
   } catch (e) {
     console.error("Audit Solver:", e);
-    ui.error(`Something went wrong: ${e.message}`);
+    ui.error(
+      e instanceof SessionExpiredError
+        ? e.message
+        : `Something went wrong: ${e.message}`,
+    );
   }
 }
