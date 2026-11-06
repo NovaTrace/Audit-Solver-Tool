@@ -11,12 +11,13 @@ import {
   saveState,
   clearSaved,
   isSampleLoaded,
+  clearAllData,
   AuditError,
 } from "../state.js";
 import { parseAudit } from "../logic/parser.js";
 import sample from "../data/sample-audit.json";
 
-const STORAGE_KEY = "audit-solver-state-v2";
+const STORAGE_KEY = "audit-solver-state";
 
 // Shortcut: one course from the current audit
 const course = (id) => getAudit().courses[id];
@@ -240,5 +241,16 @@ describe("saving and loading", () => {
       throw new Error("QuotaExceededError");
     };
     expect(saveState()).toBe(false);
+  });
+});
+
+describe("clearAllData", () => {
+  it("deletes the save and goes back to the demo", () => {
+    toggleTerm("cs4500", "FA27");
+    saveState();
+    clearAllData();
+    expect(isSampleLoaded()).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(course("cs4500").plannedTerm).toBeNull();
   });
 });

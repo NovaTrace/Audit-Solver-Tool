@@ -25,10 +25,12 @@ import {
   toggleLock,
   importAudit,
   AuditError,
+  clearAllData,
 } from "./state.js";
 import { visibleSections } from "./logic/courses.js";
 import { setupPopups } from "./ui/popups.js";
-import { setupImport } from "./ui/importer.js";
+import { setupImport, setupReceiver } from "./ui/importer.js";
+import { setupBookmarkletPanel } from "./ui/bookmarkletPanel.js";
 import { setupExport } from "./ui/exporter.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
@@ -43,10 +45,25 @@ let activeSection = "all";
 // REDRAWING — call these after anything changes the audit
 // =====================================================================
 
+// Which audit the get-started panel was last opened/closed for
+// (null until the first draw)
+let panelShowsSample = null;
+
 // Header, footer, and the get-started panel (only shown with the demo)
 function refreshHeader() {
   renderHeader(getAudit(), { isSample: isSampleLoaded(), now: new Date() });
-  document.getElementById("get-started").hidden = !isSampleLoaded();
+  const panel = document.getElementById("get-started");
+  panel.querySelector("h2").textContent = isSampleLoaded()
+    ? "Load your degree audit"
+    : "Update your audit or get the bookmarklet again";
+
+  // Open on first visit, collapsed once an audit is loaded. Only change it
+  // when switching between the demo and a real audit: this runs after every
+  // click, and would otherwise shut a panel the student just opened.
+  if (panelShowsSample !== isSampleLoaded()) {
+    panelShowsSample = isSampleLoaded();
+    panel.open = panelShowsSample;
+  }
 }
 
 // Stats tiles + schedule section
@@ -103,21 +120,24 @@ function setSaveStatus(text) {
 // =====================================================================
 setupPopups(); // handles every .info-popup on the page
 
-// Import button: ui/importer.js reads the file, then calls this.
-// importAudit() runs parseAudit(), which throws AuditError for a file that
+// Import: from a file (Import button) or from the bookmarklet (Send).
+// importAudit() runs parseAudit(), which throws AuditError for data that
 // isn't a valid audit; the current plan is left untouched in that case.
-setupImport((raw) => {
+function handleImport(raw) {
   try {
     importAudit(raw.content);
   } catch (e) {
     if (!(e instanceof AuditError)) throw e; // a bug in our code: let it show
-    alert(
-      `That file isn't a valid audit, so nothing was changed.\n\n${e.message}`,
-    );
+    alert(`That isn't a valid audit, so nothing was changed.\n\n${e.message}`);
     return;
   }
   saveAndRefresh();
-});
+}
+setupImport(handleImport);
+setupReceiver(handleImport);
+
+// The "Grab my audit" bookmarklet link and its Copy code button
+setupBookmarkletPanel();
 
 // Export button: downloads the current audit as .json
 setupExport(getAudit);
@@ -133,6 +153,17 @@ document.getElementById("reset-btn").addEventListener("click", () => {
   if (!ok) return;
   resetPlan();
   saveAndRefresh();
+});
+
+// "Clear data" button (footer): delete the save and go back to the demo
+document.getElementById("clear-data-btn").addEventListener("click", () => {
+  const ok = confirm(
+    "Delete your saved audit and plan from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
+  );
+  if (!ok) return;
+  clearAllData();
+  setSaveStatus("Sample data: changes aren't saved");
+  refreshAll();
 });
 
 // =====================================================================

@@ -18,7 +18,7 @@ import sample from "./data/sample-audit.json";
 
 // v2: the whole audit object. (v1 saves only held picks, in the old
 // format; they're ignored rather than converted.)
-const STORAGE_KEY = "audit-solver-state-v2";
+const STORAGE_KEY = "audit-solver-state";
 
 // The current audit. Other files READ it through getAudit(). To CHANGE it,
 // use the functions below, so the rules (e.g. "locked courses can't move")
@@ -77,6 +77,15 @@ export function resetPlan() {
   }
   loadAudit(parseAudit(copy));
   sampleLoaded = wasSample; // resetting the demo leaves it the demo
+}
+
+/**
+ * Forget everything: delete this browser's save and go back to the demo
+ * audit. Used by the "Clear data" button.
+ */
+export function clearAllData() {
+  clearSaved();
+  loadSample();
 }
 
 // ---------- Changing the plan ----------

@@ -4,13 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm run build:bookmarklet",
     "dev": "vite",
+    "prebuild": "npm run build:bookmarklet",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "test": "vitest"
+    "test": "vitest",
+    "build:bookmarklet": "vite build --config vite.bookmarklet.config.js",
+    "dev:bookmarklet": "vite build --config vite.bookmarklet.config.js --watch"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -9,6 +9,9 @@ export function matchesQuery(course, query) {
   return haystack.includes(query);
 }
 
+/** Heading for courses that aren't tied to any requirement. */
+export const UNLINKED = "Not linked to a requirement";
+
 /** The audit's section names, in audit order, each listed once. */
 export function sectionNames(audit) {
   return [...new Set(audit.requirements.map((r) => r.section))];
@@ -30,9 +33,22 @@ export function visibleSections({ audit, filterSection, query }) {
     .filter((c) => c.status !== "completed" && matchesQuery(c, query))
     .sort((a, b) => a.code.localeCompare(b.code));
 
-  return sectionNames(audit)
+  // Courses the audit doesn't tie to any requirement (e.g. the bookmarklet
+  // before requirements.js exists) still need to be plannable somewhere
+  const sections = sectionNames(audit);
+  if (plannable.some((c) => c.requirementIds.length === 0)) {
+    sections.push(UNLINKED);
+  }
+
+  return sections
     .filter((section) => filterSection === "all" || section === filterSection)
     .map((section) => {
+      if (section === UNLINKED) {
+        return {
+          section,
+          courses: plannable.filter((c) => c.requirementIds.length === 0),
+        };
+      }
       const reqIds = new Set(
         audit.requirements
           .filter((r) => r.section === section)

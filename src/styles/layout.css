@@ -91,11 +91,52 @@
 }
 
 .get-started h2 {
-  margin: 0 0 12px;
+  margin: 0;
   font: 600 14px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--accent-ink);
+}
+
+/* The panel is a <details>: <summary> is the heading row that's always
+   visible, and clicking it opens or closes the rest. */
+.get-started summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none; /* hide the browser's own triangle (Firefox) */
+}
+
+.get-started summary::-webkit-details-marker {
+  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+}
+
+/* Our own arrow: points right when closed, down when open */
+.get-started summary::before {
+  content: "\25B8"; /* ▸ */
+  color: var(--accent-ink);
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+
+.get-started[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.get-started[open] summary {
+  margin-bottom: 12px; /* space between the heading and the steps */
+}
+
+.get-started summary:hover h2 {
+  text-decoration: underline;
+}
+
+/* Collapsed: a slim, quieter bar */
+.get-started:not([open]) {
+  padding: 8px 20px;
+  background: var(--panel);
+  border-color: var(--line-strong);
 }
 
 .get-started ol {

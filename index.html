@@ -56,8 +56,8 @@
       </header>
 
       <main>
-        <section class="get-started" id="get-started">
-          <h2>Load your degree audit</h2>
+        <details class="get-started" id="get-started">
+          <summary><h2>Load your degree audit</h2></summary>
           <ol>
             <li>
               Drag
@@ -74,7 +74,7 @@
             <button id="copy-bookmarklet">Copy code</button> · Or
             <button id="import-alt">upload a PDF/JSON</button>
           </p>
-        </section>
+        </details>
         <dl class="stats">
           <div class="stat">
             <dt>Hours earned</dt>
@@ -205,8 +205,13 @@
         </template>
       </main>
 
-      <!-- Filled by src/render/header.js -->
-      <footer id="source-note"></footer>
+      <footer>
+        <!-- Filled by src/render/header.js -->
+        <p id="source-note"></p>
+        <button type="button" id="clear-data-btn" class="clear-data-btn">
+          Clear data
+        </button>
+      </footer>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -4,6 +4,13 @@
 // This file only READS files. Whether the contents are a valid audit is
 // decided by parseAudit() (through state.js), not here.
 
+// Sites the bookmarklet may send an audit from. While developing, a local
+// test page counts too.
+const AUDIT_ORIGINS = ["https://datc.prod.cu.edu"];
+const isAuditOrigin = (origin) =>
+  AUDIT_ORIGINS.includes(origin) ||
+  (import.meta.env.DEV && /^http:\/\/localhost(:\d+)?$/.test(origin));
+
 const ALLOWED_TYPES = [".pdf", ".json"];
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -52,4 +59,26 @@ export function setupImport(onImport) {
     }
     onImport({ kind: "json", content });
   });
+}
+
+/**
+ * Receive an audit from the bookmarklet's "Send to Audit Solver" button.
+ * The bookmarklet opens this page in a new tab, so `window.opener` is the
+ * audit tab. We tell it we're ready, then accept ONE audit message from it.
+ * `onImport` gets { kind: "json", content: object }, like a file import.
+ */
+export function setupReceiver(onImport) {
+  const auditTab = window.opener;
+  if (!auditTab) return; // opened normally, not by the bookmarklet
+
+  window.addEventListener("message", function onMessage(event) {
+    // Only the tab that opened us, on the audit site, with an audit
+    if (event.source !== auditTab || !isAuditOrigin(event.origin)) return;
+    if (event.data?.type !== "audit-solver:audit") return;
+    window.removeEventListener("message", onMessage);
+    onImport({ kind: "json", content: event.data.payload });
+  });
+
+  // "*" is fine here: this message carries no data, it only says "ready"
+  auditTab.postMessage({ type: "audit-solver:ready" }, "*");
 }

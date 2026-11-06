@@ -8,6 +8,7 @@ import {
   matchesQuery,
   sectionNames,
   visibleSections,
+  UNLINKED,
   creditText,
   countsTowardText,
   offeredText,
@@ -84,6 +85,17 @@ describe("visibleSections", () => {
         ["CS 3300", "CS 4200", "CS 4500", "ECE 4891", "ECE 4899"],
       ],
     ]);
+  });
+
+  it("lists plannable courses with no requirement under their own heading", () => {
+    const a = audit();
+    a.courses.ece4020.requirementIds = []; // as if the audit didn't link it
+    const groups = visibleSections({
+      audit: a,
+      filterSection: "all",
+      query: "",
+    });
+    expect(codes(groups).at(-1)).toEqual([UNLINKED, ["ECE 4020"]]);
   });
 
   it("skips sections with nothing left to show", () => {
