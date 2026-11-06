@@ -2,7 +2,7 @@
 // They all read the audit object from state.js and never change it.
 // No `document` here, so these can be tested with Vitest (see credits.test.js).
 
-import { idFromCode } from "./parser.js";
+import { idFromCode } from "./courseText.js";
 
 /** A course's credit hours for adding up (unknown counts as 0). */
 export function creditsOf(course) {

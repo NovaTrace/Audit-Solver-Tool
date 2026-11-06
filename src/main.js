@@ -23,10 +23,13 @@ import {
   resetPlan,
   toggleTerm,
   toggleLock,
+  importAudit,
+  AuditError,
 } from "./state.js";
 import { visibleSections } from "./logic/courses.js";
 import { setupPopups } from "./ui/popups.js";
 import { setupImport } from "./ui/importer.js";
+import { setupExport } from "./ui/exporter.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
@@ -100,11 +103,24 @@ function setSaveStatus(text) {
 // =====================================================================
 setupPopups(); // handles every .info-popup on the page
 
-// Import button: ui/importer.js checks the file, then calls this
+// Import button: ui/importer.js reads the file, then calls this.
+// importAudit() runs parseAudit(), which throws AuditError for a file that
+// isn't a valid audit; the current plan is left untouched in that case.
 setupImport((raw) => {
-  console.log("Imported:", raw.kind, raw.content);
-  // Step 5: importAudit(raw.content); saveAndRefresh();
+  try {
+    importAudit(raw.content);
+  } catch (e) {
+    if (!(e instanceof AuditError)) throw e; // a bug in our code: let it show
+    alert(
+      `That file isn't a valid audit, so nothing was changed.\n\n${e.message}`,
+    );
+    return;
+  }
+  saveAndRefresh();
 });
+
+// Export button: downloads the current audit as .json
+setupExport(getAudit);
 
 // =====================================================================
 // SCHEDULE SECTION (#pool-status, #sched-grid, #unassigned)

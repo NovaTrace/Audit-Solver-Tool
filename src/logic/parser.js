@@ -15,6 +15,14 @@
 // Audit JSON Data Guide.
 // =====================================================================
 
+import {
+  idFromCode,
+  termIndex,
+  termFromIndex,
+  termLabel,
+  termForDate,
+} from "./courseText.js";
+
 export const SCHEMA = "audit-solver/v1";
 
 /** Thrown for bad audit data, so the importer can show the message to the
@@ -277,37 +285,10 @@ function cleanPicks(audit) {
 }
 
 // =====================================================================
-// TERMS  (move to logic/courseText.js in step 6)
+// SEMESTER COLUMNS  (term helpers live in logic/courseText.js)
 // =====================================================================
 
-const SEASONS = ["SP", "SU", "FA"]; // order within a calendar year
-const SEASON_NAMES = { SP: "Spring", SU: "Summer", FA: "Fall" };
 const MIN_TERMS = 6; // always show at least this many columns
-
-/** "FA26" -> a number that sorts in time order. */
-export function termIndex(key) {
-  const season = SEASONS.indexOf(key.slice(0, 2));
-  const year = Number(key.slice(2));
-  return year * 3 + season;
-}
-
-/** The reverse of termIndex. */
-function termFromIndex(index) {
-  const year = Math.floor(index / 3);
-  return SEASONS[index % 3] + String(year).padStart(2, "0");
-}
-
-/** "FA26" -> "Fall 2026" */
-export function termLabel(key) {
-  return `${SEASON_NAMES[key.slice(0, 2)]} 20${key.slice(2)}`;
-}
-
-/** The term a date falls in: Jan–May Spring, Jun–Jul Summer, Aug–Dec Fall. */
-export function termForDate(date) {
-  const month = date.getMonth(); // 0 = January
-  const season = month <= 4 ? "SP" : month <= 6 ? "SU" : "FA";
-  return season + String(date.getFullYear() % 100).padStart(2, "0");
-}
 
 /**
  * Columns from the earlier of (this term, the first registered term) up to
@@ -335,11 +316,6 @@ function generateTerms(audit, now) {
 // =====================================================================
 // HELPERS
 // =====================================================================
-
-/** "MATH 1350" or "MATH1350" -> "math1350" */
-export function idFromCode(code) {
-  return code.replace(/\s+/g, "").toLowerCase();
-}
 
 /** The term of the course's registered ("***") attempt, or null. */
 function registeredTerm(course) {

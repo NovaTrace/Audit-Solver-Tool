@@ -1,14 +1,7 @@
 // src/tests/parser.test.js
 import { describe, it, expect } from "vitest";
 import sample from "../data/sample-audit.json";
-import {
-  parseAudit,
-  AuditError,
-  termForDate,
-  termLabel,
-  termIndex,
-  idFromCode,
-} from "../logic/parser.js";
+import { parseAudit, AuditError } from "../logic/parser.js";
 
 const copy = () => structuredClone(sample); // fresh copy, so one test can't affect another
 const NOV_2026 = new Date(2026, 10, 5); // a fixed "today" so tests don't change with the calendar
@@ -214,23 +207,5 @@ describe("parseAudit: merging with previous", () => {
       code: "OLD 1000",
     };
     expect(parseAudit(copy(), previous).courses.old1000).toBeUndefined();
-  });
-});
-
-describe("term helpers", () => {
-  it("finds the term for a date", () => {
-    expect(termForDate(new Date(2026, 0, 15))).toBe("SP26"); // January
-    expect(termForDate(new Date(2026, 5, 15))).toBe("SU26"); // June
-    expect(termForDate(new Date(2026, 7, 15))).toBe("FA26"); // August
-  });
-
-  it("labels and orders terms", () => {
-    expect(termLabel("SU27")).toBe("Summer 2027");
-    expect(termIndex("FA26") < termIndex("SP27")).toBe(true);
-  });
-
-  it("normalizes course codes into ids", () => {
-    expect(idFromCode("MATH1350")).toBe("math1350");
-    expect(idFromCode("ECE 3210")).toBe("ece3210");
   });
 });
