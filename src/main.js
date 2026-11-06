@@ -1,5 +1,9 @@
 // =====================================================================
-// main.js — entry point
+// main.js — entry point: connects the page to state.js
+//
+//   state.js   holds the audit and changes it (no `document`)
+//   render/*   draws parts of the page from the audit (no state changes)
+//   main.js    listens for clicks, asks state.js to change, then redraws
 // =====================================================================
 
 // ---------- Styles ----------
@@ -12,57 +16,66 @@ import "./styles/course-list.css";
 
 // ---------- Modules ----------
 import {
-  TERMS,
-  catLabels,
-  catOrder,
-  poolGroups,
-  EARNED_HOURS,
-  courses,
-} from "./data/defaults.js";
-import {
-  assignments,
-  locked,
+  getAudit,
+  isSampleLoaded,
   loadState,
   saveState,
-  clearSaved,
-  resetToDefaults,
+  resetPlan,
   toggleTerm,
   toggleLock,
 } from "./state.js";
+import { visibleSections } from "./logic/courses.js";
 import { setupPopups } from "./ui/popups.js";
 import { setupImport } from "./ui/importer.js";
+import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
-import { renderCourseList } from "./render/courseList.js";
+import { renderCourseList, renderFilterChips } from "./render/courseList.js";
+
+// The chosen filter chip: "all" or a section name. This is display state,
+// not plan data, so it lives here rather than in state.js and isn't saved.
+let activeSection = "all";
 
 // =====================================================================
-// REDRAWING — call these after anything changes the state
+// REDRAWING — call these after anything changes the audit
 // =====================================================================
+
+// Header, footer, and the get-started panel (only shown with the demo)
+function refreshHeader() {
+  renderHeader(getAudit(), { isSample: isSampleLoaded(), now: new Date() });
+  document.getElementById("get-started").hidden = !isSampleLoaded();
+}
 
 // Stats tiles + schedule section
 function refreshSchedule() {
-  const data = { terms: TERMS, courses, assignments, locked, poolGroups };
-  renderSchedule(data);
-  renderStats({ ...data, earnedHours: EARNED_HOURS });
+  renderSchedule(getAudit());
+  renderStats(getAudit());
 }
 
-// Course list, keeping the current filter chip and search text
+// Chips + course list, keeping the current chip and search text
 function refreshList() {
+  const audit = getAudit();
+  // One chip per section that still has something to plan
+  const sections = visibleSections({
+    audit,
+    filterSection: "all",
+    query: "",
+  }).map((group) => group.section);
+  // A new audit may not have the section that was chosen before
+  if (activeSection !== "all" && !sections.includes(activeSection)) {
+    activeSection = "all";
+  }
+  renderFilterChips(sections, activeSection);
   renderCourseList({
-    terms: TERMS,
-    courses,
-    catOrder,
-    catLabels,
-    poolGroups,
-    assignments,
-    locked,
-    filterCat: document.querySelector(".chip.active").dataset.cat,
+    audit,
+    filterSection: activeSection,
     query: document.getElementById("search").value.trim().toLowerCase(),
   });
 }
 
 // Everything
 function refreshAll() {
+  refreshHeader();
   refreshList();
   refreshSchedule();
 }
@@ -72,6 +85,8 @@ function refreshAll() {
 function saveAndRefresh() {
   if (saveState()) {
     setSaveStatus("Saved " + new Date().toLocaleTimeString());
+  } else if (isSampleLoaded()) {
+    setSaveStatus("Sample data: changes aren't saved");
   }
   refreshAll();
 }
@@ -84,11 +99,11 @@ function setSaveStatus(text) {
 // HEADER + POPUPS
 // =====================================================================
 setupPopups(); // handles every .info-popup on the page
-// Import button: ui/importer.js checks the file, then calls this
 
+// Import button: ui/importer.js checks the file, then calls this
 setupImport((raw) => {
   console.log("Imported:", raw.kind, raw.content);
-  // Later: loadAudit(parseAudit(raw)); saveAndRefresh();
+  // Step 5: importAudit(raw.content); saveAndRefresh();
 });
 
 // =====================================================================
@@ -97,33 +112,25 @@ setupImport((raw) => {
 // =====================================================================
 document.getElementById("reset-btn").addEventListener("click", () => {
   const ok = confirm(
-    "Clear all saved term picks and locks, and go back to the built-in defaults?",
+    "Clear all term picks and locks? Registered courses stay in their terms.",
   );
   if (!ok) return;
-  clearSaved();
-  resetToDefaults();
-  setSaveStatus("Autosaves in browser");
-  refreshAll();
+  resetPlan();
+  saveAndRefresh();
 });
 
 // =====================================================================
-//  PARSE
-// =====================================================================
-
-// =====================================================================
-// COURSE LIST SECTION (chips, search, #list)
+// COURSE LIST SECTION (#chips, #search, #list)
 // Drawing lives in render/courseList.js; clicks are handled here.
 // =====================================================================
 
-// Filter chips
-document.querySelectorAll(".chip").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    document
-      .querySelectorAll(".chip")
-      .forEach((c) => c.classList.remove("active"));
-    chip.classList.add("active");
-    refreshList();
-  });
+// Filter chips: ONE listener on the chip box, since the chips are rebuilt
+// on every redraw (a listener on each chip would be thrown away with it)
+document.getElementById("chips").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  activeSection = chip.dataset.section;
+  refreshList();
 });
 
 // Search box
@@ -148,5 +155,10 @@ document.getElementById("list").addEventListener("click", (e) => {
 // =====================================================================
 // STARTUP
 // =====================================================================
-loadState(); // state.js starts from the defaults; this adds saved picks
+loadState(); // state.js starts from the demo; this swaps in a saved audit
+setSaveStatus(
+  isSampleLoaded()
+    ? "Sample data: changes aren't saved"
+    : "Autosaves in browser",
+);
 refreshAll(); // first draw

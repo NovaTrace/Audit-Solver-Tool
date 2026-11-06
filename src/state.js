@@ -1,42 +1,96 @@
 // =====================================================================
-// state.js — the user's current plan, and saving it in the browser
+// state.js — the one audit object the app runs on, and saving it in
+// the browser
 //
-//   data/defaults.js = the starting point (never changes while the app runs)
-//   state.js         = the user's picks on top of it (changes on every click)
+//   logic/parser.js        = checks and completes audit data (parseAudit)
+//   data/sample-audit.json = demo data shown until a real audit is loaded
+//   state.js               = holds the current audit, changes it, saves it
+//
+// The audit object is the shape described in the Audit JSON Data Guide.
+// The student's picks live on each course: `plannedTerm` and `locked`.
 //
 // No `document` in this file: it only holds and changes data, so it can be
-// tested with Vitest (see state.test.js). main.js updates the page.
+// tested with Vitest (see State.test.js). main.js updates the page.
 // =====================================================================
 
-import { courses, TERMS } from "./data/defaults.js";
+import { parseAudit, AuditError } from "./logic/parser.js";
+import sample from "./data/sample-audit.json";
 
-const STORAGE_KEY = "audit-solver-state-v1";
+// v2: the whole audit object. (v1 saves only held picks, in the old
+// format; they're ignored rather than converted.)
+const STORAGE_KEY = "audit-solver-state-v2";
 
-// Other files may READ these. To CHANGE them, use the functions below,
-// so the rules (e.g. "locked courses can't move") live in one place.
-export const assignments = {}; // course id -> term key, or null if unplaced
-export const locked = {}; // course id -> true (only locked courses are listed)
+// The current audit. Other files READ it through getAudit(). To CHANGE it,
+// use the functions below, so the rules (e.g. "locked courses can't move")
+// live in one place.
+let audit = null;
 
-// Valid ids and term keys, used to reject bad clicks and bad saved data
-const courseIds = new Set(courses.map((c) => c.id));
-const termKeys = new Set(TERMS.map((t) => t.key));
+// True while the demo audit is showing. The demo is never saved, and its
+// picks are never merged into a real import.
+let sampleLoaded = false;
+
+/** The current audit object (read it; change it only through this file). */
+export function getAudit() {
+  return audit;
+}
+
+/** True while the built-in demo audit is showing instead of a real one. */
+export function isSampleLoaded() {
+  return sampleLoaded;
+}
+
+// ---------- Loading an audit ----------
+
+/** Replace the current audit with one that already went through parseAudit(). */
+export function loadAudit(parsed) {
+  audit = parsed;
+  sampleLoaded = false;
+}
+
+/**
+ * Check and load new audit data (from the bookmarklet, a PDF or a JSON
+ * file). A fresh scrape keeps the student's current picks; see parseAudit.
+ * Throws AuditError if the data is bad; the current audit stays as it was.
+ */
+export function importAudit(data) {
+  const previous = sampleLoaded ? null : audit; // never merge demo picks
+  loadAudit(parseAudit(data, previous));
+}
+
+/** Load the built-in demo audit (used at startup). */
+export function loadSample() {
+  loadAudit(parseAudit(sample));
+  sampleLoaded = true;
+}
+
+/**
+ * Clear every pick on the current audit. Registered courses go back into
+ * their registered term, locked (parseAudit does that). Semester columns
+ * are kept.
+ */
+export function resetPlan() {
+  const wasSample = sampleLoaded;
+  const copy = structuredClone(audit);
+  for (const course of Object.values(copy.courses)) {
+    delete course.plannedTerm;
+    delete course.locked;
+  }
+  loadAudit(parseAudit(copy));
+  sampleLoaded = wasSample; // resetting the demo leaves it the demo
+}
 
 // ---------- Changing the plan ----------
-
-/** Put every course back in its default term and unlock everything. */
-export function resetToDefaults() {
-  courses.forEach((c) => (assignments[c.id] = c.dflt ?? null));
-  Object.keys(locked).forEach((id) => delete locked[id]);
-}
 
 /**
  * A term pill was clicked: place the course in that term, or unplace it if
  * it's already there. Returns true if something changed.
  */
 export function toggleTerm(id, term) {
-  if (!courseIds.has(id) || !termKeys.has(term)) return false;
-  if (locked[id]) return false; // locked courses can't move
-  assignments[id] = assignments[id] === term ? null : term;
+  const course = findCourse(id);
+  if (!course || !isTermKey(term)) return false;
+  if (course.locked) return false; // locked courses can't move
+  if (course.status === "completed") return false; // already taken
+  course.plannedTerm = course.plannedTerm === term ? null : term;
   return true;
 }
 
@@ -45,65 +99,59 @@ export function toggleTerm(id, term) {
  * Returns true if something changed.
  */
 export function toggleLock(id) {
-  if (!courseIds.has(id)) return false;
-  if (locked[id]) {
-    delete locked[id]; // unlock
+  const course = findCourse(id);
+  if (!course) return false;
+  if (course.locked) {
+    course.locked = false; // unlock
     return true;
   }
-  if (!assignments[id]) return false; // can't lock a course with no term
-  locked[id] = true;
+  if (!course.plannedTerm) return false; // can't lock a course with no term
+  course.locked = true;
   return true;
 }
 
 // ---------- Saving in this browser (localStorage) ----------
 
 /**
- * Overwrite the defaults with this browser's saved picks.
- * Saved data is checked first: unknown courses, unknown terms, and locks on
- * unplaced courses are skipped (old saves, typos, or edited data).
- * Returns true if saved picks were found.
+ * Replace the current audit with this browser's saved one.
+ * The save goes through parseAudit() like any other import, so old,
+ * edited or broken saves are checked and repaired, or skipped.
+ * Returns true if a saved audit was loaded.
  */
 export function loadState() {
   let saved;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
-    saved = JSON.parse(raw);
+    saved = parseAudit(JSON.parse(raw));
   } catch (e) {
+    // SyntaxError: not valid JSON. AuditError: valid JSON, wrong shape.
     console.warn("Could not load saved planner state:", e);
     return false;
   }
-  if (!isPlainObject(saved)) return false;
-
-  if (isPlainObject(saved.assignments)) {
-    for (const [id, term] of Object.entries(saved.assignments)) {
-      if (courseIds.has(id) && (term === null || termKeys.has(term))) {
-        assignments[id] = term;
-      }
-    }
-  }
-  if (isPlainObject(saved.locked)) {
-    for (const [id, isLocked] of Object.entries(saved.locked)) {
-      if (courseIds.has(id) && isLocked === true && assignments[id]) {
-        locked[id] = true;
-      }
-    }
-  }
+  loadAudit(saved);
   return true;
 }
 
-/** Save the current picks. Returns true if it worked. */
+/**
+ * Save the whole current audit. Returns true if it worked.
+ * The demo audit is never saved, so playing with it can't overwrite a
+ * student's real save.
+ */
 export function saveState() {
+  if (sampleLoaded) return false;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ assignments, locked }));
+    audit.plan.lastSaved = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(audit));
     return true;
   } catch (e) {
+    // e.g. storage is full, or blocked in a private window
     console.warn("Could not save planner state:", e);
     return false;
   }
 }
 
-/** Delete this browser's saved picks (used by Reset). */
+/** Delete this browser's saved audit (used by Reset). */
 export function clearSaved() {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -114,10 +162,18 @@ export function clearSaved() {
 
 // ---------- Helpers ----------
 
-// True for a {...} object (not null, not an array)
-function isPlainObject(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+// The course with this id, or null. Object.hasOwn stops ids like
+// "__proto__" or "toString" from finding built-in object properties.
+function findCourse(id) {
+  return Object.hasOwn(audit.courses, id) ? audit.courses[id] : null;
 }
 
+// True if `term` is one of the plan's semester columns right now.
+function isTermKey(term) {
+  return audit.plan.terms.some((t) => t.key === term);
+}
+
+export { AuditError }; // so callers of importAudit can catch it
+
 // ---------- Startup ----------
-resetToDefaults(); // start from the defaults; main.js then calls loadState()
+loadSample(); // start from the demo audit; main.js then calls loadState()

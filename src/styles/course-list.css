@@ -6,6 +6,12 @@
   align-items: center;
 }
 
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .chip {
   font-family: var(--mono);
   font-size: 12px;
@@ -193,6 +199,11 @@
   cursor: not-allowed;
 }
 
+/* Term the course isn't scheduled in (from the course details) */
+.pill.not-offered {
+  border-style: dashed;
+}
+
 .pill[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
@@ -205,4 +216,14 @@
   .pills {
     margin-top: 6px;
   }
+}
+
+/* Shown in #list when no course matches the chip + search */
+.list-empty {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
 }

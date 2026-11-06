@@ -1,18 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
-  assignments,
-  locked,
-  resetToDefaults,
+  getAudit,
+  loadAudit,
+  importAudit,
+  loadSample,
+  resetPlan,
   toggleTerm,
   toggleLock,
   loadState,
   saveState,
   clearSaved,
+  isSampleLoaded,
+  AuditError,
 } from "../state.js";
-import { courses } from "../data/defaults.js";
+import { parseAudit } from "../logic/parser.js";
+import sample from "../data/sample-audit.json";
 
-// Each course's starting term, straight from data/defaults.js
-const dflt = (id) => courses.find((c) => c.id === id).dflt;
+const STORAGE_KEY = "audit-solver-state-v2";
+
+// Shortcut: one course from the current audit
+const course = (id) => getAudit().courses[id];
 
 // Tests run in Node, which has no real localStorage, so we hand state.js a
 // simple stand-in that keeps values in a Map.
@@ -27,126 +34,211 @@ function fakeStorage() {
 
 beforeEach(() => {
   vi.stubGlobal("localStorage", fakeStorage());
-  resetToDefaults(); // every test starts from the defaults
+  // Every test starts from the sample, loaded as if it were a real import.
+  // (The demo has its own rules; see "the demo audit" below.)
+  loadAudit(parseAudit(structuredClone(sample)));
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
-// Sample courses from data/defaults.js: cs1450 and gps1010.
-// To get an unplaced course, a test clicks its current term pill again.
-function unplace(id) {
-  toggleTerm(id, assignments[id]);
-}
+// Sample courses used below (see sample-audit.json):
+//   cs4500   needed, unplaced          ece2050  registered SP27, locked
+//   math3400 completed                 cs3300   registered FA26, locked
 
-describe("resetToDefaults", () => {
-  it("puts courses in their default terms and unlocks everything", () => {
-    toggleTerm("cs1450", "f28");
-    toggleLock("cs1450");
-    unplace("gps1010");
-    resetToDefaults();
-    expect(assignments.cs1450).toBe(dflt("cs1450"));
-    expect(assignments.gps1010).toBe(dflt("gps1010"));
-    expect(locked).toEqual({});
+describe("the demo audit", () => {
+  it("is flagged while it's showing", () => {
+    loadSample();
+    expect(isSampleLoaded()).toBe(true);
+    loadAudit(parseAudit(structuredClone(sample)));
+    expect(isSampleLoaded()).toBe(false);
+  });
+
+  it("is never saved", () => {
+    loadSample();
+    expect(saveState()).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it("doesn't pass its picks on to a real import", () => {
+    loadSample();
+    toggleTerm("cs4500", "SP27");
+    importAudit(structuredClone(sample));
+    expect(isSampleLoaded()).toBe(false);
+    expect(course("cs4500").plannedTerm).toBeNull();
+  });
+
+  it("stays the demo after resetPlan", () => {
+    loadSample();
+    resetPlan();
+    expect(isSampleLoaded()).toBe(true);
+  });
+});
+
+describe("loading an audit", () => {
+  it("starts from the parsed sample", () => {
+    expect(getAudit().student.name).toBe(sample.student.name);
+    expect(course("cs3300").plannedTerm).toBe("FA26");
+    expect(course("cs3300").locked).toBe(true);
+  });
+
+  it("loadAudit replaces the whole audit", () => {
+    const other = parseAudit(structuredClone(sample));
+    other.student.name = "Roe, Sam";
+    loadAudit(other);
+    expect(getAudit().student.name).toBe("Roe, Sam");
+  });
+
+  it("importAudit keeps the student's picks on a fresh scrape", () => {
+    toggleTerm("cs4500", "SP27");
+    importAudit(structuredClone(sample));
+    expect(course("cs4500").plannedTerm).toBe("SP27");
+  });
+
+  it("importAudit leaves the current audit alone when the data is bad", () => {
+    toggleTerm("cs4500", "SP27");
+    expect(() => importAudit({ schema: "nope" })).toThrow(AuditError);
+    expect(course("cs4500").plannedTerm).toBe("SP27");
+  });
+});
+
+describe("resetPlan", () => {
+  it("clears picks but re-places registered courses and keeps the columns", () => {
+    toggleTerm("cs4500", "SP27");
+    toggleLock("cs4500");
+    toggleLock("ece2050"); // unlock a registered course
+    toggleTerm("ece2050", "SP27"); // and unplace it
+    const columns = getAudit().plan.terms;
+
+    resetPlan();
+
+    expect(course("cs4500").plannedTerm).toBeNull();
+    expect(course("cs4500").locked).toBe(false);
+    expect(course("ece2050").plannedTerm).toBe("SP27");
+    expect(course("ece2050").locked).toBe(true);
+    expect(getAudit().plan.terms).toEqual(columns);
   });
 });
 
 describe("toggleTerm", () => {
-  it("moves a course to a new term", () => {
-    expect(toggleTerm("cs1450", "f27")).toBe(true);
-    expect(assignments.cs1450).toBe("f27");
+  it("places an unplaced course", () => {
+    expect(toggleTerm("cs4500", "FA27")).toBe(true);
+    expect(course("cs4500").plannedTerm).toBe("FA27");
+  });
+
+  it("moves a course to a different term", () => {
+    toggleTerm("cs4500", "FA27");
+    expect(toggleTerm("cs4500", "SP28")).toBe(true);
+    expect(course("cs4500").plannedTerm).toBe("SP28");
   });
 
   it("unplaces a course when its current term is clicked again", () => {
-    expect(toggleTerm("cs1450", dflt("cs1450"))).toBe(true);
-    expect(assignments.cs1450).toBe(null);
+    toggleTerm("cs4500", "FA27");
+    expect(toggleTerm("cs4500", "FA27")).toBe(true);
+    expect(course("cs4500").plannedTerm).toBeNull();
   });
 
   it("won't move a locked course", () => {
-    toggleLock("cs1450");
-    expect(toggleTerm("cs1450", "f27")).toBe(false);
-    expect(assignments.cs1450).toBe(dflt("cs1450"));
+    expect(toggleTerm("ece2050", "FA27")).toBe(false);
+    expect(course("ece2050").plannedTerm).toBe("SP27");
+  });
+
+  it("won't place a completed course", () => {
+    expect(toggleTerm("math3400", "FA27")).toBe(false);
+    expect(course("math3400").plannedTerm).toBeNull();
   });
 
   it("ignores unknown courses and terms", () => {
-    expect(toggleTerm("nope", "f27")).toBe(false);
-    expect(toggleTerm("cs1450", "w99")).toBe(false);
-    expect(assignments.cs1450).toBe(dflt("cs1450"));
-    expect("nope" in assignments).toBe(false);
+    expect(toggleTerm("nope", "FA27")).toBe(false);
+    expect(toggleTerm("__proto__", "FA27")).toBe(false);
+    expect(toggleTerm("cs4500", "FA35")).toBe(false);
+    expect(course("cs4500").plannedTerm).toBeNull();
   });
 });
 
 describe("toggleLock", () => {
   it("locks, then unlocks, a placed course", () => {
-    expect(toggleLock("cs1450")).toBe(true);
-    expect(locked.cs1450).toBe(true);
-    expect(toggleLock("cs1450")).toBe(true);
-    expect(locked.cs1450).toBeUndefined();
+    toggleTerm("cs4500", "FA27");
+    expect(toggleLock("cs4500")).toBe(true);
+    expect(course("cs4500").locked).toBe(true);
+    expect(toggleLock("cs4500")).toBe(true);
+    expect(course("cs4500").locked).toBe(false);
   });
 
   it("won't lock an unplaced course", () => {
-    unplace("gps1010");
-    expect(toggleLock("gps1010")).toBe(false);
-    expect(locked.gps1010).toBeUndefined();
+    expect(toggleLock("cs4500")).toBe(false);
+    expect(course("cs4500").locked).toBe(false);
+  });
+
+  it("ignores unknown courses", () => {
+    expect(toggleLock("nope")).toBe(false);
   });
 });
 
 describe("saving and loading", () => {
-  it("brings back saved picks after a reload", () => {
-    toggleTerm("cs1450", "f28");
-    toggleLock("cs1450");
+  it("brings back the whole audit after a reload", () => {
+    toggleTerm("cs4500", "FA27");
+    toggleLock("cs4500");
     expect(saveState()).toBe(true);
 
-    resetToDefaults(); // like a fresh page load
+    loadSample(); // like a fresh page load
+    expect(course("cs4500").plannedTerm).toBeNull();
+
     expect(loadState()).toBe(true);
-    expect(assignments.cs1450).toBe("f28");
-    expect(locked.cs1450).toBe(true);
+    expect(course("cs4500").plannedTerm).toBe("FA27");
+    expect(course("cs4500").locked).toBe(true);
+  });
+
+  it("records when it was saved", () => {
+    saveState();
+    expect(getAudit().plan.lastSaved).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("returns false when nothing was saved", () => {
     expect(loadState()).toBe(false);
-    expect(assignments.cs1450).toBe(dflt("cs1450"));
+    expect(getAudit().student.name).toBe(sample.student.name);
   });
 
-  it("forgets saved picks after clearSaved", () => {
-    toggleTerm("cs1450", "f28");
+  it("forgets the save after clearSaved", () => {
+    toggleTerm("cs4500", "FA27");
     saveState();
     clearSaved();
-    resetToDefaults();
+    loadSample();
     expect(loadState()).toBe(false);
-    expect(assignments.cs1450).toBe(dflt("cs1450"));
+    expect(course("cs4500").plannedTerm).toBeNull();
   });
 
-  it("skips bad saved data instead of loading it", () => {
-    unplace("gps1010");
-    localStorage.setItem(
-      "audit-solver-state-v1",
-      JSON.stringify({
-        assignments: {
-          cs1450: "f27", // fine
-          pes1110: "w99", // unknown term
-          hacked: "f26", // unknown course
-          ["__proto__"]: "f26", // sneaky key
-        },
-        locked: {
-          cs1450: true, // fine
-          gps1010: true, // unplaced, can't be locked
-          pes1110: "yes", // not true/false
-        },
-      }),
-    );
+  it("repairs saved data through parseAudit", () => {
+    const saved = structuredClone(sample);
+    saved.courses.cs4500.plannedTerm = "FA35"; // not a column
+    saved.courses.cs4500.locked = true;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+
     expect(loadState()).toBe(true);
-    expect(assignments.cs1450).toBe("f27");
-    expect(assignments.pes1110).toBe(dflt("pes1110")); // kept its default
-    expect("hacked" in assignments).toBe(false);
-    expect(locked).toEqual({ cs1450: true });
+    expect(course("cs4500").plannedTerm).toBeNull();
+    expect(course("cs4500").locked).toBe(false);
+  });
+
+  it("skips saved data that fails parseAudit", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ schema: "old" }));
+    expect(loadState()).toBe(false);
+    expect(getAudit().student.name).toBe(sample.student.name);
   });
 
   it("survives broken JSON", () => {
-    localStorage.setItem("audit-solver-state-v1", "{not json");
     vi.spyOn(console, "warn").mockImplementation(() => {});
+    localStorage.setItem(STORAGE_KEY, "{not json");
     expect(loadState()).toBe(false);
-    expect(assignments.cs1450).toBe(dflt("cs1450"));
+  });
+
+  it("returns false when the browser refuses to save", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    localStorage.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    expect(saveState()).toBe(false);
   });
 });
