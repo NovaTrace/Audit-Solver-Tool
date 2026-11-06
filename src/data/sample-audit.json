@@ -241,11 +241,25 @@
       "minCredits": 4,
       "maxCredits": 4,
       "status": "completed",
-      "attempts": [{ "term": "FA21", "grade": "TB", "credits": 4, "flags": [], "transfer": true }],
+      "attempts": [
+        {
+          "term": "FA21",
+          "grade": "TB",
+          "credits": 4,
+          "flags": [],
+          "transfer": true
+        }
+      ],
       "transferNote": "CO-PPCC: MAT201",
       "requirementIds": ["cpe-math"],
       "termsOffered": ["Fall", "Spring", "Summer"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "available", "FA27": "available", "SP28": "available" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "available",
+        "FA27": "available",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "Topics include limits, derivatives, and integrals of algebraic and transcendental functions.",
       "prereqText": "",
@@ -265,19 +279,52 @@
       "maxCredits": 3,
       "status": "completed",
       "attempts": [
-        { "term": "SP23", "grade": "W", "credits": 0, "flags": [], "transfer": false },
-        { "term": "SU23", "grade": "C-", "credits": 0, "flags": [">E"], "transfer": false },
-        { "term": "SP24", "grade": "W", "credits": 0, "flags": [], "transfer": false },
-        { "term": "SU26", "grade": "B", "credits": 3, "flags": [], "transfer": false }
+        {
+          "term": "SP23",
+          "grade": "W",
+          "credits": 0,
+          "flags": [],
+          "transfer": false
+        },
+        {
+          "term": "SU23",
+          "grade": "C-",
+          "credits": 0,
+          "flags": [">E"],
+          "transfer": false
+        },
+        {
+          "term": "SP24",
+          "grade": "W",
+          "credits": 0,
+          "flags": [],
+          "transfer": false
+        },
+        {
+          "term": "SU26",
+          "grade": "B",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
       ],
       "transferNote": null,
       "requirementIds": ["cpe-math", "math-minor-electives"],
       "termsOffered": ["Fall", "Spring", "Summer"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "available", "FA27": "available", "SP28": "available" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "available",
+        "FA27": "available",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "First-order equations, linear equations with constant coefficients, and systems of equations.",
       "prereqText": "MATH 2350 with a grade of “C” or better",
-      "prereqs": { "groups": [{ "anyOf": ["MATH 2350"], "minGrade": "C" }], "notes": [] },
+      "prereqs": {
+        "groups": [{ "anyOf": ["MATH 2350"], "minGrade": "C" }],
+        "notes": []
+      },
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
@@ -292,7 +339,15 @@
       "minCredits": 1,
       "maxCredits": 1,
       "status": "completed",
-      "attempts": [{ "term": "FA20", "grade": "TA", "credits": 1, "flags": [], "transfer": true }],
+      "attempts": [
+        {
+          "term": "FA20",
+          "grade": "TA",
+          "credits": 1,
+          "flags": [],
+          "transfer": true
+        }
+      ],
       "transferNote": "CO-PPCC: PED143",
       "requirementIds": [],
       "termsOffered": [],
@@ -315,11 +370,25 @@
       "minCredits": 3,
       "maxCredits": 3,
       "status": "completed",
-      "attempts": [{ "term": "SP24", "grade": "A", "credits": 3, "flags": [">S"], "transfer": false }],
+      "attempts": [
+        {
+          "term": "SP24",
+          "grade": "A",
+          "credits": 3,
+          "flags": [">S"],
+          "transfer": false
+        }
+      ],
       "transferNote": null,
       "requirementIds": ["hss-humanities"],
       "termsOffered": ["Spring"],
-      "availability": { "FA26": "unknown", "SP27": "available", "SU27": "unknown", "FA27": "unknown", "SP28": "available" },
+      "availability": {
+        "FA26": "unknown",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "unknown",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "Explores daily life, customs, and social expectations in contemporary Japan.",
       "prereqText": "",
@@ -338,15 +407,32 @@
       "minCredits": 3,
       "maxCredits": 3,
       "status": "registered",
-      "attempts": [{ "term": "FA26", "grade": "***", "credits": 3, "flags": [], "transfer": false }],
+      "attempts": [
+        {
+          "term": "FA26",
+          "grade": "***",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
       "transferNote": null,
       "requirementIds": ["cc-navigate", "cpe-cs3300", "ee-tech-electives"],
       "termsOffered": ["Fall", "Spring"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "unknown", "FA27": "available", "SP28": "available" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "Software engineering principles, team projects, and the software development life cycle.",
       "prereqText": "CS 2060 with a grade of “C” or better",
-      "prereqs": { "groups": [{ "anyOf": ["CS 2060"], "minGrade": "C" }], "notes": [] },
+      "prereqs": {
+        "groups": [{ "anyOf": ["CS 2060"], "minGrade": "C" }],
+        "notes": []
+      },
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
@@ -361,17 +447,37 @@
       "minCredits": 3,
       "maxCredits": 3,
       "status": "registered",
-      "attempts": [{ "term": "FA26", "grade": "***", "credits": 3, "flags": [], "transfer": false }],
+      "attempts": [
+        {
+          "term": "FA26",
+          "grade": "***",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
       "transferNote": null,
       "requirementIds": ["ee-ece3210"],
       "termsOffered": ["Fall"],
-      "availability": { "FA26": "available", "SP27": "unknown", "SU27": "unknown", "FA27": "available", "SP28": "unknown" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "unknown",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "unknown"
+      },
       "auditNotes": ["Fall Only"],
       "description": "Diodes, transistors, and operational amplifier circuits.",
       "prereqText": "ECE 2205 with a grade of “C” or better",
-      "prereqs": { "groups": [{ "anyOf": ["ECE 2205"], "minGrade": "C" }], "notes": [] },
+      "prereqs": {
+        "groups": [{ "anyOf": ["ECE 2205"], "minGrade": "C" }],
+        "notes": []
+      },
       "coreqText": "ECE 3230",
-      "coreqs": { "groups": [{ "anyOf": ["ECE 3230"], "minGrade": null }], "notes": [] },
+      "coreqs": {
+        "groups": [{ "anyOf": ["ECE 3230"], "minGrade": null }],
+        "notes": []
+      },
       "detailsLoaded": true,
       "plannedTerm": "FA26",
       "locked": true
@@ -384,15 +490,32 @@
       "minCredits": 3,
       "maxCredits": 3,
       "status": "registered",
-      "attempts": [{ "term": "SP27", "grade": "***", "credits": 3, "flags": [], "transfer": false }],
+      "attempts": [
+        {
+          "term": "SP27",
+          "grade": "***",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
       "transferNote": null,
       "requirementIds": ["ee-ece2050"],
       "termsOffered": ["Spring"],
-      "availability": { "FA26": "unknown", "SP27": "available", "SU27": "unknown", "FA27": "unknown", "SP28": "available" },
+      "availability": {
+        "FA26": "unknown",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "unknown",
+        "SP28": "available"
+      },
       "auditNotes": ["Spring Only"],
       "description": "Physical principles underlying electronic materials and devices.",
       "prereqText": "PES 1120",
-      "prereqs": { "groups": [{ "anyOf": ["PES 1120"], "minGrade": null }], "notes": [] },
+      "prereqs": {
+        "groups": [{ "anyOf": ["PES 1120"], "minGrade": null }],
+        "notes": []
+      },
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
@@ -407,15 +530,32 @@
       "minCredits": 3,
       "maxCredits": 3,
       "status": "completed",
-      "attempts": [{ "term": "SP26", "grade": "B", "credits": 3, "flags": [], "transfer": false }],
+      "attempts": [
+        {
+          "term": "SP26",
+          "grade": "B",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
       "transferNote": null,
       "requirementIds": ["cpe-arch", "ee-lecture-electives"],
       "termsOffered": ["Spring"],
-      "availability": { "FA26": "unknown", "SP27": "available", "SU27": "unknown", "FA27": "unknown", "SP28": "available" },
+      "availability": {
+        "FA26": "unknown",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "unknown",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "Processor datapath and control, pipelining, memory hierarchy, and I/O.",
       "prereqText": "ECE 2411 with a grade of “C” or better",
-      "prereqs": { "groups": [{ "anyOf": ["ECE 2411"], "minGrade": "C" }], "notes": [] },
+      "prereqs": {
+        "groups": [{ "anyOf": ["ECE 2411"], "minGrade": "C" }],
+        "notes": []
+      },
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
@@ -457,7 +597,13 @@
       "transferNote": null,
       "requirementIds": ["cpe-cs4500"],
       "termsOffered": ["Fall", "Spring"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "unknown", "FA27": "available", "SP28": "available" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "Introduces concepts, terminology, and algorithms of operating systems.",
       "prereqText": "CS 2060 or ECE 1021 with a grade of “C” or better; CS 2080 with a grade of “C” or better; CS 4200 or CS 5200 or ECE 4480 with a grade of “C” or better. College of Engineering students only",
@@ -487,7 +633,13 @@
       "transferNote": null,
       "requirementIds": ["ee-ece3020"],
       "termsOffered": ["Fall"],
-      "availability": { "FA26": "available", "SP27": "unknown", "SU27": "unknown", "FA27": "available", "SP28": "unknown" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "unknown",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "unknown"
+      },
       "auditNotes": ["Fall Only"],
       "description": "An introduction to semiconductor devices used in modern microelectronic technologies. College of Engineering students only.",
       "prereqText": "ECE 2050, and either ECE 2205 or ECE 2210",
@@ -516,7 +668,13 @@
       "transferNote": null,
       "requirementIds": ["cpe-ece4891"],
       "termsOffered": ["Fall", "Spring"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "unknown", "FA27": "available", "SP28": "available" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
       "auditNotes": ["This course must be taken the semester before ECE 4899"],
       "description": "Preparation for the senior design project: team formation, proposals, and design reviews.",
       "prereqText": "",
@@ -539,11 +697,20 @@
       "transferNote": null,
       "requirementIds": ["cpe-ece4899"],
       "termsOffered": ["Fall", "Spring"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "unknown", "FA27": "available", "SP28": "available" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
       "auditNotes": [],
       "description": "Team-based design project culminating in a working prototype and final presentation.",
       "prereqText": "ECE 4891",
-      "prereqs": { "groups": [{ "anyOf": ["ECE 4891"], "minGrade": null }], "notes": [] },
+      "prereqs": {
+        "groups": [{ "anyOf": ["ECE 4891"], "minGrade": null }],
+        "notes": []
+      },
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
@@ -585,7 +752,13 @@
       "transferNote": null,
       "requirementIds": ["ee-lecture-electives"],
       "termsOffered": ["Fall", "Spring", "Summer"],
-      "availability": { "FA26": "available", "SP27": "available", "SU27": "available", "FA27": "unknown", "SP28": "unknown" },
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "available",
+        "FA27": "unknown",
+        "SP28": "unknown"
+      },
       "auditNotes": [],
       "description": "Topics vary by semester. May be repeated for credit when topics differ.",
       "prereqText": "Instructor consent",

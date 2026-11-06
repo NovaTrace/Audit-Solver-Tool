@@ -1,4 +1,3 @@
-
 /**
  * Extracts course-history records from degree-audit text.
  * This handles course history only; requirement interpretation comes next.
@@ -162,9 +161,7 @@ export function extractRequiredCoreText(requirementPages) {
     /IN PROGRESS\s+([\d.]+)\s+HOURS\s+NEEDS:\s*([\d.]+)\s+HOURS\s+EARNED:\s*([\d.]+)\s+HOURS/i,
   );
 
-  const coreStart = text.search(
-    /\bRequired Core\s+(?:NO|IP|OK)\b/i,
-  );
+  const coreStart = text.search(/\bRequired Core\s+(?:NO|IP|OK)\b/i);
 
   return {
     pageNumber: requiredCorePage.pageNumber,
@@ -196,7 +193,9 @@ export function parseRequiredCoreCourse(coreSection) {
       .trim();
 
     return {
-      term: match[1].toUpperCase() + match[0].match(/(?:FA|SP|SU)\d{2}/i)[0].slice(2),
+      term:
+        match[1].toUpperCase() +
+        match[0].match(/(?:FA|SP|SU)\d{2}/i)[0].slice(2),
       courseCode: match[2].trim(),
       credits: Number(match[3]),
       grade: match[4],
@@ -211,7 +210,6 @@ export function parseRequiredCoreCourse(coreSection) {
  * Required Specialty Track parent exists.
  */
 export function extractRequirementSections(requirementPages) {
-
   const hasSpecialtyParent = requirementPages.some((page) =>
     /\bREQUIRED SPECIALTY TRACK\b/i.test(page.text),
   );
@@ -220,21 +218,22 @@ export function extractRequirementSections(requirementPages) {
     const matches = [];
 
     // Match minor headings independently.
-const minorHeadingPattern =
-  /(?<![A-Za-z&'’./-])([A-Z][A-Za-z&'’./-]*(?:\s+[A-Z][A-Za-z&'’./-]*){0,2}\s+Minor)\s+(NO|IP|OK)\b/g;
+    const minorHeadingPattern =
+      /(?<![A-Za-z&'’./-])([A-Z][A-Za-z&'’./-]*(?:\s+[A-Z][A-Za-z&'’./-]*){0,2}\s+Minor)\s+(NO|IP|OK)\b/g;
 
-for (const match of text.matchAll(minorHeadingPattern)) {
-  const heading = match[0].replace(/^GPA\s+/, "");
-  const offset = match[0].indexOf(heading);
+    for (const match of text.matchAll(minorHeadingPattern)) {
+      const heading = match[0].replace(/^GPA\s+/, "");
+      const offset = match[0].indexOf(heading);
 
-  matches.push({
-    index: match.index + offset,
-    text: heading,
-  });
-}
+      matches.push({
+        index: match.index + offset,
+        text: heading,
+      });
+    }
 
     // Match the other known heading patterns.
-    const otherHeadingPattern = /\+\s*GATEWAY PROGRAM SEMINAR|\+\s*SUSTAINABILITY|\+\s*INCLUSIVENESS|-\s*SUMMIT|\+\s*NAVIGATE|\+\s*EXPLORE\s*-\s*[^+]+?(?=\s+Complete\b)|\+\s*UPPER-DIVISION WRITING INTENSIVE COURSE\b|\+\s*WRITING INTENSIVE COURSE\b|\bREQUIRED SPECIALTY TRACK\b|\bTECHNICAL ELECTIVES\b|\b(?<![\w-])(?!(?:SUB-GROUPS?|HOURS)\b)[A-Z][A-Za-z&'’./-]*(?:\s+(?!SUB-GROUPS?\b|HOURS\b)[A-Z][A-Za-z&'’./-]*){0,8}?\s*-\s*[^+]{1,80}?\s+(?:NO|IP|OK)\b/g;
+    const otherHeadingPattern =
+      /\+\s*GATEWAY PROGRAM SEMINAR|\+\s*SUSTAINABILITY|\+\s*INCLUSIVENESS|-\s*SUMMIT|\+\s*NAVIGATE|\+\s*EXPLORE\s*-\s*[^+]+?(?=\s+Complete\b)|\+\s*UPPER-DIVISION WRITING INTENSIVE COURSE\b|\+\s*WRITING INTENSIVE COURSE\b|\bREQUIRED SPECIALTY TRACK\b|\bTECHNICAL ELECTIVES\b|\b(?<![\w-])(?!(?:SUB-GROUPS?|HOURS)\b)[A-Z][A-Za-z&'’./-]*(?:\s+(?!SUB-GROUPS?\b|HOURS\b)[A-Z][A-Za-z&'’./-]*){0,8}?\s*-\s*[^+]{1,80}?\s+(?:NO|IP|OK)\b/g;
 
     for (const match of text.matchAll(otherHeadingPattern)) {
       matches.push({
@@ -246,10 +245,7 @@ for (const match of text.matchAll(minorHeadingPattern)) {
     // Remove duplicate matches and sort by their original text position.
     const headings = [
       ...new Map(
-        matches.map((match) => [
-          `${match.index}:${match.text}`,
-          match,
-        ]),
+        matches.map((match) => [`${match.index}:${match.text}`, match]),
       ).values(),
     ].sort((a, b) => a.index - b.index);
 
@@ -258,8 +254,7 @@ for (const match of text.matchAll(minorHeadingPattern)) {
       const previous = headings[index - 1];
 
       return (
-        !previous ||
-        heading.index >= previous.index + previous.text.length
+        !previous || heading.index >= previous.index + previous.text.length
       );
     });
 
@@ -280,9 +275,7 @@ for (const match of text.matchAll(minorHeadingPattern)) {
         pageNumber,
         heading,
         content: text.slice(start + match.text.length, end).trim(),
-        sectionType: isSpecialtyOption
-          ? "alternative-track"
-          : "requirement",
+        sectionType: isSpecialtyOption ? "alternative-track" : "requirement",
         parentRequirement: isSpecialtyOption
           ? "REQUIRED SPECIALTY TRACK"
           : null,
@@ -341,8 +334,7 @@ export function getTrackEligibleCourses(requirementSections) {
   function parseCourseCodes(courseList) {
     const eligibleCourses = [];
 
-    const tokens =
-      courseList.match(/\b[A-Z]{2,5}\s*\d{4}\b|\b\d{4}\b/g) ?? [];
+    const tokens = courseList.match(/\b[A-Z]{2,5}\s*\d{4}\b|\b\d{4}\b/g) ?? [];
 
     let previousDepartment = "";
 
