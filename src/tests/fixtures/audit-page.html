@@ -1,0 +1,482 @@
+<!doctype html>
+<!--
+  A made-up student's audit page for tests. Same element structure and
+  class names as the real UCCS audit page (read.html), trimmed to the
+  parts the bookmarklet reads. No real student data.
+-->
+<html>
+  <head>
+    <title>My Audit - Audit Results Tab</title>
+  </head>
+  <body>
+    <div class="row">
+      <div class="col-md-8">
+        <div class="h5">Curly, Brace</div>
+        <h1 class="h5">BS in Computer Engineering</h1>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-auto">
+        <b
+          >Prepared On <br />
+          11/05/2026 01:32 PM</b
+        >
+      </div>
+      <div class="col-auto">
+        <b
+          >Program Code <br />
+          ESBS---CPEN</b
+        >
+      </div>
+      <div class="col-auto">
+        <b
+          >Catalog Year <br />
+          Fall 2023</b
+        >
+      </div>
+      <div class="col-auto">
+        <b>Graduation Date <br /> </b>
+      </div>
+      <div class="col-auto">
+        <b
+          >Job ID <br />
+          1234567890</b
+        >
+      </div>
+    </div>
+    <div class="includeTopText preformatted">
+      THIS EVALUATION IS PROVIDED FOR ADVISEMENT; IT IS NOT AN OFFICIAL RECORD.
+      Program: CUSPG, ENGRU, CPEN-BS, ELEN-ADL, MATH-MIN
+    </div>
+    <div class="completionTextNO">
+      AT LEAST ONE REQUIREMENT HAS NOT BEEN SATISFIED
+    </div>
+
+    <!-- The phone layout repeats the audit; the bookmarklet must ignore it -->
+    <div id="responsiveAudit">
+      <div id="audit">
+        <div id="auditRequirements">
+          <div class="requirement Status_NO" rname="ESCPENCOR">
+            <div class="reqTitle">Computer Engineering - Core</div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNO"
+                ><b>CS 9999</b> Should Not Be Read</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="selectedAudit">
+      <div id="audit">
+        <div id="auditRequirements">
+          <div class="requirement Status_IP" rname="ESGENINFO">
+            <div class="reqTitle">
+              College of Engineering - General Information
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusIP"
+                ><b>MINIMUM HOURS</b><br />A minimum of 128 applicable hours are
+                required.</span
+              >
+              <table class="subrequirementTotals">
+                <tr class="subreqEarned">
+                  <td><span class="hours number">88.0</span></td>
+                </tr>
+                <tr class="subreqIpHours">
+                  <td class="hours number">9.0</td>
+                </tr>
+              </table>
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SU26</td>
+                  <td class="course">MATH3400</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Introduction to Diff Equations</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusOK"
+                ><b>UNIVERSITY OF COLORADO GPA</b></span
+              >
+              <table class="subrequirementTotals">
+                <tr class="gpaDetail">
+                  <td><span class="hours number">82.0</span></td>
+                  <td class="points number">263.5</td>
+                  <td class="gpa number">3.214</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="requirement Status_NO" rname="ESCPENCOR">
+            <div class="reqTitle">Computer Engineering - Core</div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>COMPUTER ENGINEERING PROGRAM INFORMATION</b><br />1.
+                Students must complete CS 1150 with a C or better.</span
+              >
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusIP"
+                ><b>CS 3300</b> Software Engineering</span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse ip">
+                  <td class="term">FA26</td>
+                  <td class="course">CS 3300</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">***</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Intro to Software Engineering</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNO"
+                ><b>CS 4500</b> Operating Systems I</span
+              >
+              <table class="selectcourses">
+                <tr class="selectfromcourses">
+                  <td class="fromlabel">SELECT FROM:</td>
+                  <td class="fromcourselist">
+                    <table>
+                      <tr>
+                        <td>
+                          <span
+                            class="course draggable"
+                            number="4500"
+                            department="CS  "
+                            ><span class="number">CS 4500</span></span
+                          >
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusOK"
+                ><b>ECE 4480</b> Computer Architecture and Design<br /><b>OR</b
+                ><br /><b>CS 4200</b> Computer Architecture I<br /><b>NOTE:</b>
+                Beginning fall 2023, take ECE 4480.</span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SP26</td>
+                  <td class="course">ECE 4480</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">
+                          Computer Architecture &amp; Design
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="requirement Status_NO" rname="ESELENCOR">
+            <div class="reqTitle">Electrical Engineering - Core</div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNO"
+                ><b>ELECTRICAL ENGINEERING ELECTIVES - LECTURE</b><br />Complete
+                2 courses and 6 credit hours from the<br />Electrical
+                Engineering elective courses below.</span
+              >
+              <table class="subrequirementTotals">
+                <tr class="subreqEarned">
+                  <td><span class="hours number"> 3.0</span></td>
+                  <td class="count number">1</td>
+                </tr>
+              </table>
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SP26</td>
+                  <td class="course">ECE 4480</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">
+                          Computer Architecture &amp; Design
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table class="subreqNeeds">
+                <tr>
+                  <td class="rowlabel">NEEDS:</td>
+                  <td class="hours number">3.0</td>
+                  <td class="hourslabel">HOURS</td>
+                  <td class="count number">1</td>
+                  <td class="countlabel">COURSES</td>
+                </tr>
+              </table>
+              <table class="selectcourses">
+                <tr class="selectfromcourses">
+                  <td class="fromlabel">SELECT FROM:</td>
+                  <td class="fromcourselist">
+                    <table>
+                      <tr>
+                        <td>
+                          <span class="course" number="4020" department="ECE "
+                            ><span class="number">ECE 4020</span></span
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="course" number="4910" department="ECE "
+                            ><span class="number">ECE 4910</span></span
+                          >
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="requirement Status_NO" rname="LSMINMATH">
+            <div class="reqTitle">Mathematics Minor</div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNO"
+                ><b>MATHEMATICS ELECTIVES</b><br />Complete 9 credit hours of
+                any MATH course numbered<br />3100 or higher.</span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SU26</td>
+                  <td class="course">MATH3400</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Introduction to Diff Equations</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table class="subreqNeeds">
+                <tr>
+                  <td class="rowlabel">NEEDS:</td>
+                  <td class="hours number">6.0</td>
+                  <td class="hourslabel">HOURS</td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusOK"
+                ><b>TOTAL HOUR RESIDENCY</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SU26</td>
+                  <td class="course">MATH3400</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Introduction to Diff Equations</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="requirement Status_NONE" rname="CRSHIST">
+            <div class="reqTitle">Course History</div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>Transfer credit</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">FA21</td>
+                  <td class="course">MATH1350</td>
+                  <td class="credit">4.0</td>
+                  <td class="grade">TB</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Calculus I</td>
+                      </tr>
+                      <tr>
+                        <td class="descLine">CO-PPCC: MAT201</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>SP2023</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SP23</td>
+                  <td class="course">MATH3400</td>
+                  <td class="credit">0.0</td>
+                  <td class="grade">W</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Introduction to Diff Equations</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>SU2023</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SU23</td>
+                  <td class="course">MATH3400</td>
+                  <td class="credit">0.0</td>
+                  <td class="grade">C-</td>
+                  <td class="ccode">&gt;E</td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Introduction to Diff Equations</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>SP2026</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SP26</td>
+                  <td class="course">ECE 4480</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">
+                          Computer Architecture &amp; Design
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>SU2026</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse">
+                  <td class="term">SU26</td>
+                  <td class="course">MATH3400</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">B</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Introduction to Diff Equations</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>FA2026</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse ip">
+                  <td class="term">FA26</td>
+                  <td class="course">CS 3300</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">***</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Intro to Software Engineering</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="subrequirement">
+              <span class="subreqTitle srTitle_substatusNONE"
+                ><b>SP2027</b></span
+              >
+              <table class="completedCourses">
+                <tr class="takenCourse ip">
+                  <td class="term">SP27</td>
+                  <td class="course">ECE 2050</td>
+                  <td class="credit">3.0</td>
+                  <td class="grade">***</td>
+                  <td class="ccode"></td>
+                  <td class="description">
+                    <table>
+                      <tr>
+                        <td class="descLine">Intro to Physical Electronics</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,612 +1,329 @@
+// src/logic/parser.js
+// =====================================================================
+// parseAudit() — the one checkpoint every piece of audit data passes
+// through: bookmarklet imports, PDF imports, JSON files, and the startup
+// load from localStorage.
+//
+// 1. REJECT data that is broken in a way we can't safely guess about
+//      (throws an AuditError with a message that says what is wrong).
+// 2. MERGE with the previous state, so a re-import keeps the plan.
+// 3. REPAIR data that is just incomplete, by filling in defaults.
+//
+// Pure logic: no `document`, no localStorage. It never changes the object
+// it was given; it returns a new, complete one. Tested in parser.test.js.
+// The rules come from the "Rules the data must follow" section of the
+// Audit JSON Data Guide.
+// =====================================================================
 
-// Validates and normalizes imported degree audit data.
+import {
+  idFromCode,
+  termIndex,
+  termFromIndex,
+  termLabel,
+  termForDate,
+} from "./courseText.js";
 
-export function parseAudit(rawAudit) {
-  // Step 1: Validate the overall JSON structure.
-  if (!rawAudit || typeof rawAudit !== "object" || Array.isArray(rawAudit)) {
-    throw new Error("Audit data must be a valid JSON object.");
+export const SCHEMA = "audit-solver/v1";
+
+/** Thrown for bad audit data, so the importer can show the message to the
+ *  student instead of treating it as a bug in our code. */
+export class AuditError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "AuditError";
   }
-
-  if (rawAudit.schemaVersion !== 1) {
-    throw new Error("Unsupported audit JSON schema version.");
-  }
-
-  const validSources = ["pdf", "bookmarklet", "json"];
-
-  if (!validSources.includes(rawAudit.source)) {
-    throw new Error("Audit data has an invalid source.");
-  }
-
-  if (
-    !rawAudit.student ||
-    typeof rawAudit.student !== "object" ||
-    Array.isArray(rawAudit.student)
-  ) {
-    throw new Error("Audit data is missing student information.");
-  }
-
-  if (
-    !rawAudit.credits ||
-    typeof rawAudit.credits !== "object" ||
-    Array.isArray(rawAudit.credits)
-  ) {
-    throw new Error("Audit data is missing credit information.");
-  }
-
-  if (!Array.isArray(rawAudit.courses)) {
-    throw new Error("Audit data must contain a courses array.");
-  }
-
-  if (!Array.isArray(rawAudit.requirements)) {
-    throw new Error("Audit data must contain a requirements array.");
-  }
-
-  if (!Array.isArray(rawAudit.courseCatalog)) {
-    throw new Error("Audit data must contain a courseCatalog array.");
-  }
-
-  // Step 2: Validate student information and credits.
-  if (
-    typeof rawAudit.student.name !== "string" ||
-    rawAudit.student.name.trim() === ""
-  ) {
-    throw new Error("Student name must be a non-empty string.");
-  }
-
-  if (
-    !Array.isArray(rawAudit.student.majors) ||
-    !rawAudit.student.majors.every((major) => typeof major === "string")
-  ) {
-    throw new Error("Student majors must be an array of strings.");
-  }
-
-  if (
-    !Array.isArray(rawAudit.student.minors) ||
-    !rawAudit.student.minors.every((minor) => typeof minor === "string")
-  ) {
-    throw new Error("Student minors must be an array of strings.");
-  }
-
-  if (
-    typeof rawAudit.credits.earned !== "number" ||
-    !Number.isFinite(rawAudit.credits.earned) ||
-    rawAudit.credits.earned < 0
-  ) {
-    throw new Error("Earned credits must be a non-negative number.");
-  }
-
-  if (
-    rawAudit.credits.required !== null &&
-    (typeof rawAudit.credits.required !== "number" ||
-      !Number.isFinite(rawAudit.credits.required) ||
-      rawAudit.credits.required <= 0)
-  ) {
-    throw new Error("Required credits must be a positive number or null.");
-  }
-
-  if (
-    rawAudit.credits.required !== null &&
-    rawAudit.credits.earned > rawAudit.credits.required
-  ) {
-    throw new Error("Earned credits cannot exceed required credits.");
-  }
-
-  // Step 3: Validate courses.
-  const courseIds = new Set();
-
-  for (const course of rawAudit.courses) {
-    if (!course || typeof course !== "object" || Array.isArray(course)) {
-      throw new Error("Each course must be a valid object.");
-    }
-
-    if (typeof course.id !== "string" || course.id.trim() === "") {
-      throw new Error("Each course must have a non-empty ID.");
-    }
-
-    if (courseIds.has(course.id)) {
-      throw new Error(`Duplicate course ID found: ${course.id}`);
-    }
-
-    courseIds.add(course.id);
-
-    if (typeof course.code !== "string" || course.code.trim() === "") {
-      throw new Error(`Course ${course.id} must have a course code.`);
-    }
-
-    if (typeof course.title !== "string" || course.title.trim() === "") {
-      throw new Error(`Course ${course.id} must have a title.`);
-    }
-
-    if (
-      typeof course.credits !== "number" ||
-      !Number.isFinite(course.credits) ||
-      course.credits <= 0
-    ) {
-      throw new Error(`Course ${course.id} must have valid credits.`);
-    }
-
-    if (
-      !Array.isArray(course.requirementIds) ||
-      !course.requirementIds.every((id) => typeof id === "string")
-    ) {
-      throw new Error(
-        `Course ${course.id} must have a requirementIds array of strings.`,
-      );
-    }
-  }
-
-  // Step 4: Validate degree requirements.
-  const requirementIds = new Set();
-
-  for (const requirement of rawAudit.requirements) {
-    if (
-      !requirement ||
-      typeof requirement !== "object" ||
-      Array.isArray(requirement)
-    ) {
-      throw new Error("Each requirement must be a valid object.");
-    }
-
-    if (typeof requirement.id !== "string" || requirement.id.trim() === "") {
-      throw new Error("Each requirement must have a non-empty ID.");
-    }
-
-    if (requirementIds.has(requirement.id)) {
-      throw new Error(`Duplicate requirement ID found: ${requirement.id}`);
-    }
-
-    requirementIds.add(requirement.id);
-
-    if (
-      typeof requirement.name !== "string" ||
-      requirement.name.trim() === ""
-    ) {
-      throw new Error(`Requirement ${requirement.id} must have a name.`);
-    }
-
-    if (
-      !requirement.selection ||
-      typeof requirement.selection !== "object" ||
-      Array.isArray(requirement.selection)
-    ) {
-      throw new Error(
-        `Requirement ${requirement.id} must have a selection type.`,
-      );
-    }
-
-    const validCourseIds = (ids) =>
-      Array.isArray(ids) &&
-      ids.every((id) => typeof id === "string" && courseIds.has(id));
-
-      const validCourseCodes = (codes) =>
-  Array.isArray(codes) &&
-  codes.every(
-    (code) =>
-      typeof code === "string" &&
-      /^[A-Z]{2,5}\s\d{4}$/i.test(code.trim()),
-  );
-
-    if (!validCourseIds(requirement.courseIds)) {
-      throw new Error(
-        `Requirement ${requirement.id} contains an invalid course ID.`,
-      );
-    }
-
-    if (!validCourseIds(requirement.eligibleCourseIds)) {
-      throw new Error(
-        `Requirement ${requirement.id} contains an invalid eligible course ID.`,
-      );
-    }
-
-    // Validate equivalent-course groups, when provided.
-    if (requirement.courseGroups !== undefined) {
-      if (!Array.isArray(requirement.courseGroups)) {
-        throw new Error(
-          `Requirement ${requirement.id} must have a courseGroups array.`,
-        );
-      }
-
-      for (const group of requirement.courseGroups) {
-        if (
-          !group ||
-          typeof group !== "object" ||
-          Array.isArray(group) ||
-          !Array.isArray(group.courseIds) ||
-          group.courseIds.length === 0 ||
-          !validCourseIds(group.courseIds)
-        ) {
-          throw new Error(
-            `Requirement ${requirement.id} contains an invalid course group.`,
-          );
-        }
-
-        if (new Set(group.courseIds).size !== group.courseIds.length) {
-          throw new Error(
-            `Requirement ${requirement.id} contains duplicate course IDs in a group.`,
-          );
-        }
-      }
-    }
-
-    // Validate subgroups, when provided.
-    if (requirement.subgroups !== undefined) {
-      if (
-        !Array.isArray(requirement.subgroups) ||
-        requirement.subgroups.length === 0
-      ) {
-        throw new Error(
-          `Requirement ${requirement.id} must have a non-empty subgroups array.`,
-        );
-      }
-
-      const subgroupIds = new Set();
-
-      for (const subgroup of requirement.subgroups) {
-        if (
-          !subgroup ||
-          typeof subgroup !== "object" ||
-          Array.isArray(subgroup)
-        ) {
-          throw new Error(
-            `Requirement ${requirement.id} contains an invalid subgroup.`,
-          );
-        }
-
-        if (typeof subgroup.id !== "string" || subgroup.id.trim() === "") {
-          throw new Error(
-            `Requirement ${requirement.id} contains a subgroup with an invalid ID.`,
-          );
-        }
-
-        if (subgroupIds.has(subgroup.id)) {
-          throw new Error(
-            `Requirement ${requirement.id} contains a duplicate subgroup ID: ${subgroup.id}.`,
-          );
-        }
-
-        subgroupIds.add(subgroup.id);
-
-        if (typeof subgroup.name !== "string" || subgroup.name.trim() === "") {
-          throw new Error(
-            `Subgroup ${subgroup.id} must have a non-empty name.`,
-          );
-        }
-
-        // Required credits must be numeric.
-        // Earned and remaining credits may be null when unknown.
-        for (const field of [
-          "requiredCredits",
-          "earnedCredits",
-          "remainingCredits",
-        ]) {
-          const value = subgroup[field];
-
-          const isValid =
-            field === "requiredCredits"
-              ? typeof value === "number" &&
-                Number.isFinite(value) &&
-                value >= 0
-              : value === null ||
-                (typeof value === "number" &&
-                  Number.isFinite(value) &&
-                  value >= 0);
-
-          if (!isValid) {
-            throw new Error(
-              `Subgroup ${subgroup.id} has an invalid ${field} value.`,
-            );
-          }
-        }
-
-        if (!validCourseIds(subgroup.eligibleCourseIds)) {
-          throw new Error(
-            `Subgroup ${subgroup.id} contains an invalid eligible course ID.`,
-          );
-        }
-
-        if (
-  subgroup.eligibleCourseCodes !== undefined &&
-  !validCourseCodes(subgroup.eligibleCourseCodes)
-) {
-  throw new Error(
-    `Subgroup ${subgroup.id} contains invalid eligible course codes.`,
-  );
 }
 
-        if (subgroup.courseGroups !== undefined) {
-          if (!Array.isArray(subgroup.courseGroups)) {
-            throw new Error(
-              `Subgroup ${subgroup.id} must have a courseGroups array.`,
-            );
-          }
+// Every course has exactly these fields. Anything missing gets this value.
+// (Arrays and objects are created fresh per course in fillCourse.)
+const COURSE_DEFAULTS = {
+  title: null,
+  credits: null,
+  minCredits: null,
+  maxCredits: null,
+  status: "needed",
+  attempts: [],
+  transferNote: null,
+  requirementIds: [],
+  termsOffered: [],
+  availability: {},
+  auditNotes: [],
+  description: null,
+  prereqText: null,
+  prereqs: null,
+  coreqText: null,
+  coreqs: null,
+  detailsLoaded: false,
+  plannedTerm: null,
+  locked: false,
+};
 
-          for (const group of subgroup.courseGroups) {
-            if (
-              !group ||
-              typeof group !== "object" ||
-              Array.isArray(group) ||
-              !Array.isArray(group.courseIds) ||
-              group.courseIds.length === 0 ||
-              !validCourseIds(group.courseIds)
-            ) {
-              throw new Error(
-                `Subgroup ${subgroup.id} contains an invalid course group.`,
-              );
-            }
+// The fields that come from the course-details fetch (bookmarklet only).
+// A PDF re-import doesn't have them, so they're kept from the previous state.
+const DETAIL_FIELDS = [
+  "title",
+  "credits",
+  "minCredits",
+  "maxCredits",
+  "termsOffered",
+  "availability",
+  "description",
+  "prereqText",
+  "prereqs",
+  "coreqText",
+  "coreqs",
+  "detailsLoaded",
+];
 
-            if (new Set(group.courseIds).size !== group.courseIds.length) {
-              throw new Error(
-                `Subgroup ${subgroup.id} contains duplicate course IDs in a group.`,
-              );
-            }
-          }
-        }
+const SOURCE_DEFAULTS = {
+  type: "json",
+  importedAt: null,
+  collectorVersion: null,
+  exportedAt: null,
+};
 
-        // Validate optional categories within a subgroup.
-        if (subgroup.categories !== undefined) {
-          if (!Array.isArray(subgroup.categories)) {
-            throw new Error(
-              `Subgroup ${subgroup.id} must have a categories array.`,
-            );
-          }
+/**
+ * Check, merge and complete audit data.
+ *
+ * @param {object} data      Audit JSON from any source.
+ * @param {object|null} previous  The current state, when re-importing.
+ * @param {Date} now         Today's date (tests pass a fixed one).
+ * @returns {object}         A new, complete audit object.
+ * @throws {AuditError}      If the data is broken.
+ */
+export function parseAudit(data, previous = null, now = new Date()) {
+  // 1. Reject (looks at the input; changes nothing)
+  checkShape(data);
+  const audit = structuredClone(data); // from here on we only touch our copy
+  checkCourses(audit);
+  checkRequirements(audit);
 
-          const categoryIds = new Set();
+  // 2. Merge with what the student already had
+  if (previous) mergePrevious(audit, previous);
 
-          for (const category of subgroup.categories) {
-            if (
-              !category ||
-              typeof category !== "object" ||
-              Array.isArray(category)
-            ) {
-              throw new Error(
-                `Subgroup ${subgroup.id} contains an invalid category.`,
-              );
-            }
+  // 3. Repair
+  audit.source = { ...SOURCE_DEFAULTS, ...audit.source };
+  for (const course of Object.values(audit.courses)) fillCourse(course);
+  fillPlan(audit, now);
+  placeRegistered(audit);
+  cleanPicks(audit);
 
-            if (typeof category.id !== "string" || category.id.trim() === "") {
-              throw new Error(
-                `Subgroup ${subgroup.id} contains a category with an invalid ID.`,
-              );
-            }
-
-            if (categoryIds.has(category.id)) {
-              throw new Error(
-                `Subgroup ${subgroup.id} contains a duplicate category ID: ${category.id}.`,
-              );
-            }
-
-            categoryIds.add(category.id);
-
-            if (
-              typeof category.name !== "string" ||
-              category.name.trim() === ""
-            ) {
-              throw new Error(
-                `Category ${category.id} must have a non-empty name.`,
-              );
-            }
-
-            // Required credits must be numeric.
-            // Earned and remaining credits may be null when unknown.
-            for (const field of [
-              "requiredCredits",
-              "earnedCredits",
-              "remainingCredits",
-            ]) {
-              const value = category[field];
-
-              const isValid =
-                field === "requiredCredits"
-                  ? typeof value === "number" &&
-                    Number.isFinite(value) &&
-                    value >= 0
-                  : value === null ||
-                    (typeof value === "number" &&
-                      Number.isFinite(value) &&
-                      value >= 0);
-
-              if (!isValid) {
-                throw new Error(
-                  `Category ${category.id} has an invalid ${field} value.`,
-                );
-              }
-            }
-
-            if (!validCourseIds(category.eligibleCourseIds)) {
-              throw new Error(
-                `Category ${category.id} contains an invalid eligible course ID.`,
-              );
-            }
-
-            if (
-  category.eligibleCourseCodes !== undefined &&
-  !validCourseCodes(category.eligibleCourseCodes)
-) {
-  throw new Error(
-    `Category ${category.id} contains invalid eligible course codes.`,
-  );
+  return audit;
 }
-          }
-        }
-      }
-    }
 
-    // Validate selection rules.
-    if (
-      requirement.selection.type === "all" &&
-      requirement.eligibleCourseIds.length > 0
-    ) {
-      throw new Error(
-        `Requirement ${requirement.id} cannot use eligibleCourseIds with the all selection type.`,
+// =====================================================================
+// 1. REJECT
+// =====================================================================
+
+/** Rejects 1 + 2: right schema, and the required keys have the right types. */
+function checkShape(data) {
+  if (!isPlainObject(data)) {
+    throw new AuditError("Audit data must be a JSON object.");
+  }
+  if (data.schema !== SCHEMA) {
+    throw new AuditError(
+      `Unsupported schema "${data.schema}" (expected "${SCHEMA}").`,
+    );
+  }
+  if (!isPlainObject(data.student)) {
+    throw new AuditError(`"student" must be an object.`);
+  }
+  if (!Array.isArray(data.requirements)) {
+    throw new AuditError(`"requirements" must be an array.`);
+  }
+  if (!isPlainObject(data.courses)) {
+    throw new AuditError(`"courses" must be an object keyed by course id.`);
+  }
+  if (data.source !== undefined && !isPlainObject(data.source)) {
+    throw new AuditError(`"source" must be an object.`);
+  }
+  if (data.plan !== undefined && !isPlainObject(data.plan)) {
+    throw new AuditError(`"plan" must be an object.`);
+  }
+}
+
+/** Reject 3: each course's key, id and code agree. */
+function checkCourses(audit) {
+  for (const [key, course] of Object.entries(audit.courses)) {
+    if (!isPlainObject(course) || typeof course.code !== "string") {
+      throw new AuditError(`Course "${key}" needs a "code" string.`);
+    }
+    if (course.id !== key) {
+      throw new AuditError(
+        `Course "${key}" has id "${course.id}"; the key and id must match.`,
       );
     }
+    if (course.id !== idFromCode(course.code)) {
+      throw new AuditError(
+        `Course "${key}" should have id "${idFromCode(course.code)}" for code "${course.code}".`,
+      );
+    }
+  }
+}
 
-    if (requirement.selection.type === "choose") {
-      const choosingCourses =
-        Number.isInteger(requirement.selection.coursesRequired) &&
-        requirement.selection.coursesRequired > 0 &&
-        requirement.selection.coursesRequired <=
-          requirement.eligibleCourseIds.length;
+/** Rejects 4, 5, 6: requirements and courses point at each other correctly. */
+function checkRequirements(audit) {
+  const reqIds = new Set();
 
-      const choosingSubgroups =
-        Number.isInteger(requirement.selection.subgroupsRequired) &&
-        requirement.selection.subgroupsRequired > 0 &&
-        Array.isArray(requirement.subgroups) &&
-        requirement.selection.subgroupsRequired <= requirement.subgroups.length;
+  for (const req of audit.requirements) {
+    if (!isPlainObject(req) || typeof req.id !== "string") {
+      throw new AuditError(`Every requirement needs an "id" string.`);
+    }
+    // 6. unique ids
+    if (reqIds.has(req.id)) {
+      throw new AuditError(`Two requirements share the id "${req.id}".`);
+    }
+    reqIds.add(req.id);
 
-      if (!choosingCourses && !choosingSubgroups) {
-        if (requirement.selection.subgroupsRequired !== undefined) {
-          throw new Error(
-            `Requirement ${requirement.id} has an invalid subgroupsRequired value.`,
-          );
-        }
-
-        throw new Error(
-          `Requirement ${requirement.id} has an invalid coursesRequired value.`,
+    // 5. every applied course exists and lists this requirement back
+    for (const { code } of req.applied ?? []) {
+      const course = audit.courses[idFromCode(code)];
+      if (!course) {
+        throw new AuditError(
+          `Requirement "${req.id}" applies ${code}, which isn't in "courses".`,
         );
       }
-
-      if (choosingCourses && choosingSubgroups) {
-        throw new Error(
-          `Requirement ${requirement.id} cannot specify both coursesRequired and subgroupsRequired.`,
-        );
-      }
-    }
-
-    if (
-      requirement.selection.type === "credits" &&
-      (typeof requirement.selection.creditsRequired !== "number" ||
-        !Number.isFinite(requirement.selection.creditsRequired) ||
-        requirement.selection.creditsRequired <= 0)
-    ) {
-      throw new Error(
-        `Requirement ${requirement.id} has an invalid creditsRequired value.`,
-      );
-    }
-
-    if (!["all", "choose", "credits"].includes(requirement.selection.type)) {
-      throw new Error(
-        `Requirement ${requirement.id} has an unsupported selection type.`,
-      );
-    }
-
-    for (const field of [
-      "requiredCredits",
-      "earnedCredits",
-      "remainingCredits",
-    ]) {
-      const value = requirement[field];
-
-      if (
-        value !== null &&
-        (typeof value !== "number" || !Number.isFinite(value) || value < 0)
-      ) {
-        throw new Error(
-          `Requirement ${requirement.id} has an invalid ${field} value.`,
+      if (!(course.requirementIds ?? []).includes(req.id)) {
+        throw new AuditError(
+          `Requirement "${req.id}" applies ${code}, but ${code} doesn't list "${req.id}" in its requirementIds.`,
         );
       }
     }
   }
 
-  // Verify that course requirement references are valid.
-  for (const course of rawAudit.courses) {
-    for (const requirementId of course.requirementIds) {
-      const requirement = rawAudit.requirements.find(
-        (item) => item.id === requirementId,
-      );
-
-      if (
-        !requirement ||
-        (!requirement.courseIds.includes(course.id) &&
-          !requirement.eligibleCourseIds.includes(course.id) &&
-          !(requirement.courseGroups ?? []).some((group) =>
-            group.courseIds.includes(course.id),
-          ) &&
-          !(requirement.subgroups ?? []).some(
-            (subgroup) =>
-              subgroup.eligibleCourseIds.includes(course.id) ||
-              (subgroup.courseGroups ?? []).some((group) =>
-                group.courseIds.includes(course.id),
-              ) ||
-              (subgroup.categories ?? []).some((category) =>
-                category.eligibleCourseIds.includes(course.id),
-              ),
-          ))
-      ) {
-        throw new Error(
-          `Course ${course.id} has an invalid requirement reference: ${requirementId}.`,
+  // 4. every requirementId on a course exists
+  for (const course of Object.values(audit.courses)) {
+    for (const reqId of course.requirementIds ?? []) {
+      if (!reqIds.has(reqId)) {
+        throw new AuditError(
+          `${course.code} lists requirement "${reqId}", which doesn't exist.`,
         );
       }
     }
   }
+}
 
-  // Step 5: Validate course catalog information.
-  const catalogCourseIds = new Set();
+// =====================================================================
+// 2. MERGE
+// =====================================================================
 
-  for (const catalogEntry of rawAudit.courseCatalog) {
-    if (
-      !catalogEntry ||
-      typeof catalogEntry !== "object" ||
-      Array.isArray(catalogEntry)
-    ) {
-      throw new Error("Each catalog entry must be a valid object.");
-    }
+/**
+ * Re-importing over existing data.
+ * - A fresh scrape (no `exportedAt`) has no real plan, so the student's
+ *   picks and semester columns come from `previous`.
+ * - An exported file (has `exportedAt`) is a saved plan: its own picks win.
+ * - Either way, if the new data lacks course details (a PDF import) and the
+ *   previous state had them (from the bookmarklet), keep the old details.
+ */
+function mergePrevious(audit, previous) {
+  const isExport = audit.source?.exportedAt != null;
 
-    if (
-      typeof catalogEntry.courseId !== "string" ||
-      !courseIds.has(catalogEntry.courseId)
-    ) {
-      throw new Error("Each catalog entry must reference an existing course.");
-    }
-
-    if (catalogCourseIds.has(catalogEntry.courseId)) {
-      throw new Error(
-        `Duplicate catalog entry found for ${catalogEntry.courseId}.`,
-      );
-    }
-
-    catalogCourseIds.add(catalogEntry.courseId);
-
-    if (
-      !Array.isArray(catalogEntry.availableTerms) ||
-      !catalogEntry.availableTerms.every((term) => typeof term === "string")
-    ) {
-      throw new Error(
-        `Catalog entry for ${catalogEntry.courseId} must have an availableTerms array of strings.`,
-      );
-    }
-
-    if (typeof catalogEntry.availabilityKnown !== "boolean") {
-      throw new Error(
-        `Catalog entry for ${catalogEntry.courseId} must specify whether availability is known.`,
-      );
-    }
-
-    if (
-      catalogEntry.prerequisites !== null &&
-      (!Array.isArray(catalogEntry.prerequisites) ||
-        !catalogEntry.prerequisites.every(
-          (courseId) => typeof courseId === "string",
-        ))
-    ) {
-      throw new Error(
-        `Catalog entry for ${catalogEntry.courseId} has invalid prerequisites.`,
-      );
-    }
-
-    if (
-      catalogEntry.corequisites !== null &&
-      (!Array.isArray(catalogEntry.corequisites) ||
-        !catalogEntry.corequisites.every(
-          (courseId) => typeof courseId === "string",
-        ))
-    ) {
-      throw new Error(
-        `Catalog entry for ${catalogEntry.courseId} has invalid corequisites.`,
-      );
-    }
+  if (!isExport && previous.plan) {
+    audit.plan = structuredClone(previous.plan);
   }
 
-  // Step 6: Return normalized audit data.
-  return rawAudit;
+  for (const [id, course] of Object.entries(audit.courses)) {
+    const old = previous.courses?.[id];
+    if (!old) continue; // a course that's new in this import
+
+    if (!isExport) {
+      course.plannedTerm = old.plannedTerm;
+      course.locked = old.locked;
+    }
+    if (!course.detailsLoaded && old.detailsLoaded) {
+      for (const field of DETAIL_FIELDS) {
+        course[field] = structuredClone(old[field]);
+      }
+    }
+  }
+}
+
+// =====================================================================
+// 3. REPAIR
+// =====================================================================
+
+/** Repairs 2 + 6: every course gets every field. */
+function fillCourse(course) {
+  for (const [field, value] of Object.entries(COURSE_DEFAULTS)) {
+    if (course[field] === undefined) {
+      // structuredClone so courses never share one [] or {}
+      course[field] = structuredClone(value);
+    }
+  }
+}
+
+/** Repair 1: make sure there's a plan with semester columns. */
+function fillPlan(audit, now) {
+  audit.plan = { lastSaved: null, ...audit.plan };
+  if (!Array.isArray(audit.plan.terms) || audit.plan.terms.length === 0) {
+    audit.plan.terms = generateTerms(audit, now);
+  }
+}
+
+/** Repair 3: registered courses start in their registered term, locked. */
+function placeRegistered(audit) {
+  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+  for (const course of Object.values(audit.courses)) {
+    if (course.status !== "registered" || course.plannedTerm) continue;
+    const term = registeredTerm(course);
+    if (term && termKeys.has(term)) {
+      course.plannedTerm = term;
+      course.locked = true;
+    }
+  }
+}
+
+/** Repairs 4 + 5: picks must point at a real column; locks need a term. */
+function cleanPicks(audit) {
+  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+  for (const course of Object.values(audit.courses)) {
+    if (course.plannedTerm !== null && !termKeys.has(course.plannedTerm)) {
+      course.plannedTerm = null;
+    }
+    if (course.plannedTerm === null) course.locked = false;
+  }
+}
+
+// =====================================================================
+// SEMESTER COLUMNS  (term helpers live in logic/courseText.js)
+// =====================================================================
+
+const MIN_TERMS = 6; // always show at least this many columns
+
+/**
+ * Columns from the earlier of (this term, the first registered term) up to
+ * at least MIN_TERMS columns and at least the last registered term.
+ */
+function generateTerms(audit, now) {
+  const registered = Object.values(audit.courses)
+    .filter((c) => c.status === "registered")
+    .map(registeredTerm)
+    .filter(Boolean)
+    .map(termIndex);
+
+  const current = termIndex(termForDate(now));
+  const first = Math.min(current, ...registered);
+  const last = Math.max(first + MIN_TERMS - 1, ...registered);
+
+  const terms = [];
+  for (let i = first; i <= last; i++) {
+    const key = termFromIndex(i);
+    terms.push({ key, label: termLabel(key) });
+  }
+  return terms;
+}
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+
+/** The term of the course's registered ("***") attempt, or null. */
+function registeredTerm(course) {
+  const attempt = (course.attempts ?? []).findLast((a) => a.grade === "***");
+  return attempt?.term ?? null;
+}
+
+// True for a {...} object (not null, not an array)
+function isPlainObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

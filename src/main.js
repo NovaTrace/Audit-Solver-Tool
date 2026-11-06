@@ -1,6 +1,9 @@
-
 // =====================================================================
-// main.js — entry point
+// main.js — entry point: connects the page to state.js
+//
+//   state.js   holds the audit and changes it (no `document`)
+//   render/*   draws parts of the page from the audit (no state changes)
+//   main.js    listens for clicks, asks state.js to change, then redraws
 // =====================================================================
 
 // ---------- Styles ----------
@@ -13,74 +16,86 @@ import "./styles/course-list.css";
 
 // ---------- Modules ----------
 import {
-  TERMS,
-  catLabels,
-  catOrder,
-  poolGroups,
-  EARNED_HOURS,
-  courses,
-} from "./data/defaults.js";
-
-import {
-  assignments,
-  locked,
+  getAudit,
+  isSampleLoaded,
   loadState,
   saveState,
-  clearSaved,
-  resetToDefaults,
+  resetPlan,
   toggleTerm,
   toggleLock,
-  registerImportedCourses,
-  loadImportedCourses,
+  importAudit,
+  AuditError,
+  clearAllData,
 } from "./state.js";
-
+import { visibleSections } from "./logic/courses.js";
 import { setupPopups } from "./ui/popups.js";
-import { setupImport } from "./ui/importer.js";
-
-import { parseAudit } from "./logic/parser.js";
-
-import {
-  extractRequirementPages,
-  extractRequiredCoreText,
-  parseAuditCourses,
-  parseRequiredCoreCourse,
-  extractRequirementSections,
-  getTrackEligibleCourses,
-  parseRequiredTrackSection,
-} from "./logic/pdf-extractor.js";
-
+import { setupImport, setupReceiver } from "./ui/importer.js";
+import { setupBookmarkletPanel } from "./ui/bookmarkletPanel.js";
+import { setupExport } from "./ui/exporter.js";
+import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
 import { renderStats } from "./render/stats.js";
-import { renderCourseList } from "./render/courseList.js";
+import { renderCourseList, renderFilterChips } from "./render/courseList.js";
+
+// The chosen filter chip: "all" or a section name. This is display state,
+// not plan data, so it lives here rather than in state.js and isn't saved.
+let activeSection = "all";
 
 // =====================================================================
-// REDRAWING — call these after anything changes the state
+// REDRAWING — call these after anything changes the audit
 // =====================================================================
+
+// Which audit the get-started panel was last opened/closed for
+// (null until the first draw)
+let panelShowsSample = null;
+
+// Header, footer, and the get-started panel (only shown with the demo)
+function refreshHeader() {
+  renderHeader(getAudit(), { isSample: isSampleLoaded(), now: new Date() });
+  const panel = document.getElementById("get-started");
+  panel.querySelector("h2").textContent = isSampleLoaded()
+    ? "Load your degree audit"
+    : "Update your audit or get the bookmarklet again";
+
+  // Open on first visit, collapsed once an audit is loaded. Only change it
+  // when switching between the demo and a real audit: this runs after every
+  // click, and would otherwise shut a panel the student just opened.
+  if (panelShowsSample !== isSampleLoaded()) {
+    panelShowsSample = isSampleLoaded();
+    panel.open = panelShowsSample;
+  }
+}
 
 // Stats tiles + schedule section
 function refreshSchedule() {
-  const data = { terms: TERMS, courses, assignments, locked, poolGroups };
-  renderSchedule(data);
-  renderStats({ ...data, earnedHours: EARNED_HOURS });
+  renderSchedule(getAudit());
+  renderStats(getAudit());
 }
 
-// Course list, keeping the current filter chip and search text
+// Chips + course list, keeping the current chip and search text
 function refreshList() {
+  const audit = getAudit();
+  // One chip per section that still has something to plan
+  const sections = visibleSections({
+    audit,
+    filterSection: "all",
+    query: "",
+  }).map((group) => group.section);
+  // A new audit may not have the section that was chosen before
+  if (activeSection !== "all" && !sections.includes(activeSection)) {
+    activeSection = "all";
+  }
+  renderFilterChips(sections, activeSection);
   renderCourseList({
-    terms: TERMS,
-    courses,
-    catOrder,
-    catLabels,
-    poolGroups,
-    assignments,
-    locked,
-    filterCat: document.querySelector(".chip.active").dataset.cat,
+    audit,
+    filterSection: activeSection,
     query: document.getElementById("search").value.trim().toLowerCase(),
   });
 }
 
 // Everything
 function refreshAll() {
+  refreshHeader();
   refreshList();
   refreshSchedule();
 }
@@ -90,7 +105,10 @@ function refreshAll() {
 function saveAndRefresh() {
   if (saveState()) {
     setSaveStatus("Saved " + new Date().toLocaleTimeString());
+  } else if (isSampleLoaded()) {
+    setSaveStatus("Sample data: changes aren't saved");
   }
+  refreshAll();
 }
 
 function setSaveStatus(text) {
@@ -100,352 +118,94 @@ function setSaveStatus(text) {
 // =====================================================================
 // HEADER + POPUPS
 // =====================================================================
+setupPopups(); // handles every .info-popup on the page
 
-setupPopups();
-
-// =====================================================================
-// PDF AND JSON IMPORT
-// =====================================================================
-
-setupImport((raw) => {
-  // ---------------------------------------------------------------
-  // PDF IMPORT
-  // ---------------------------------------------------------------
-
-  if (raw.kind === "pdf") {
-    const auditData = JSON.parse(raw.content);
-
-    // First page contains student and overall credit information.
-    const firstPageText = auditData.pages[0] ?? "";
-
-    // -------------------------------------------------------------
-    // STUDENT INFORMATION
-    // -------------------------------------------------------------
-
-    const studentNameMatch = firstPageText.match(
-      /PREPARED: (.+?)\s+[A-Z]{2,5}---/,
-    );
-
-    const earnedCreditsMatch = firstPageText.match(
-      /EARNED:\s*([\d.]+)\s*HOURS/,
-    );
-
-    const neededCreditsMatch = firstPageText.match(
-      /NEEDS:\s*([\d.]+)\s*HOURS/,
-    );
-
-    const majorMatch = firstPageText.match(/BS in (.+?)\s+\d{9,}/);
-
-    const studentInfo = {
-      name: studentNameMatch ? studentNameMatch[1].trim() : null,
-      earnedCredits: earnedCreditsMatch
-        ? Number(earnedCreditsMatch[1])
-        : null,
-      neededCredits: neededCreditsMatch
-        ? Number(neededCreditsMatch[1])
-        : null,
-    };
-
-    const major = majorMatch ? majorMatch[1].trim() : null;
-
-    const student = {
-      name: studentInfo.name,
-      majors: major ? [major] : [],
-      minors: [],
-    };
-
-    const credits = {
-      earned: studentInfo.earnedCredits,
-    };
-
-    // -------------------------------------------------------------
-    // REQUIREMENT PAGES AND SECTIONS
-    // -------------------------------------------------------------
-
-    const requirementPages = extractRequirementPages(auditData.pages);
-
-    const requirementSections =
-      extractRequirementSections(requirementPages);
-
-    // -------------------------------------------------------------
-    // REQUIRED TRACK INFORMATION
-    // -------------------------------------------------------------
-
-    const requiredTrack =
-      parseRequiredTrackSection(requirementSections);
-
-    if (!requiredTrack) {
-      throw new Error(
-        "Could not find the Required Track section in this degree audit.",
-      );
-    }
-
-    const sharedRequiredTrackCourses =
-      requiredTrack.courseRecords.map((course, index) => ({
-        id: `required-track-course-${index + 1}`,
-        code: course.courseCode,
-        title: course.title,
-        credits: course.credits,
-        requirementIds: ["required-track"],
-      }));
-
-    // Normalize course codes so equivalent courses can be matched
-    // even when the PDF uses different spacing.
-    const normalizeCourseCode = (courseCode) =>
-      courseCode.replace(/\s+/g, "").toUpperCase();
-
-    const requiredTrackCourseIds = new Map(
-      sharedRequiredTrackCourses.map((course) => [
-        normalizeCourseCode(course.code),
-        course.id,
-      ]),
-    );
-
-    // Connect equivalent courses to the matching imported course IDs.
-    const sharedRequiredTrackGroups = requiredTrack.courseGroups
-      .map((group) => ({
-        courseIds: group.courseCodes
-          .map((courseCode) =>
-            requiredTrackCourseIds.get(
-              normalizeCourseCode(courseCode),
-            ),
-          )
-          .filter(Boolean),
-      }))
-      .filter((group) => group.courseIds.length > 0);
-
-    // -------------------------------------------------------------
-    // SPECIALTY TRACK INFORMATION
-    // -------------------------------------------------------------
-
-    const trackEligibleCourses =
-      getTrackEligibleCourses(requirementSections);
-
-    // Convert extracted track information into shared audit subgroups.
-    const sharedSpecialtyTrackSubgroups = trackEligibleCourses.map(
-      (track, index) => {
-        const trackId = `specialty-track-${index + 1}`;
-
-        const subgroup = {
-          id: trackId,
-          name: track.heading,
-          requiredCredits: track.requiredCredits,
-          earnedCredits: null,
-          remainingCredits: null,
-          courseIds: [],
-          eligibleCourseIds: [],
-          eligibleCourseCodes: track.eligibleCourses,
-        };
-
-        // General Track contains two separate 9-credit categories.
-        if (track.categories) {
-          subgroup.categories = track.categories.map(
-            (category, categoryIndex) => ({
-              id: `${trackId}-category-${categoryIndex + 1}`,
-              name: category.name,
-              requiredCredits: category.requiredCredits,
-              earnedCredits: null,
-              remainingCredits: null,
-              eligibleCourseIds: [],
-              eligibleCourseCodes: category.eligibleCourses,
-            }),
-          );
-        }
-
-        return subgroup;
-      },
-    );
-
-    // -------------------------------------------------------------
-    // REQUIRED CORE INFORMATION
-    // -------------------------------------------------------------
-
-    const requiredCoreData =
-      extractRequiredCoreText(requirementPages);
-
-    const requiredCoreCourses = parseRequiredCoreCourse(
-      requiredCoreData?.coreSection,
-    );
-
-    const sharedRequiredCoreCourses =
-      requiredCoreCourses.map((course, index) => ({
-        id: `required-core-course-${index + 1}`,
-        code: course.courseCode,
-        title: course.title,
-        credits: course.credits,
-        requirementIds: ["required-core"],
-      }));
-
-    // -------------------------------------------------------------
-    // COURSE HISTORY
-    // -------------------------------------------------------------
-
-    // The second page contains the course history.
-    const pageTwoText = auditData.pages[1] ?? "";
-
-    const auditCourses = parseAuditCourses(pageTwoText);
-
-    // -------------------------------------------------------------
-    // SHARED AUDIT JSON
-    // -------------------------------------------------------------
-
-    const sharedAudit = {
-      schemaVersion: 1,
-      source: "pdf",
-
-      student: {
-        name: student.name,
-        majors: student.majors,
-        minors: student.minors,
-      },
-
-      credits: {
-        earned: credits.earned,
-        required: null,
-      },
-
-      courses: [
-        ...sharedRequiredCoreCourses,
-        ...sharedRequiredTrackCourses,
-      ],
-
-      requirements: [
-        {
-          id: "required-core",
-          name: "Required Core",
-          selection: {
-            type: "all",
-          },
-          requiredCredits: null,
-          earnedCredits:
-            requiredCoreData?.summary?.earnedHours ?? null,
-          remainingCredits:
-            requiredCoreData?.summary?.needsHours ?? null,
-          courseIds: sharedRequiredCoreCourses.map(
-            (course) => course.id,
-          ),
-          eligibleCourseIds: [],
-        },
-        {
-          id: "required-track",
-          name: "Required Track",
-          selection: {
-            type: "choose",
-            subgroupsRequired: 1,
-          },
-          requiredCredits: 18,
-          earnedCredits: null,
-          remainingCredits: null,
-          courseIds: sharedRequiredTrackCourses.map(
-            (course) => course.id,
-          ),
-          eligibleCourseIds: [],
-          courseGroups: sharedRequiredTrackGroups,
-          subgroups: sharedSpecialtyTrackSubgroups,
-        },
-      ],
-
-      courseCatalog: [],
-    };
-
-    // Validate the shared audit against the project schema.
-    parseAudit(sharedAudit);
-
-    // -------------------------------------------------------------
-    // IMPORT SUMMARY
-    // -------------------------------------------------------------
-
-    alert(
-      `PDF read successfully. Found ${auditCourses.length} course records.`,
-    );
-
+// Import: from a file (Import button) or from the bookmarklet (Send).
+// importAudit() runs parseAudit(), which throws AuditError for data that
+// isn't a valid audit; the current plan is left untouched in that case.
+function handleImport(raw) {
+  try {
+    importAudit(raw.content);
+  } catch (e) {
+    if (!(e instanceof AuditError)) throw e; // a bug in our code: let it show
+    alert(`That isn't a valid audit, so nothing was changed.\n\n${e.message}`);
     return;
   }
+  saveAndRefresh();
+}
+setupImport(handleImport);
+setupReceiver(handleImport);
 
-  // ---------------------------------------------------------------
-  // JSON IMPORT
-  // ---------------------------------------------------------------
+// The "Grab my audit" bookmarklet link and its Copy code button
+setupBookmarkletPanel();
 
-  if (raw.kind === "json") {
-    alert(
-      "JSON file read successfully. JSON import processing is not implemented yet.",
-    );
-
-    return;
-  }
-});
+// Export button: downloads the current audit as .json
+setupExport(getAudit);
 
 // =====================================================================
-// SCHEDULE SECTION
+// SCHEDULE SECTION (#pool-status, #sched-grid, #unassigned)
+// Drawing lives in render/schedule.js; only the Reset button is wired here.
 // =====================================================================
-
-// Reset button
 document.getElementById("reset-btn").addEventListener("click", () => {
   const ok = confirm(
-    "Clear all saved term picks and locks, and go back to the built-in defaults?",
+    "Clear all term picks and locks? Registered courses stay in their terms.",
   );
-
   if (!ok) return;
+  resetPlan();
+  saveAndRefresh();
+});
 
-  clearSaved();
-  resetToDefaults();
-
-  setSaveStatus("Autosaves in browser");
+// "Clear data" button (footer): delete the save and go back to the demo
+document.getElementById("clear-data-btn").addEventListener("click", () => {
+  const ok = confirm(
+    "Delete your saved audit and plan from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
+  );
+  if (!ok) return;
+  clearAllData();
+  setSaveStatus("Sample data: changes aren't saved");
   refreshAll();
 });
 
 // =====================================================================
-// COURSE LIST SECTION
+// COURSE LIST SECTION (#chips, #search, #list)
+// Drawing lives in render/courseList.js; clicks are handled here.
 // =====================================================================
 
-// Filter chips
-document.querySelectorAll(".chip").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    document
-      .querySelectorAll(".chip")
-      .forEach((c) => c.classList.remove("active"));
-
-    chip.classList.add("active");
-
-    refreshList();
-  });
+// Filter chips: ONE listener on the chip box, since the chips are rebuilt
+// on every redraw (a listener on each chip would be thrown away with it)
+document.getElementById("chips").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  activeSection = chip.dataset.section;
+  refreshList();
 });
 
 // Search box
 document.getElementById("search").addEventListener("input", refreshList);
 
-// Term pills and lock buttons
+// Term pills and lock buttons: ONE listener on the whole list.
+// state.js decides whether the click is allowed; we just save and redraw.
 document.getElementById("list").addEventListener("click", (e) => {
   const pill = e.target.closest(".pill");
   const lockBtn = e.target.closest(".lock-btn");
 
   let changed = false;
-
   if (pill) {
     changed = toggleTerm(pill.dataset.id, pill.dataset.term);
   } else if (lockBtn) {
     changed = toggleLock(lockBtn.dataset.id);
   }
 
-  if (changed) {
-    saveAndRefresh();
-    refreshAll();
-  }
+  if (changed) saveAndRefresh();
 });
 
 // =====================================================================
 // STARTUP
 // =====================================================================
-
-const savedImportedCourses = loadImportedCourses();
-
-courses.push(
-  ...savedImportedCourses.filter(
-    (saved) => !courses.some((course) => course.id === saved.id),
-  ),
+loadState(); // state.js starts from the demo; this swaps in a saved audit
+setSaveStatus(
+  isSampleLoaded()
+    ? "Sample data: changes aren't saved"
+    : "Autosaves in browser",
 );
-
-registerImportedCourses(savedImportedCourses);
-
-loadState();
-refreshAll();
+refreshAll(); // first draw

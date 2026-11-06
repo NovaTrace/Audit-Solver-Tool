@@ -1,169 +1,773 @@
 {
-  "schemaVersion": 1,
-  "source": "pdf",
+  "schema": "audit-solver/v1",
+  "source": {
+    "type": "bookmarklet",
+    "importedAt": "2026-11-05T20:30:00",
+    "collectorVersion": "0.1.1",
+    "exportedAt": null
+  },
   "student": {
-    "name": "Example Student",
-    "majors": ["Data Analytics"],
-    "minors": ["Mathematics"]
+    "name": "Curly, Brace",
+    "degreeTitle": "BS in Computer Engineering",
+    "programCode": "ESBS---CPEN",
+    "programs": ["CUSPG", "ENGRU", "CPEN-BS", "ELEN-ADL", "MATH-MIN"],
+    "catalogYear": "Fall 2023",
+    "preparedOn": "2026-11-05T13:32:00",
+    "graduationDate": null,
+    "allRequirementsMet": false,
+    "hoursRequired": 128,
+    "hoursEarned": 88,
+    "hoursInProgress": 9,
+    "gpa": 3.214,
+    "attemptedHours": 82
   },
-  "credits": {
-    "earned": 60,
-    "required": 120
+  "plan": {
+    "terms": [
+      { "key": "FA26", "label": "Fall 2026" },
+      { "key": "SP27", "label": "Spring 2027" },
+      { "key": "SU27", "label": "Summer 2027" },
+      { "key": "FA27", "label": "Fall 2027" },
+      { "key": "SP28", "label": "Spring 2028" }
+    ],
+    "lastSaved": null
   },
-  "courses": [
-    {
-      "id": "CS 3020",
-      "code": "CS 3020",
-      "title": "Advanced Object-Oriented Programming",
-      "credits": 3,
-      "requirementIds": ["required-core"]
-    },
-    {
-      "id": "CS 3050",
-      "code": "CS 3050",
-      "title": "Software Engineering",
-      "credits": 3,
-      "requirementIds": ["required-core"]
-    },
-    {
-      "id": "CS 4100",
-      "code": "CS 4100",
-      "title": "Example Technical Elective",
-      "credits": 3,
-      "requirementIds": ["technical-electives"]
-    },
-    {
-      "id": "CS 4200",
-      "code": "CS 4200",
-      "title": "Example Technical Elective 2",
-      "credits": 3,
-      "requirementIds": ["technical-electives"]
-    },
-    {
-      "id": "ENGR 4300",
-      "code": "ENGR 4300",
-      "title": "Example Engineering Elective",
-      "credits": 3,
-      "requirementIds": ["technical-electives"]
-    },
-    {
-      "id": "ECON 1010",
-      "code": "ECON 1010",
-      "title": "Example Economics Course",
-      "credits": 3,
-      "requirementIds": ["general-electives"]
-    },
-    {
-      "id": "PSY 1000",
-      "code": "PSY 1000",
-      "title": "Example Psychology Course",
-      "credits": 3,
-      "requirementIds": ["general-electives"]
-    },
-    {
-      "id": "SOC 1010",
-      "code": "SOC 1010",
-      "title": "Example Sociology Course",
-      "credits": 3,
-      "requirementIds": ["general-electives"]
-    }
-  ],
   "requirements": [
     {
-      "id": "required-core",
-      "name": "Required Core",
-      "selection": {
-        "type": "all"
-      },
-      "requiredCredits": 32,
-      "earnedCredits": 26,
-      "remainingCredits": 6,
-      "courseIds": ["CS 3020", "CS 3050"],
-      "eligibleCourseIds": []
+      "id": "cc-navigate",
+      "section": "Compass Curriculum",
+      "title": "NAVIGATE",
+      "type": "pool",
+      "status": "in-progress",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 3,
+      "options": [],
+      "applied": [{ "code": "CS 3300", "hours": 3 }],
+      "description": "Complete one of the Navigate courses listed below. The Navigate course may double count with other requirements."
     },
     {
-      "id": "technical-electives",
-      "name": "Technical Electives",
-      "selection": {
-        "type": "credits",
-        "creditsRequired": 9
-      },
-      "requiredCredits": 9,
-      "earnedCredits": 0,
-      "remainingCredits": 9,
-      "courseIds": [],
-      "eligibleCourseIds": ["CS 4100", "CS 4200", "ENGR 4300"]
+      "id": "cpe-cs3300",
+      "section": "Computer Engineering - Core",
+      "title": "CS 3300 Software Engineering",
+      "type": "course",
+      "status": "in-progress",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 3,
+      "options": ["CS 3300"],
+      "applied": [{ "code": "CS 3300", "hours": 3 }],
+      "description": ""
     },
     {
-      "id": "general-electives",
-      "name": "General Electives",
-      "selection": {
-        "type": "choose",
-        "coursesRequired": 2
-      },
-      "requiredCredits": null,
-      "earnedCredits": null,
-      "remainingCredits": null,
-      "courseIds": [],
-      "eligibleCourseIds": ["ECON 1010", "PSY 1000", "SOC 1010"]
+      "id": "cpe-cs4500",
+      "section": "Computer Engineering - Core",
+      "title": "CS 4500 Operating Systems I",
+      "type": "course",
+      "status": "needs",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 0,
+      "options": ["CS 4500"],
+      "applied": [],
+      "description": ""
+    },
+    {
+      "id": "cpe-arch",
+      "section": "Computer Engineering - Core",
+      "title": "ECE 4480 Computer Architecture and Design OR CS 4200 Computer Architecture I",
+      "type": "course",
+      "status": "complete",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 3,
+      "inProgressHours": 0,
+      "options": ["ECE 4480", "CS 4200"],
+      "applied": [{ "code": "ECE 4480", "hours": 3 }],
+      "description": "Beginning fall 2023, if you have not already completed this requirement, take ECE 4480."
+    },
+    {
+      "id": "cpe-ece4891",
+      "section": "Computer Engineering - Core",
+      "title": "ECE 4891 Senior Seminar",
+      "type": "course",
+      "status": "needs",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 0,
+      "options": ["ECE 4891"],
+      "applied": [],
+      "description": "This course must be taken the semester before ECE 4899."
+    },
+    {
+      "id": "cpe-ece4899",
+      "section": "Computer Engineering - Core",
+      "title": "ECE 4899 Senior Design Project",
+      "type": "course",
+      "status": "needs",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 0,
+      "options": ["ECE 4899"],
+      "applied": [],
+      "description": ""
+    },
+    {
+      "id": "cpe-math",
+      "section": "Computer Engineering - Mathematics",
+      "title": "COMPUTER ENGINEERING REQUIRED MATHEMATICS",
+      "type": "all",
+      "status": "complete",
+      "needCourses": null,
+      "needHours": null,
+      "earnedHours": 7,
+      "inProgressHours": 0,
+      "options": ["MATH 1350", "MATH 3400"],
+      "applied": [
+        { "code": "MATH 1350", "hours": 4 },
+        { "code": "MATH 3400", "hours": 3 }
+      ],
+      "description": "Complete the required courses below. Math courses require a grade of C or better to progress through the Math sequence."
+    },
+    {
+      "id": "ee-ece2050",
+      "section": "Electrical Engineering - Core",
+      "title": "ECE 2050 Introduction to Physical Electronics",
+      "type": "course",
+      "status": "in-progress",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 3,
+      "options": ["ECE 2050"],
+      "applied": [{ "code": "ECE 2050", "hours": 3 }],
+      "description": "Spring Only"
+    },
+    {
+      "id": "ee-ece3020",
+      "section": "Electrical Engineering - Core",
+      "title": "ECE 3020 Semiconductor Devices I",
+      "type": "course",
+      "status": "needs",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 0,
+      "options": ["ECE 3020"],
+      "applied": [],
+      "description": "Fall Only"
+    },
+    {
+      "id": "ee-ece3210",
+      "section": "Electrical Engineering - Core",
+      "title": "ECE 3210 Electronics I",
+      "type": "course",
+      "status": "in-progress",
+      "needCourses": 1,
+      "needHours": null,
+      "earnedHours": 0,
+      "inProgressHours": 3,
+      "options": ["ECE 3210"],
+      "applied": [{ "code": "ECE 3210", "hours": 3 }],
+      "description": "Fall Only"
+    },
+    {
+      "id": "ee-lecture-electives",
+      "section": "Electrical Engineering - Core",
+      "title": "ELECTRICAL ENGINEERING ELECTIVES - LECTURE",
+      "type": "pool",
+      "status": "needs",
+      "needCourses": 1,
+      "needHours": 3,
+      "earnedHours": 3,
+      "inProgressHours": 0,
+      "options": ["ECE 4020", "ECE 4910"],
+      "applied": [{ "code": "ECE 4480", "hours": 3 }],
+      "description": "Complete 2 courses and 6 credit hours from the Electrical Engineering elective courses below."
+    },
+    {
+      "id": "ee-tech-electives",
+      "section": "Electrical Engineering - Technical Electives",
+      "title": "TECHNICAL ELECTIVES",
+      "type": "pool",
+      "status": "needs",
+      "needCourses": null,
+      "needHours": 6,
+      "earnedHours": 0,
+      "inProgressHours": 3,
+      "options": [],
+      "applied": [{ "code": "CS 3300", "hours": 3 }],
+      "description": "Complete 9 credit hours of Technical Electives. Additional UNUSED upper-division (3000+ level) ECE electives may also be taken to fulfill this requirement."
+    },
+    {
+      "id": "math-minor-electives",
+      "section": "Mathematics Minor",
+      "title": "MATHEMATICS ELECTIVES",
+      "type": "rule",
+      "status": "needs",
+      "needCourses": null,
+      "needHours": 6,
+      "earnedHours": 3,
+      "inProgressHours": 0,
+      "options": [],
+      "applied": [{ "code": "MATH 3400", "hours": 3 }],
+      "description": "Complete 9 credit hours of any MATH course numbered 3100 or higher."
+    },
+    {
+      "id": "hss-humanities",
+      "section": "Computer Engineering - Humanities/Social Sciences",
+      "title": "HUMANITIES",
+      "type": "pool",
+      "status": "needs",
+      "needCourses": null,
+      "needHours": 5,
+      "earnedHours": 1,
+      "inProgressHours": 0,
+      "options": [],
+      "applied": [{ "code": "JPNS 3210", "hours": 1 }],
+      "description": "Complete 6 hours from the departments listed below OR from the Arts, Humanities & Cultures list."
     }
   ],
-  "courseCatalog": [
-    {
-      "courseId": "CS 3020",
-      "availableTerms": ["Fall", "Spring"],
-      "availabilityKnown": true,
-      "prerequisites": [],
-      "corequisites": []
+  "courses": {
+    "math1350": {
+      "id": "math1350",
+      "code": "MATH 1350",
+      "title": "Calculus I",
+      "credits": 4,
+      "minCredits": 4,
+      "maxCredits": 4,
+      "status": "completed",
+      "attempts": [
+        {
+          "term": "FA21",
+          "grade": "TB",
+          "credits": 4,
+          "flags": [],
+          "transfer": true
+        }
+      ],
+      "transferNote": "CO-PPCC: MAT201",
+      "requirementIds": ["cpe-math"],
+      "termsOffered": ["Fall", "Spring", "Summer"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "available",
+        "FA27": "available",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "Topics include limits, derivatives, and integrals of algebraic and transcendental functions.",
+      "prereqText": "",
+      "prereqs": { "groups": [], "notes": [] },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
     },
-    {
-      "courseId": "CS 3050",
-      "availableTerms": ["Spring"],
-      "availabilityKnown": true,
-      "prerequisites": ["CS 3020"],
-      "corequisites": []
+    "math3400": {
+      "id": "math3400",
+      "code": "MATH 3400",
+      "title": "Introduction to Differential Equations",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "completed",
+      "attempts": [
+        {
+          "term": "SP23",
+          "grade": "W",
+          "credits": 0,
+          "flags": [],
+          "transfer": false
+        },
+        {
+          "term": "SU23",
+          "grade": "C-",
+          "credits": 0,
+          "flags": [">E"],
+          "transfer": false
+        },
+        {
+          "term": "SP24",
+          "grade": "W",
+          "credits": 0,
+          "flags": [],
+          "transfer": false
+        },
+        {
+          "term": "SU26",
+          "grade": "B",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
+      "transferNote": null,
+      "requirementIds": ["cpe-math", "math-minor-electives"],
+      "termsOffered": ["Fall", "Spring", "Summer"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "available",
+        "FA27": "available",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "First-order equations, linear equations with constant coefficients, and systems of equations.",
+      "prereqText": "MATH 2350 with a grade of “C” or better",
+      "prereqs": {
+        "groups": [{ "anyOf": ["MATH 2350"], "minGrade": "C" }],
+        "notes": []
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
     },
-    {
-      "courseId": "CS 4100",
-      "availableTerms": ["Fall"],
-      "availabilityKnown": true,
-      "prerequisites": [],
-      "corequisites": []
+    "hsci1140": {
+      "id": "hsci1140",
+      "code": "HSCI 1140",
+      "title": "Yoga Theory & Practice",
+      "credits": 1,
+      "minCredits": 1,
+      "maxCredits": 1,
+      "status": "completed",
+      "attempts": [
+        {
+          "term": "FA20",
+          "grade": "TA",
+          "credits": 1,
+          "flags": [],
+          "transfer": true
+        }
+      ],
+      "transferNote": "CO-PPCC: PED143",
+      "requirementIds": [],
+      "termsOffered": [],
+      "availability": {},
+      "auditNotes": ["Work not applied to this program"],
+      "description": null,
+      "prereqText": null,
+      "prereqs": null,
+      "coreqText": null,
+      "coreqs": null,
+      "detailsLoaded": false,
+      "plannedTerm": null,
+      "locked": false
     },
-    {
-      "courseId": "CS 4200",
-      "availableTerms": ["Spring"],
-      "availabilityKnown": true,
-      "prerequisites": [],
-      "corequisites": []
+    "jpns3210": {
+      "id": "jpns3210",
+      "code": "JPNS 3210",
+      "title": "Learning to Live in Japan",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "completed",
+      "attempts": [
+        {
+          "term": "SP24",
+          "grade": "A",
+          "credits": 3,
+          "flags": [">S"],
+          "transfer": false
+        }
+      ],
+      "transferNote": null,
+      "requirementIds": ["hss-humanities"],
+      "termsOffered": ["Spring"],
+      "availability": {
+        "FA26": "unknown",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "unknown",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "Explores daily life, customs, and social expectations in contemporary Japan.",
+      "prereqText": "",
+      "prereqs": { "groups": [], "notes": [] },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
     },
-    {
-      "courseId": "ENGR 4300",
-      "availableTerms": [],
-      "availabilityKnown": false,
-      "prerequisites": [],
-      "corequisites": []
+    "cs3300": {
+      "id": "cs3300",
+      "code": "CS 3300",
+      "title": "Intro to Software Engineering",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "registered",
+      "attempts": [
+        {
+          "term": "FA26",
+          "grade": "***",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
+      "transferNote": null,
+      "requirementIds": ["cc-navigate", "cpe-cs3300", "ee-tech-electives"],
+      "termsOffered": ["Fall", "Spring"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "Software engineering principles, team projects, and the software development life cycle.",
+      "prereqText": "CS 2060 with a grade of “C” or better",
+      "prereqs": {
+        "groups": [{ "anyOf": ["CS 2060"], "minGrade": "C" }],
+        "notes": []
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": "FA26",
+      "locked": true
     },
-    {
-      "courseId": "ECON 1010",
-      "availableTerms": ["Fall", "Spring"],
-      "availabilityKnown": true,
-      "prerequisites": [],
-      "corequisites": []
+    "ece3210": {
+      "id": "ece3210",
+      "code": "ECE 3210",
+      "title": "Electronics I",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "registered",
+      "attempts": [
+        {
+          "term": "FA26",
+          "grade": "***",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
+      "transferNote": null,
+      "requirementIds": ["ee-ece3210"],
+      "termsOffered": ["Fall"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "unknown",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "unknown"
+      },
+      "auditNotes": ["Fall Only"],
+      "description": "Diodes, transistors, and operational amplifier circuits.",
+      "prereqText": "ECE 2205 with a grade of “C” or better",
+      "prereqs": {
+        "groups": [{ "anyOf": ["ECE 2205"], "minGrade": "C" }],
+        "notes": []
+      },
+      "coreqText": "ECE 3230",
+      "coreqs": {
+        "groups": [{ "anyOf": ["ECE 3230"], "minGrade": null }],
+        "notes": []
+      },
+      "detailsLoaded": true,
+      "plannedTerm": "FA26",
+      "locked": true
     },
-    {
-      "courseId": "PSY 1000",
-      "availableTerms": ["Fall"],
-      "availabilityKnown": true,
-      "prerequisites": [],
-      "corequisites": []
+    "ece2050": {
+      "id": "ece2050",
+      "code": "ECE 2050",
+      "title": "Introduction to Physical Electronics",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "registered",
+      "attempts": [
+        {
+          "term": "SP27",
+          "grade": "***",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
+      "transferNote": null,
+      "requirementIds": ["ee-ece2050"],
+      "termsOffered": ["Spring"],
+      "availability": {
+        "FA26": "unknown",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "unknown",
+        "SP28": "available"
+      },
+      "auditNotes": ["Spring Only"],
+      "description": "Physical principles underlying electronic materials and devices.",
+      "prereqText": "PES 1120",
+      "prereqs": {
+        "groups": [{ "anyOf": ["PES 1120"], "minGrade": null }],
+        "notes": []
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": "SP27",
+      "locked": true
     },
-    {
-      "courseId": "SOC 1010",
-      "availableTerms": ["Spring"],
-      "availabilityKnown": true,
-      "prerequisites": [],
-      "corequisites": []
+    "ece4480": {
+      "id": "ece4480",
+      "code": "ECE 4480",
+      "title": "Computer Architecture and Design",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "completed",
+      "attempts": [
+        {
+          "term": "SP26",
+          "grade": "B",
+          "credits": 3,
+          "flags": [],
+          "transfer": false
+        }
+      ],
+      "transferNote": null,
+      "requirementIds": ["cpe-arch", "ee-lecture-electives"],
+      "termsOffered": ["Spring"],
+      "availability": {
+        "FA26": "unknown",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "unknown",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "Processor datapath and control, pipelining, memory hierarchy, and I/O.",
+      "prereqText": "ECE 2411 with a grade of “C” or better",
+      "prereqs": {
+        "groups": [{ "anyOf": ["ECE 2411"], "minGrade": "C" }],
+        "notes": []
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "cs4200": {
+      "id": "cs4200",
+      "code": "CS 4200",
+      "title": null,
+      "credits": null,
+      "minCredits": null,
+      "maxCredits": null,
+      "status": "option",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["cpe-arch"],
+      "termsOffered": [],
+      "availability": {},
+      "auditNotes": [],
+      "description": null,
+      "prereqText": null,
+      "prereqs": null,
+      "coreqText": null,
+      "coreqs": null,
+      "detailsLoaded": false,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "cs4500": {
+      "id": "cs4500",
+      "code": "CS 4500",
+      "title": "Operating Systems I",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "needed",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["cpe-cs4500"],
+      "termsOffered": ["Fall", "Spring"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "Introduces concepts, terminology, and algorithms of operating systems.",
+      "prereqText": "CS 2060 or ECE 1021 with a grade of “C” or better; CS 2080 with a grade of “C” or better; CS 4200 or CS 5200 or ECE 4480 with a grade of “C” or better. College of Engineering students only",
+      "prereqs": {
+        "groups": [
+          { "anyOf": ["CS 2060", "ECE 1021"], "minGrade": "C" },
+          { "anyOf": ["CS 2080"], "minGrade": "C" },
+          { "anyOf": ["CS 4200", "CS 5200", "ECE 4480"], "minGrade": "C" }
+        ],
+        "notes": ["College of Engineering students only"]
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "ece3020": {
+      "id": "ece3020",
+      "code": "ECE 3020",
+      "title": "Semiconductor Devices I",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "needed",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["ee-ece3020"],
+      "termsOffered": ["Fall"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "unknown",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "unknown"
+      },
+      "auditNotes": ["Fall Only"],
+      "description": "An introduction to semiconductor devices used in modern microelectronic technologies. College of Engineering students only.",
+      "prereqText": "ECE 2050, and either ECE 2205 or ECE 2210",
+      "prereqs": {
+        "groups": [
+          { "anyOf": ["ECE 2050"], "minGrade": null },
+          { "anyOf": ["ECE 2205", "ECE 2210"], "minGrade": null }
+        ],
+        "notes": []
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "ece4891": {
+      "id": "ece4891",
+      "code": "ECE 4891",
+      "title": "Senior Seminar",
+      "credits": 1,
+      "minCredits": 1,
+      "maxCredits": 1,
+      "status": "needed",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["cpe-ece4891"],
+      "termsOffered": ["Fall", "Spring"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
+      "auditNotes": ["This course must be taken the semester before ECE 4899"],
+      "description": "Preparation for the senior design project: team formation, proposals, and design reviews.",
+      "prereqText": "",
+      "prereqs": { "groups": [], "notes": [] },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "ece4899": {
+      "id": "ece4899",
+      "code": "ECE 4899",
+      "title": "Senior Design Project",
+      "credits": 3,
+      "minCredits": 3,
+      "maxCredits": 3,
+      "status": "needed",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["cpe-ece4899"],
+      "termsOffered": ["Fall", "Spring"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "unknown",
+        "FA27": "available",
+        "SP28": "available"
+      },
+      "auditNotes": [],
+      "description": "Team-based design project culminating in a working prototype and final presentation.",
+      "prereqText": "ECE 4891",
+      "prereqs": {
+        "groups": [{ "anyOf": ["ECE 4891"], "minGrade": null }],
+        "notes": []
+      },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "ece4020": {
+      "id": "ece4020",
+      "code": "ECE 4020",
+      "title": null,
+      "credits": null,
+      "minCredits": null,
+      "maxCredits": null,
+      "status": "option",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["ee-lecture-electives"],
+      "termsOffered": [],
+      "availability": {},
+      "auditNotes": [],
+      "description": null,
+      "prereqText": null,
+      "prereqs": null,
+      "coreqText": null,
+      "coreqs": null,
+      "detailsLoaded": false,
+      "plannedTerm": null,
+      "locked": false
+    },
+    "ece4910": {
+      "id": "ece4910",
+      "code": "ECE 4910",
+      "title": "Special Topics in Electrical Engineering",
+      "credits": 1,
+      "minCredits": 1,
+      "maxCredits": 3,
+      "status": "option",
+      "attempts": [],
+      "transferNote": null,
+      "requirementIds": ["ee-lecture-electives"],
+      "termsOffered": ["Fall", "Spring", "Summer"],
+      "availability": {
+        "FA26": "available",
+        "SP27": "available",
+        "SU27": "available",
+        "FA27": "unknown",
+        "SP28": "unknown"
+      },
+      "auditNotes": [],
+      "description": "Topics vary by semester. May be repeated for credit when topics differ.",
+      "prereqText": "Instructor consent",
+      "prereqs": { "groups": [], "notes": ["Instructor consent"] },
+      "coreqText": "",
+      "coreqs": { "groups": [], "notes": [] },
+      "detailsLoaded": true,
+      "plannedTerm": null,
+      "locked": false
     }
-  ]
+  }
 }

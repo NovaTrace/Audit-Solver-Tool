@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Built by `npm run build:bookmarklet` (runs before dev and build)
+src/generated
