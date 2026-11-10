@@ -3,7 +3,7 @@
   "source": {
     "type": "bookmarklet",
     "importedAt": "2026-11-05T20:30:00",
-    "collectorVersion": "0.1.1",
+    "collectorVersion": null,
     "exportedAt": null
   },
   "student": {
@@ -436,7 +436,7 @@
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
-      "plannedTerm": "FA26",
+      "plannedTerm": null,
       "locked": true
     },
     "ece3210": {
@@ -479,8 +479,8 @@
         "notes": []
       },
       "detailsLoaded": true,
-      "plannedTerm": "FA26",
-      "locked": true
+      "plannedTerm": null,
+      "locked": false
     },
     "ece2050": {
       "id": "ece2050",
@@ -519,8 +519,8 @@
       "coreqText": "",
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
-      "plannedTerm": "SP27",
-      "locked": true
+      "plannedTerm": null,
+      "locked": false
     },
     "ece4480": {
       "id": "ece4480",

@@ -226,7 +226,13 @@ function mergePrevious(audit, previous) {
     const old = previous.courses?.[id];
     if (!old) continue; // a course that's new in this import
 
-    if (!isExport) {
+    // Keep the old pick, unless the audit now says the course is registered
+    // or completed: then the audit's fact replaces the plan (a registered
+    // course is placed in its real term below; a completed one is cleared)
+    const nowSettled =
+      course.status !== old.status &&
+      (course.status === "registered" || course.status === "completed");
+    if (!isExport && !nowSettled) {
       course.plannedTerm = old.plannedTerm;
       course.locked = old.locked;
     }
@@ -273,13 +279,15 @@ function placeRegistered(audit) {
   }
 }
 
-/** Repairs 4 + 5: picks must point at a real column; locks need a term. */
+/** Repairs 4 + 5: picks must point at a real column; locks need a term;
+ *  a completed course can't be planned (its hours are already earned). */
 function cleanPicks(audit) {
   const termKeys = new Set(audit.plan.terms.map((t) => t.key));
   for (const course of Object.values(audit.courses)) {
     if (course.plannedTerm !== null && !termKeys.has(course.plannedTerm)) {
       course.plannedTerm = null;
     }
+    if (course.status === "completed") course.plannedTerm = null;
     if (course.plannedTerm === null) course.locked = false;
   }
 }

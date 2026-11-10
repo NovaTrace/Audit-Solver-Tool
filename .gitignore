@@ -25,3 +25,6 @@ dist-ssr
 
 # Built by `npm run build:bookmarklet` (runs before dev and build)
 src/generated
+
+# Notes for Claude Code (kept local, not committed)
+CLAUDE.md

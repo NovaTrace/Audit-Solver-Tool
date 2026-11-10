@@ -38,7 +38,9 @@ function download(filename, text) {
   document.body.append(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url); // free the memory once the click has started it
+  // Free the memory once the download has started. Some browsers (Firefox,
+  // Safari) start it a moment after the click, so don't revoke right away.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // "2026-11-06" in the student's own time zone (toISOString would use UTC,

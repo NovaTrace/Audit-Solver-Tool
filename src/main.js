@@ -30,7 +30,10 @@ import {
 import { visibleSections } from "./logic/courses.js";
 import { setupPopups } from "./ui/popups.js";
 import { setupImport, setupReceiver } from "./ui/importer.js";
-import { setupBookmarkletPanel } from "./ui/bookmarkletPanel.js";
+import {
+  setupBookmarkletPanel,
+  BOOKMARKLET_VERSION,
+} from "./ui/bookmarkletPanel.js";
 import { setupExport } from "./ui/exporter.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
@@ -107,6 +110,10 @@ function saveAndRefresh() {
     setSaveStatus("Saved " + new Date().toLocaleTimeString());
   } else if (isSampleLoaded()) {
     setSaveStatus("Sample data: changes aren't saved");
+  } else {
+    // Storage full or blocked (e.g. a private window): don't keep showing
+    // an old "Saved" time
+    setSaveStatus("Couldn't save in this browser. Export to keep a copy.");
   }
   refreshAll();
 }
@@ -132,6 +139,24 @@ function handleImport(raw) {
     return;
   }
   saveAndRefresh();
+  warnIfOldBookmark(raw.content);
+}
+
+// Send, Download and Copy all arrive through handleImport, so this one
+// check covers them all. Only fresh scrapes count: an exported plan keeps
+// the version that made it, however old.
+function warnIfOldBookmark(data) {
+  const { type, exportedAt, collectorVersion } = data.source ?? {};
+  if (type !== "bookmarklet" || exportedAt != null) return;
+  if (collectorVersion === BOOKMARKLET_VERSION) return;
+
+  alert(
+    "Your audit was loaded, but your Audit Solver bookmark is out of date.\n\nDrag the new “Grab my audit” link to your bookmarks bar to replace it.",
+  );
+  // Open the panel with the link and bring it into view
+  const panel = document.getElementById("get-started");
+  panel.open = true;
+  panel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 setupImport(handleImport);
 setupReceiver(handleImport);

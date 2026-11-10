@@ -22,6 +22,12 @@ const STYLE = `
   button.main { background: #1f7a8c; color: #fff; }
   .close { position: absolute; top: 6px; right: 8px; border: none;
     padding: 2px 6px; font-size: 16px; }
+  .more { margin: -6px 0 10px; }
+  summary { cursor: pointer; color: #1f7a8c; font-size: 12px; }
+  summary::after { content: "See more"; }
+  .more[open] summary::after { content: "See less"; }
+  .more ul { margin: 6px 0 0; padding-left: 18px; max-height: 160px;
+    overflow-y: auto; font: 12px ui-monospace, monospace; }
 `;
 
 /** Show the panel. Returns { status, ready, error, close }. */
@@ -34,6 +40,10 @@ export function showOverlay() {
       <button class="close" aria-label="Close">×</button>
       <h2>Audit Solver</h2>
       <p class="msg">Starting…</p>
+      <details class="more" hidden>
+        <summary></summary>
+        <ul></ul>
+      </details>
       <div class="buttons"></div>
     </div>`;
   document.body.append(host);
@@ -53,9 +63,23 @@ export function showOverlay() {
     status: (text) => say(text),
     error: (text) => say(text, true),
     close,
-    /** Show the finished buttons. Each action is { label, run, main? }. */
-    ready(text, actions) {
+    /**
+     * Show the finished buttons. Each action is { label, run, main? }.
+     * `list` (optional) goes behind a "See more" toggle under the message.
+     */
+    ready(text, actions, list = []) {
       say(text);
+      if (list.length) {
+        const more = root.querySelector(".more");
+        more.querySelector("ul").replaceChildren(
+          ...list.map((item) => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            return li;
+          }),
+        );
+        more.hidden = false;
+      }
       buttons.replaceChildren(
         ...actions.map(({ label, run, main }) => {
           const button = document.createElement("button");

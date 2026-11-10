@@ -166,6 +166,40 @@ describe("parseAudit: repairs", () => {
 });
 
 describe("parseAudit: merging with previous", () => {
+  // The student had planned CS 4500 for Fall '27...
+  const plannedBefore = () => {
+    const previous = parseAudit(copy());
+    previous.courses.cs4500.plannedTerm = "FA27";
+    return previous;
+  };
+  const withAttempt = (status, grade) => {
+    const data = copy();
+    Object.assign(data.courses.cs4500, {
+      status,
+      attempts: [
+        { term: "SP27", grade, credits: 3, flags: [], transfer: false },
+      ],
+    });
+    delete data.courses.cs4500.plannedTerm;
+    delete data.courses.cs4500.locked;
+    return data;
+  };
+
+  it("moves a newly registered course to its real term", () => {
+    const result = parseAudit(
+      withAttempt("registered", "***"),
+      plannedBefore(),
+    );
+    expect(result.courses.cs4500.plannedTerm).toBe("SP27");
+    expect(result.courses.cs4500.locked).toBe(true);
+  });
+
+  it("clears the pick of a newly completed course", () => {
+    const result = parseAudit(withAttempt("completed", "A"), plannedBefore());
+    expect(result.courses.cs4500.plannedTerm).toBeNull();
+    expect(result.courses.cs4500.locked).toBe(false);
+  });
+
   it("keeps the student's semester columns on a fresh scrape", () => {
     const previous = parseAudit(copy());
     previous.plan.terms.push({ key: "SU28", label: "Summer 2028" });

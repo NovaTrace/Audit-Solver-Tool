@@ -16,8 +16,6 @@
 import { parseAudit, AuditError } from "./logic/parser.js";
 import sample from "./data/sample-audit.json";
 
-// v2: the whole audit object. (v1 saves only held picks, in the old
-// format; they're ignored rather than converted.)
 const STORAGE_KEY = "audit-solver-state";
 
 // The current audit. Other files READ it through getAudit(). To CHANGE it,

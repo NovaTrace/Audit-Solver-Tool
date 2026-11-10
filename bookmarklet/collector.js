@@ -21,8 +21,9 @@ import {
 } from "./scrape/courseDetails.js";
 import { parseAudit, SCHEMA } from "../src/logic/parser.js";
 
-// Bump when the bookmarklet changes, so the app can tell old bookmarks
-const COLLECTOR_VERSION = "0.3.0";
+// Filled in by bookmarkletPanel.js with a fingerprint of this code. The
+// planner compares it with the code it hands out now, to spot old bookmarks.
+const COLLECTOR_VERSION = "__COLLECTOR_VERSION__";
 
 // Replaced with the planner's real address when the student drags the
 // link from the planner (bookmarkletPanel.js), so the bookmark always
@@ -32,7 +33,7 @@ const APP_URL = "__APP_URL__";
 run();
 
 async function run() {
-  if (!/\/audit\//.test(location.pathname)) {
+  if (!document.querySelector("#auditRequirements")) {
     alert(
       "Audit Solver: open your degree audit first, then click the bookmark.",
     );
@@ -72,32 +73,36 @@ async function run() {
       `Found ${list.length} courses for ${student.name}.` +
       (failed.length ? ` Details missing for ${failed.length}.` : "");
 
-    ui.ready(summary, [
-      {
-        label: "Send to Audit Solver",
-        main: true,
-        run: (say) =>
-          sendToApp(audit, APP_URL).then(
-            () => say("Sent! Switch to the Audit Solver tab."),
-            (e) => say(e.message),
-          ),
-      },
-      {
-        label: "Download .json",
-        run: (say) => {
-          downloadJson(audit);
-          say("Downloaded. Load it with Import in Audit Solver.");
+    ui.ready(
+      summary,
+      [
+        {
+          label: "Send to Audit Solver",
+          main: true,
+          run: (say) =>
+            sendToApp(audit, APP_URL).then(
+              () => say("Sent! Switch to the Audit Solver tab."),
+              (e) => say(e.message),
+            ),
         },
-      },
-      {
-        label: "Copy",
-        run: (say) =>
-          copyJson(audit).then(
-            () => say("Copied."),
-            () => say("Couldn't copy. Use Download instead."),
-          ),
-      },
-    ]);
+        {
+          label: "Download .json",
+          run: (say) => {
+            downloadJson(audit);
+            say("Downloaded. Load it with Import in Audit Solver.");
+          },
+        },
+        {
+          label: "Copy",
+          run: (say) =>
+            copyJson(audit).then(
+              () => say("Copied."),
+              () => say("Couldn't copy. Use Download instead."),
+            ),
+        },
+      ],
+      failed, // the codes behind "Details missing", under "See more"
+    );
   } catch (e) {
     console.error("Audit Solver:", e);
     ui.error(
