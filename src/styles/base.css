@@ -6,6 +6,7 @@
   --bg: #193752;
   --panel: #194C76;
   --panel-alt: #133a61;
+  --note: rgba(25, 76, 118, .4);
   --course: #204365;
   --line: rgba(183, 215, 243, 0.1);
   --line-strong: rgba(183, 215, 243);
@@ -14,6 +15,9 @@
   --ink-dim: #DEF7EF;
   --ink-faint: #E6E6E6;
   --ink-dark: #193752;
+  --button: #193752;
+  --button-border: #83879d;
+  --highlight: #555568;
   --accent: rgb(236, 235, 240);
   --accent-bg: rgba(31, 51, 125, 0.674);
   --accent-ink: #162f55;
