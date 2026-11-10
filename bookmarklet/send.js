@@ -24,7 +24,9 @@ export function sendToApp(audit, appUrl) {
     const planner = window.open(appUrl, "audit-solver");
     if (!planner) {
       reject(
-        new Error("The browser blocked the new tab. Try Download instead."),
+        new Error(
+          "The browser blocked the new tab. Allow pop-ups for this site and try again, or use Download instead.",
+        ),
       );
       return;
     }

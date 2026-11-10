@@ -46,8 +46,8 @@ afterEach(() => {
 });
 
 // Sample courses used below (see sample-audit.json):
-//   cs4500   needed, unplaced          ece2050  registered SP27, locked
-//   math3400 completed                 cs3300   registered FA26, locked
+//   cs4500   needed, unplaced          math3400 completed
+// The demo's schedule starts blank (nothing registered).
 
 describe("the demo audit", () => {
   it("is flagged while it's showing", () => {
@@ -81,8 +81,6 @@ describe("the demo audit", () => {
 describe("loading an audit", () => {
   it("starts from the parsed sample", () => {
     expect(getAudit().student.name).toBe(sample.student.name);
-    expect(course("cs3300").plannedTerm).toBe("FA26");
-    expect(course("cs3300").locked).toBe(true);
   });
 
   it("loadAudit replaces the whole audit", () => {
@@ -107,6 +105,16 @@ describe("loading an audit", () => {
 
 describe("resetPlan", () => {
   it("clears picks but re-places registered courses and keeps the columns", () => {
+    // The demo has no registered courses, so make ECE 2050 one for this test
+    const data = structuredClone(sample);
+    Object.assign(data.courses.ece2050, {
+      status: "registered",
+      attempts: [
+        { term: "SP27", grade: "***", credits: 3, flags: [], transfer: false },
+      ],
+    });
+    loadAudit(parseAudit(data));
+
     toggleTerm("cs4500", "SP27");
     toggleLock("cs4500");
     toggleLock("ece2050"); // unlock a registered course
@@ -142,8 +150,10 @@ describe("toggleTerm", () => {
   });
 
   it("won't move a locked course", () => {
-    expect(toggleTerm("ece2050", "FA27")).toBe(false);
-    expect(course("ece2050").plannedTerm).toBe("SP27");
+    toggleTerm("cs4500", "SP27");
+    toggleLock("cs4500");
+    expect(toggleTerm("cs4500", "FA27")).toBe(false);
+    expect(course("cs4500").plannedTerm).toBe("SP27");
   });
 
   it("won't place a completed course", () => {

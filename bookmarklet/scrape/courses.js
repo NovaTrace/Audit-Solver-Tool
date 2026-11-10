@@ -68,14 +68,16 @@ export function linkCourses(courses, requirements) {
 // needed if an unfinished requirement asks for exactly this course;
 // otherwise one option among several.
 function statusOf(course, requirements) {
-  if (course.attempts.some(passed)) return "completed";
-  if (course.attempts.some((a) => a.grade === "***")) return "registered";
   const neededAlone = requirements.some(
     (r) =>
       r.status !== "complete" &&
       r.options.length === 1 &&
       r.options[0] === course.code,
   );
+  // A pass only counts if the audit accepted it: a D where the requirement
+  // wants a C- or better leaves that requirement unfinished
+  if (course.attempts.some(passed) && !neededAlone) return "completed";
+  if (course.attempts.some((a) => a.grade === "***")) return "registered";
   return neededAlone ? "needed" : "option";
 }
 

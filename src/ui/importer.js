@@ -79,6 +79,11 @@ export function setupReceiver(onImport) {
     onImport({ kind: "json", content: event.data.payload });
   });
 
-  // "*" is fine here: this message carries no data, it only says "ready"
-  auditTab.postMessage({ type: "audit-solver:ready" }, "*");
+  // Say "ready" only to the audit site: the browser drops a message whose
+  // target doesn't match the tab's site. While developing, the test page's
+  // localhost port isn't known ahead of time, so allow any site there.
+  const targets = import.meta.env.DEV ? ["*"] : AUDIT_ORIGINS;
+  for (const origin of targets) {
+    auditTab.postMessage({ type: "audit-solver:ready" }, origin);
+  }
 }

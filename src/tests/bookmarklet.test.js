@@ -16,7 +16,10 @@ import {
   toCourseDetails,
   fetchCourseDetails,
   addCourseDetails,
+  needsDetails,
   SessionExpiredError,
+  SlowDownError,
+  AT_ONCE,
 } from "../../bookmarklet/scrape/courseDetails.js";
 import { parseAudit, SCHEMA } from "../logic/parser.js";
 import responses from "./fixtures/course-details.json";
@@ -63,6 +66,20 @@ describe("scrapeStudent", () => {
       hoursInProgress: 9,
       gpa: 3.214,
       attemptedHours: 82,
+    });
+  });
+
+  it("finds the totals by their wording, not CU's headings", () => {
+    const renamed = new DOMParser().parseFromString(
+      pageHtml
+        .replace("MINIMUM HOURS", "TOTAL CREDITS")
+        .replace("UNIVERSITY OF COLORADO GPA", "CUMULATIVE GPA"),
+      "text/html",
+    );
+    expect(scrapeStudent(renamed)).toMatchObject({
+      hoursRequired: 128,
+      hoursEarned: 88,
+      gpa: 3.214,
     });
   });
 });
@@ -170,6 +187,31 @@ describe("scrapeCourses and linkCourses", () => {
     expect(courses.cs4200.status).toBe("option"); // the other half of an either/or
   });
 
+  it("counts a pass only if the audit accepted it", () => {
+    // A D in a course whose requirement wants a C- or better
+    const withD = (reqStatus) => {
+      const courses = {
+        cs1450: {
+          id: "cs1450",
+          code: "CS 1450",
+          attempts: [{ term: "FA25", grade: "D", flags: [], credits: 3 }],
+          requirementIds: [],
+        },
+      };
+      const requirements = [
+        {
+          id: "core-cs-1450",
+          status: reqStatus,
+          options: ["CS 1450"],
+          applied: [],
+        },
+      ];
+      return linkCourses(courses, requirements).cs1450.status;
+    };
+    expect(withD("needs")).toBe("needed"); // not accepted: plan it again
+    expect(withD("complete")).toBe("completed"); // accepted
+  });
+
   it("links courses and requirements both ways", () => {
     expect(courses.ece4480.requirementIds).toHaveLength(2); // either/or + electives pool
     expect(courses.cs4500.requirementIds).toEqual([
@@ -237,17 +279,66 @@ describe("an expired login", () => {
       ok: false,
       type: "opaqueredirect",
     }));
-    const list = [
-      "CS 4500",
-      "ECE 3020",
-      "ECE 4020",
-      "ECE 4910",
-      "PES 2130",
-    ].map((code) => ({ code }));
+    // Twice as many courses as are fetched at once
+    const list = Array.from({ length: AT_ONCE * 2 }, (_, i) => ({
+      code: `CS ${1000 + i}`,
+    }));
     await expect(
       addCourseDetails(list, { fetchImpl, baseUrl: BASE }),
     ).rejects.toThrow(SessionExpiredError);
-    expect(fetchImpl.mock.calls.length).toBeLessThanOrEqual(3); // not all 5
+    // Only the first round went out, not the rest of the list
+    expect(fetchImpl.mock.calls.length).toBeLessThanOrEqual(AT_ONCE);
+  });
+
+  it("stops the other workers taking new courses when one request expires", async () => {
+    // The first answer is the login redirect; the rest succeed, a bit later
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      if (++calls === 1) return { ok: false, type: "opaqueredirect" };
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return { ok: true, type: "basic", json: async () => ({ title: "X" }) };
+    });
+    const list = Array.from({ length: AT_ONCE * 2 }, (_, i) => ({
+      code: `CS ${1000 + i}`,
+    }));
+    await expect(
+      addCourseDetails(list, { fetchImpl, baseUrl: BASE }),
+    ).rejects.toThrow(SessionExpiredError);
+    expect(fetchImpl.mock.calls.length).toBe(AT_ONCE); // nothing new started
+  });
+});
+
+describe("being told to slow down", () => {
+  // A 429 (Too Many Requests) answer; Retry-After: 0 keeps the test fast
+  const tooMany = {
+    ok: false,
+    status: 429,
+    type: "basic",
+    headers: { get: () => "0" },
+  };
+
+  it("pauses, then retries the course", async () => {
+    const answer = fakeFetch();
+    let calls = 0;
+    const fetchImpl = vi.fn(async (url, init) =>
+      ++calls === 1 ? tooMany : answer(url, init),
+    );
+    const list = [{ code: "ECE 3020" }, { code: "PES 2130" }];
+    const failed = await addCourseDetails(list, { fetchImpl, baseUrl: BASE });
+    expect(failed).toEqual([]);
+    expect(list.every((c) => c.detailsLoaded)).toBe(true);
+  });
+
+  it("stops if it's told again after the pause", async () => {
+    const fetchImpl = vi.fn(async () => tooMany);
+    const list = Array.from({ length: AT_ONCE * 2 }, (_, i) => ({
+      code: `CS ${1000 + i}`,
+    }));
+    await expect(
+      addCourseDetails(list, { fetchImpl, baseUrl: BASE }),
+    ).rejects.toThrow(SlowDownError);
+    // One try and one retry for each worker's first course, no more
+    expect(fetchImpl.mock.calls.length).toBe(AT_ONCE * 2);
   });
 });
 
@@ -255,10 +346,18 @@ describe("the whole collection", () => {
   it("builds an audit that passes parseAudit", async () => {
     const { requirements, courses } = collect();
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    await addCourseDetails(Object.values(courses), {
-      fetchImpl: fakeFetch(),
+    const fetchImpl = fakeFetch();
+    // Like collector.js: details only for courses still to plan
+    await addCourseDetails(Object.values(courses).filter(needsDetails), {
+      fetchImpl,
       baseUrl: BASE,
     });
+    const asked = fetchImpl.mock.calls.map(([, { body }]) =>
+      body.get("courseNum"),
+    );
+    expect(asked).not.toContain("3400"); // MATH 3400 is completed: skipped
+    expect(courses.math3400.detailsLoaded).toBeUndefined();
+    expect(courses.math3400.credits).toBe(3); // still known, from history
     const audit = {
       schema: SCHEMA,
       source: { type: "bookmarklet" },

@@ -39,7 +39,7 @@ export function showOverlay() {
     <div class="box" role="dialog" aria-label="Audit Solver">
       <button class="close" aria-label="Close">×</button>
       <h2>Audit Solver</h2>
-      <p class="msg">Starting…</p>
+      <p class="msg" aria-live="polite">Starting…</p>
       <details class="more" hidden>
         <summary></summary>
         <ul></ul>

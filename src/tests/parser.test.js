@@ -6,6 +6,15 @@ import { parseAudit, AuditError } from "../logic/parser.js";
 const copy = () => structuredClone(sample); // fresh copy, so one test can't affect another
 const NOV_2026 = new Date(2026, 10, 5); // a fixed "today" so tests don't change with the calendar
 
+// The demo has no registered courses, so tests that need one make it here
+function makeRegistered(data, id, term) {
+  Object.assign(data.courses[id], {
+    status: "registered",
+    attempts: [{ term, grade: "***", credits: 3, flags: [], transfer: false }],
+  });
+  return data;
+}
+
 describe("parseAudit", () => {
   it("accepts the sample", () => {
     expect(() => parseAudit(copy())).not.toThrow();
@@ -33,9 +42,7 @@ describe("parseAudit", () => {
   });
 
   it("places and locks a registered course", () => {
-    const data = copy();
-    data.courses.ece2050.plannedTerm = null;
-    data.courses.ece2050.locked = false;
+    const data = makeRegistered(copy(), "ece2050", "SP27");
     const result = parseAudit(data);
     expect(result.courses.ece2050.plannedTerm).toBe("SP27");
     expect(result.courses.ece2050.locked).toBe(true);
@@ -81,8 +88,8 @@ describe("parseAudit: rejects", () => {
 
   it("rejects an applied course that doesn't list the requirement back", () => {
     const data = copy();
-    data.courses.cs3300.requirementIds = ["cc-navigate", "cpe-cs3300"]; // dropped ee-tech-electives
-    expect(() => parseAudit(data)).toThrow(/ee-tech-electives/);
+    data.courses.ece4480.requirementIds = ["cpe-arch"]; // dropped ee-lecture-electives
+    expect(() => parseAudit(data)).toThrow(/ee-lecture-electives/);
   });
 
   it("rejects two requirements with the same id", () => {
@@ -132,7 +139,7 @@ describe("parseAudit: repairs", () => {
   });
 
   it("starts the columns at the first registered term if it's earlier than today", () => {
-    const data = copy();
+    const data = makeRegistered(copy(), "cs3300", "FA26");
     delete data.plan;
     const { plan } = parseAudit(data, null, new Date(2027, 2, 1)); // March 2027
     expect(plan.terms[0].key).toBe("FA26"); // CS 3300 is registered in FA26

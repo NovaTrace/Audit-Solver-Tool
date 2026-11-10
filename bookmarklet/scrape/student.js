@@ -2,10 +2,10 @@
 //
 //   name / degree     the two headings at the top (.h5, then h1.h5)
 //   header fields     "Prepared On <br> 11/05/2026 01:32 PM" style blocks
-//   totals            the MINIMUM HOURS and UNIVERSITY OF COLORADO GPA
-//                     sub-requirements
+//   totals            the sub-requirements for the degree's minimum hours
+//                     ("A minimum of 128 … hours") and the overall GPA
 
-import { auditRoot, text, num, requirementBlocks } from "./dom.js";
+import { auditRoot, text, num, lines, requirementBlocks } from "./dom.js";
 
 /** The audit page -> the `student` object (see the Audit JSON Data Guide). */
 export function scrapeStudent(doc) {
@@ -21,10 +21,8 @@ export function scrapeStudent(doc) {
   const subs = requirementBlocks(auditRoot(doc)).flatMap((r) => [
     ...r.querySelectorAll(".subrequirement"),
   ]);
-  const subTitled = (re) =>
-    subs.find((s) => re.test(text(s.querySelector(".subreqTitle"))));
-  const minimum = subTitled(/MINIMUM HOURS/);
-  const gpa = subTitled(/UNIVERSITY OF COLORADO GPA/);
+  const minimum = degreeHours(subs);
+  const gpa = overallGpa(subs);
 
   return {
     name: text(degree?.previousElementSibling) || "Unknown student",
@@ -40,14 +38,9 @@ export function scrapeStudent(doc) {
     preparedOn: prepared ? toIsoLocal(prepared) : null,
     graduationDate: field["Graduation Date"] || null,
     allRequirementsMet: !doc.querySelector(".completionTextNO"),
-    hoursRequired:
-      Number(
-        text(minimum?.querySelector(".subreqTitle")).match(
-          /minimum of (\d+)/i,
-        )?.[1],
-      ) || null,
-    hoursEarned: num(minimum?.querySelector(".subreqEarned .hours")),
-    hoursInProgress: num(minimum?.querySelector(".subreqIpHours .hours")),
+    hoursRequired: minimum?.hours ?? null,
+    hoursEarned: num(minimum?.sub.querySelector(".subreqEarned .hours")),
+    hoursInProgress: num(minimum?.sub.querySelector(".subreqIpHours .hours")),
     gpa: num(gpa?.querySelector(".gpaDetail .gpa")),
     attemptedHours: num(gpa?.querySelector(".gpaDetail .hours")),
   };
@@ -57,18 +50,39 @@ export function scrapeStudent(doc) {
 function headerFields(doc) {
   const fields = {};
   for (const b of doc.querySelectorAll(".col-auto > b")) {
-    const [label, ...rest] = b.innerHTML.split(/<br\s*\/?>/i);
-    const key = label
-      .replace(/<[^>]*>/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    fields[key] = rest
-      .join(" ")
-      .replace(/<[^>]*>/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+    const [label, ...rest] = lines(b);
+    if (label) fields[label] = rest.join(" ");
   }
   return fields;
+}
+
+// The degree's total-hours rule: the sub-requirement whose title says "a
+// minimum of N" with the largest N (128 for the degree beats 30 for
+// residency). Found by its wording, not its heading, which varies by school.
+// -> { sub, hours } or undefined
+function degreeHours(subs) {
+  let best;
+  for (const sub of subs) {
+    const match = text(sub.querySelector(".subreqTitle")).match(
+      /minimum of (\d+)/i,
+    );
+    const hours = match && Number(match[1]);
+    if (hours && (!best || hours > best.hours)) best = { sub, hours };
+  }
+  return best;
+}
+
+// The overall GPA: a sub-requirement with a GPA table (.gpaDetail). If there
+// are several (e.g. a major GPA too), prefer the overall one.
+function overallGpa(subs) {
+  const withGpa = subs.filter((s) => s.querySelector(".gpaDetail"));
+  return (
+    withGpa.find((s) =>
+      /UNIVERSITY OF|OVERALL|CUMULATIVE|INSTITUTION/i.test(
+        text(s.querySelector(".subreqTitle")),
+      ),
+    ) ?? withGpa[0]
+  );
 }
 
 // "11/05/2026 01:32 PM" pieces -> "2026-11-05T13:32:00"

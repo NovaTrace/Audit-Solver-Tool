@@ -17,7 +17,9 @@ import { scrapeCourses, linkCourses } from "./scrape/courses.js";
 import { scrapeRequirements } from "./scrape/requirements.js";
 import {
   addCourseDetails,
+  needsDetails,
   SessionExpiredError,
+  SlowDownError,
 } from "./scrape/courseDetails.js";
 import { parseAudit, SCHEMA } from "../src/logic/parser.js";
 
@@ -50,7 +52,8 @@ async function run() {
     const courses = linkCourses(scrapeCourses(document), requirements);
 
     const list = Object.values(courses);
-    const failed = await addCourseDetails(list, {
+    // Only courses still to plan: skipping completed ones saves most requests
+    const failed = await addCourseDetails(list.filter(needsDetails), {
       onProgress: (done, total) =>
         ui.status(`Loading course details: ${done} of ${total}`),
     });
@@ -105,10 +108,9 @@ async function run() {
     );
   } catch (e) {
     console.error("Audit Solver:", e);
-    ui.error(
-      e instanceof SessionExpiredError
-        ? e.message
-        : `Something went wrong: ${e.message}`,
-    );
+    // Known situations the student can fix get their own message as-is
+    const known =
+      e instanceof SessionExpiredError || e instanceof SlowDownError;
+    ui.error(known ? e.message : `Something went wrong: ${e.message}`);
   }
 }

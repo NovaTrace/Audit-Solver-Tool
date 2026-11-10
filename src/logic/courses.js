@@ -33,8 +33,8 @@ export function visibleSections({ audit, filterSection, query }) {
     .filter((c) => c.status !== "completed" && matchesQuery(c, query))
     .sort((a, b) => a.code.localeCompare(b.code));
 
-  // Courses the audit doesn't tie to any requirement (e.g. the bookmarklet
-  // before requirements.js exists) still need to be plannable somewhere
+  // Courses the audit doesn't tie to any requirement (e.g. an F in a course
+  // no requirement lists) still need to be plannable somewhere
   const sections = sectionNames(audit);
   if (plannable.some((c) => c.requirementIds.length === 0)) {
     sections.push(UNLINKED);

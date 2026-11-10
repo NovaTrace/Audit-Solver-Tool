@@ -22,7 +22,31 @@ export class SessionExpiredError extends Error {
     this.name = "SessionExpiredError";
   }
 }
-const AT_ONCE = 3; // requests in flight at a time: be polite to the server
+
+/** Thrown when the audit site answers 429 (Too Many Requests) or 503
+ *  (overloaded). `waitMs` is how long it asked us to wait. */
+export class SlowDownError extends Error {
+  constructor(waitMs) {
+    super(
+      "The audit site asked us to slow down. Wait a minute, then click the bookmark again.",
+    );
+    this.name = "SlowDownError";
+    this.waitMs = waitMs;
+  }
+}
+
+export const AT_ONCE = 5; // requests in flight at a time: be polite to the server
+const DEFAULT_WAIT_MS = 2000; // when told to slow down without saying how long
+const MAX_WAIT_MS = 10000; // never pause longer than this before retrying
+
+/**
+ * Whether a course is worth a details request. Completed courses aren't:
+ * their title and credits come from the course history, and they're never
+ * planned, so their prereqs and offerings don't matter.
+ */
+export function needsDetails(course) {
+  return course.status !== "completed";
+}
 
 /**
  * Raw endpoint response -> our course fields (see the Audit JSON Data
@@ -80,6 +104,9 @@ export async function fetchCourseDetails(
       if (res.type === "opaqueredirect" || res.redirected) {
         throw new SessionExpiredError();
       }
+      if (res.status === 429 || res.status === 503) {
+        throw new SlowDownError(waitTime(res.headers?.get("retry-after")));
+      }
       if (!res.ok) throw new Error(`${code}: HTTP ${res.status}`);
       return res.json();
     });
@@ -92,31 +119,59 @@ export async function fetchCourseDetails(
   return toCourseDetails(raw);
 }
 
+// A Retry-After header ("5" seconds, or a date) -> milliseconds to wait
+function waitTime(retryAfter) {
+  if (retryAfter == null || retryAfter === "") return DEFAULT_WAIT_MS;
+  const seconds = Number(retryAfter);
+  const ms = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Date.parse(retryAfter) - Date.now();
+  if (Number.isNaN(ms)) return DEFAULT_WAIT_MS;
+  return Math.min(Math.max(ms, 0), MAX_WAIT_MS);
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Add details to every course, AT_ONCE at a time, calling
  * onProgress(done, total) as they finish. A course whose request fails
  * keeps detailsLoaded: false; returns the codes that failed.
- * Stops and throws SessionExpiredError if the login has run out.
+ *
+ * Stops and throws SessionExpiredError if the login has run out. If the
+ * site says to slow down, every worker pauses, then the course is tried
+ * once more; if it says so again, stops and throws SlowDownError.
  */
 export async function addCourseDetails(courses, options = {}) {
   const { onProgress = () => {}, ...fetchOptions } = options;
   const queue = [...courses];
   const failed = [];
   let done = 0;
-  let expired = null;
+  let stopError = null; // set when there's no point asking again
+  let pause = null; // a Promise every worker waits on while slowing down
+
+  async function fetchWithRetry(code) {
+    await pause;
+    try {
+      return await fetchCourseDetails(code, fetchOptions);
+    } catch (e) {
+      if (!(e instanceof SlowDownError)) throw e;
+      // The first worker told to slow down starts the pause; any others
+      // told the same wait on that same pause
+      pause ??= sleep(e.waitMs).then(() => (pause = null));
+      await pause;
+      return fetchCourseDetails(code, fetchOptions); // a 2nd SlowDownError stops all
+    }
+  }
 
   async function worker() {
     while (queue.length) {
       const course = queue.shift();
       try {
-        Object.assign(
-          course,
-          await fetchCourseDetails(course.code, fetchOptions),
-        );
+        Object.assign(course, await fetchWithRetry(course.code));
       } catch (e) {
-        if (e instanceof SessionExpiredError) {
-          expired = e;
-          queue.length = 0; // no point asking again
+        if (e instanceof SessionExpiredError || e instanceof SlowDownError) {
+          stopError ??= e;
+          queue.length = 0; // stop the other workers taking new courses
           return;
         }
         console.warn("Audit Solver:", e.message);
@@ -127,6 +182,6 @@ export async function addCourseDetails(courses, options = {}) {
   }
 
   await Promise.all(Array.from({ length: AT_ONCE }, worker));
-  if (expired) throw expired;
+  if (stopError) throw stopError;
   return failed;
 }

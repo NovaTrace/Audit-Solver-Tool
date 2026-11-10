@@ -17,7 +17,7 @@
     "allRequirementsMet": false,
     "hoursRequired": 128,
     "hoursEarned": 88,
-    "hoursInProgress": 9,
+    "hoursInProgress": 0,
     "gpa": 3.214,
     "attemptedHours": 82
   },
@@ -37,13 +37,13 @@
       "section": "Compass Curriculum",
       "title": "NAVIGATE",
       "type": "pool",
-      "status": "in-progress",
+      "status": "needs",
       "needCourses": 1,
       "needHours": null,
       "earnedHours": 0,
-      "inProgressHours": 3,
+      "inProgressHours": 0,
       "options": [],
-      "applied": [{ "code": "CS 3300", "hours": 3 }],
+      "applied": [],
       "description": "Complete one of the Navigate courses listed below. The Navigate course may double count with other requirements."
     },
     {
@@ -51,13 +51,13 @@
       "section": "Computer Engineering - Core",
       "title": "CS 3300 Software Engineering",
       "type": "course",
-      "status": "in-progress",
+      "status": "needs",
       "needCourses": 1,
       "needHours": null,
       "earnedHours": 0,
-      "inProgressHours": 3,
+      "inProgressHours": 0,
       "options": ["CS 3300"],
-      "applied": [{ "code": "CS 3300", "hours": 3 }],
+      "applied": [],
       "description": ""
     },
     {
@@ -138,13 +138,13 @@
       "section": "Electrical Engineering - Core",
       "title": "ECE 2050 Introduction to Physical Electronics",
       "type": "course",
-      "status": "in-progress",
+      "status": "needs",
       "needCourses": 1,
       "needHours": null,
       "earnedHours": 0,
-      "inProgressHours": 3,
+      "inProgressHours": 0,
       "options": ["ECE 2050"],
-      "applied": [{ "code": "ECE 2050", "hours": 3 }],
+      "applied": [],
       "description": "Spring Only"
     },
     {
@@ -166,13 +166,13 @@
       "section": "Electrical Engineering - Core",
       "title": "ECE 3210 Electronics I",
       "type": "course",
-      "status": "in-progress",
+      "status": "needs",
       "needCourses": 1,
       "needHours": null,
       "earnedHours": 0,
-      "inProgressHours": 3,
+      "inProgressHours": 0,
       "options": ["ECE 3210"],
-      "applied": [{ "code": "ECE 3210", "hours": 3 }],
+      "applied": [],
       "description": "Fall Only"
     },
     {
@@ -198,9 +198,9 @@
       "needCourses": null,
       "needHours": 6,
       "earnedHours": 0,
-      "inProgressHours": 3,
+      "inProgressHours": 0,
       "options": [],
-      "applied": [{ "code": "CS 3300", "hours": 3 }],
+      "applied": [],
       "description": "Complete 9 credit hours of Technical Electives. Additional UNUSED upper-division (3000+ level) ECE electives may also be taken to fulfill this requirement."
     },
     {
@@ -406,16 +406,8 @@
       "credits": 3,
       "minCredits": 3,
       "maxCredits": 3,
-      "status": "registered",
-      "attempts": [
-        {
-          "term": "FA26",
-          "grade": "***",
-          "credits": 3,
-          "flags": [],
-          "transfer": false
-        }
-      ],
+      "status": "needed",
+      "attempts": [],
       "transferNote": null,
       "requirementIds": ["cc-navigate", "cpe-cs3300", "ee-tech-electives"],
       "termsOffered": ["Fall", "Spring"],
@@ -437,7 +429,7 @@
       "coreqs": { "groups": [], "notes": [] },
       "detailsLoaded": true,
       "plannedTerm": null,
-      "locked": true
+      "locked": false
     },
     "ece3210": {
       "id": "ece3210",
@@ -446,16 +438,8 @@
       "credits": 3,
       "minCredits": 3,
       "maxCredits": 3,
-      "status": "registered",
-      "attempts": [
-        {
-          "term": "FA26",
-          "grade": "***",
-          "credits": 3,
-          "flags": [],
-          "transfer": false
-        }
-      ],
+      "status": "needed",
+      "attempts": [],
       "transferNote": null,
       "requirementIds": ["ee-ece3210"],
       "termsOffered": ["Fall"],
@@ -489,16 +473,8 @@
       "credits": 3,
       "minCredits": 3,
       "maxCredits": 3,
-      "status": "registered",
-      "attempts": [
-        {
-          "term": "SP27",
-          "grade": "***",
-          "credits": 3,
-          "flags": [],
-          "transfer": false
-        }
-      ],
+      "status": "needed",
+      "attempts": [],
       "transferNote": null,
       "requirementIds": ["ee-ece2050"],
       "termsOffered": ["Spring"],
