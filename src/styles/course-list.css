@@ -1,3 +1,11 @@
+.cat-head{
+  max-width: 1380px;
+  height: auto;
+  background-color: var(--accent-bg);
+  padding: 10px;
+  margin:auto;
+}
+
 .controls {
   display: flex;
   gap: 8px;
@@ -6,13 +14,18 @@
   align-items: center;
 }
 
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .chip {
   font-family: var(--mono);
   font-size: 12px;
   padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
+  border: 1px solid var(--ink-faint);
+  background: var(--button);
   color: var(--ink-dim);
   cursor: pointer;
   transition: all 0.12s;
@@ -24,9 +37,9 @@
 }
 
 .chip.active {
-  background: var(--accent);
+  background: var(--panel);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -42,11 +55,11 @@
   font-family: var(--sans);
   font-size: 13px;
   padding: 7px 12px;
-  border-radius: 20px;
+  border-radius: 5px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
   color: var(--ink);
-  min-width: 200px;
+  min-width: 250px;
   margin-left: auto;
 }
 
@@ -64,7 +77,7 @@
   padding: 7px 12px;
   border: 1px solid var(--line);
   border-bottom: none;
-  border-radius: 6px 6px 0 0;
+  border-radius: 0px 0px 0 0;
   margin-top: 14px;
 }
 
@@ -78,7 +91,7 @@
   grid-template-columns: 100px 1fr 300px;
   gap: 14px;
   align-items: center;
-  background: var(--panel);
+  background: var(--course);
   border: 1px solid var(--line);
   border-top: none;
   padding: 10px 12px;
@@ -93,7 +106,7 @@
 }
 
 .row:last-of-type {
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 0px 0px;
 }
 .row.pool {
   background: var(--panel-alt);
@@ -114,7 +127,7 @@
 .r-title {
   color: var(--ink);
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .r-sub {
   display: block;
@@ -126,8 +139,8 @@
 .r-term {
   display: inline-block;
   font-family: var(--mono);
-  background: var(--accent-bg);
-  color: var(--accent-ink);
+  background: var(--highlight);
+  color: var(--ink);
   font-size: 10px;
   padding: 2px 6px;
   margin-top: 4px;
@@ -163,8 +176,8 @@
   color: var(--ink);
 }
 .pill.on {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--button);
+  border-color: var(--button-border);
   color: #fff;
   font-weight: 600;
 }
@@ -177,6 +190,11 @@
   background: var(--panel);
   color: var(--ink-faint);
   cursor: pointer;
+  /* Wide enough for "Locked 🔒", so the button doesn't change size (and
+     nudge the pills) when it switches from "Lock 🔓" */
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .lock-btn.on {
@@ -187,7 +205,12 @@
 }
 .lock-btn:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default; /* the regular arrow: greyed out already says "not yet" */
+}
+
+/* Term the course isn't scheduled in (from the course details) */
+.pill.not-offered {
+  border-style: dashed;
 }
 
 .pill[disabled] {
@@ -202,4 +225,14 @@
   .pills {
     margin-top: 6px;
   }
+}
+
+/* Shown in #list when no course matches the chip + search */
+.list-empty {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
 }

@@ -4,23 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audit Solver Tool</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
-    />
+    <!-- Fonts are bundled with the site: see the imports in src/main.js -->
     <!-- TODO:(favicon/ contact an artist or build) -->
   </head>
   <body>
     <div class="sheet">
       <header class="titleblock">
+        <div class="logo">
+          <img src="src/imgs/Audit-Solver-logo-no-grid.png" alt="Audit Solver logo" style="max-width:80%; height:min-content">
+        </div>
         <div class="tb-left">
-          <img src="src/imgs/Audit-Solver-logo.png" alt="Audit Solver logo" style="max-width:40%; height:auto;">
-          <p>
-            studentName <br />· major + major (if present) <br />· minor (if
-            present)
-          </p>
+          <!-- Filled by src/render/header.js -->
+          <p id="student-info"></p>
         </div>
 
         <div class="tb-right">
@@ -34,8 +29,10 @@
               ⓘ
             </button>
             <span class="info-text">
-              Click 'Import' to add a degree plan.<br />
-              Click 'Export' to download a pdf of your degree plan.
+              Click 'Import' to load a plan you exported (.json).<br />
+              Used the bookmark's 'Copy' button? Press Ctrl+V on this page.<br />
+              Click 'Export' to download your plan (.json). It includes your
+              grades, so keep it private.
             </span>
           </div>
 
@@ -45,15 +42,37 @@
             <button type="button" id="export-btn">Export</button>
           </div>
 
-          <div class="tb-catalogbox">
-            CATALOG YEAR: <b>catYear</b><br />
-            AUDIT PREPARED: <b>auditGenDate</b><br />
-            SHEET GENERATED: <b>sheetGenDate</b>
-          </div>
+          <dl class="tb-catalogbox">
+            <dt>CATALOG YEAR:</dt>
+            <dd id="stat-catalog">catYear</dd>
+            <dt>AUDIT PREPARED:</dt>
+            <dd id="stat-audit">auditGenDate</dd>
+            <dt>SHEET GENERATED:</dt>
+            <dd id="stat-sheet">sheetGenDate</dd>
+          </dl>
         </div>
       </header>
 
       <main>
+        <details class="get-started" id="get-started">
+          <summary><h2>Load your degree audit</h2></summary>
+          <ol>
+            <li>
+              Drag
+              <a class="bookmarklet" id="bookmarklet-link">⤓ Grab my audit</a>
+              to your bookmarks bar
+            </li>
+            <li>
+              Open your degree audit in the portal and run it with HTML output.
+            </li>
+            <li>Click the bookmark. Your plan opens here.</li>
+          </ol>
+          <p class="alt">
+            No bookmarks bar? Press Ctrl+Shift+B · Can't drag it?
+            <button type="button" id="copy-bookmarklet">Copy code</button> · Or
+            <button type="button" id="import-alt">upload a PDF/JSON</button>
+          </p>
+        </details>
         <dl class="stats">
           <div class="stat">
             <dt>Hours earned</dt>
@@ -98,7 +117,7 @@
               Autosaves in browser
             </span>
             <button type="button" id="reset-btn" class="reset-btn">
-              Reset to defaults
+              Reset plan
             </button>
           </div>
 
@@ -123,15 +142,14 @@
           </template>
         </section>
 
-        <!-- SORTING BUTTONS - Should be replaced with dynamic solution-->
         <div class="controls">
-          <button class="chip active" data-cat="all">All</button>
-          <button class="chip" data-cat="comp-cur">Compass Curriculum</button>
-          <button class="chip" data-cat="cs-core">Computer Science</button>
-          <button class="chip" data-cat="cs-math">
-            Computer Science: Math
-          </button>
-          <button class="chip" data-cat="writing">Writing / Admin</button>
+          <!-- Filter chips, one per audit section: filled by src/render/courseList.js -->
+          <div
+            class="chips"
+            id="chips"
+            role="group"
+            aria-label="Filter courses by section"
+          ></div>
 
           <!-- SEARCH BAR AND CLASS INFO POPUP-->
           <div class="search-container">
@@ -161,7 +179,7 @@
         </div>
 
         <!-- Filled by src/render/courseList.js -->
-        <div id="list"></div>
+        <section id="list" aria-label="Courses"></section>
 
         <!-- Template: one course row (never shown directly; JS copies it) -->
         <template id="course-row-tpl">
@@ -185,7 +203,11 @@
       </main>
 
       <footer>
-        Sources: your uploaded degree audit [insert date of upload]
+        <!-- Filled by src/render/header.js -->
+        <p id="source-note"></p>
+        <button type="button" id="clear-data-btn" class="clear-data-btn">
+          Clear data
+        </button>
       </footer>
     </div>
     <script type="module" src="/src/main.js"></script>
