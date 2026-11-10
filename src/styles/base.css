@@ -3,20 +3,26 @@
 }
 
 :root {
-  --bg: #3c7fba;
-  --panel: #1e5b90;
+  --bg: #193752;
+  --panel: #194C76;
   --panel-alt: #133a61;
+  --note: rgba(25, 76, 118, .4);
+  --course: #204365;
   --line: rgba(183, 215, 243, 0.1);
   --line-strong: rgba(183, 215, 243);
   --ink-header: #1d639f;
-  --ink: #ebfbf8;
-  --ink-dim: #cedbd8;
-  --ink-faint: #90a8c0;
-  --accent: rgba(11, 1, 77);
-  --accent-bg: rgba(236, 239, 239, 0.09);
+  --ink: #FBFEFD;
+  --ink-dim: #DEF7EF;
+  --ink-faint: #E6E6E6;
+  --ink-dark: #193752;
+  --button: #193752;
+  --button-border: #83879d;
+  --highlight: #555568;
+  --accent: rgb(236, 235, 240);
+  --accent-bg: rgba(31, 51, 125, 0.674);
   --accent-ink: #162f55;
   --lock: #0b274f;
-  --lock-bg: rgba(97, 98, 101, 0.6);
+  --lock-bg: rgba(46, 106, 158, 0.674);
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 }
