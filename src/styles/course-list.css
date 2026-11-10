@@ -65,7 +65,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.7px;
-  color: var(--accent-ink);
+  color: var(--ink);
   background: var(--panel-alt);
   padding: 7px 12px;
   border: 1px solid var(--line);
@@ -91,11 +91,11 @@
 }
 
 .row.locked {
-  background: var(--amber-bg);
+  background: var(--lock-bg);
 }
 
 .row.locked .r-code {
-  color: var(--amber);
+  color: var(--lock);
 }
 
 .row:last-of-type {
@@ -107,7 +107,7 @@
 .r-code {
   font-family: var(--mono);
   font-weight: 600;
-  color: var(--accent-ink);
+  color: var(--ink);
   font-size: 13px;
 }
 .r-cr {
@@ -136,7 +136,6 @@
   color: var(--accent-ink);
   font-size: 10px;
   padding: 2px 6px;
-  border-radius: 2px;
   margin-top: 4px;
 }
 
@@ -157,7 +156,6 @@
   font-family: var(--mono);
   font-size: 10.5px;
   padding: 5px 8px;
-  border-radius: 4px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
   color: var(--ink-faint);
@@ -181,7 +179,6 @@
   font-family: var(--mono);
   font-size: 10.5px;
   padding: 5px 8px;
-  border-radius: 4px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
   color: var(--ink-faint);
@@ -194,8 +191,8 @@
 }
 
 .lock-btn.on {
-  background: var(--amber);
-  border-color: var(--red);
+  background: var(--lock);
+  border-color: var(--accent);
   color: #fff;
   font-weight: 600;
 }
