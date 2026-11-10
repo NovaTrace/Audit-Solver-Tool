@@ -119,6 +119,19 @@ export function termFromIndex(index) {
   return SEASONS[index % 3] + String(year).padStart(2, "0");
 }
 
+/** The term that follows: "FA26" -> "SP27", "SP27" -> "SU27". */
+export function termAfter(key) {
+  return termFromIndex(termIndex(key) + 1);
+}
+
+/** The term just before: "SP27" -> "FA26", "FA26" -> "SU26". */
+export function termBefore(key) {
+  return termFromIndex(termIndex(key) - 1);
+}
+
+/** The most semester columns a plan can have (8 years of 3 terms). */
+export const MAX_TERMS = 24;
+
 /** "FA26" -> "Fall 2026" */
 export function termLabel(key) {
   return `${SEASON_NAMES[key.slice(0, 2)]} 20${key.slice(2)}`;
@@ -142,6 +155,11 @@ export function termForDate(date) {
   const month = date.getMonth(); // 0 = January
   const season = month <= 4 ? "SP" : month <= 6 ? "SU" : "FA";
   return season + String(date.getFullYear() % 100).padStart(2, "0");
+}
+
+/** True if the term is already over: it ended before today's term began. */
+export function isPastTerm(key, now = new Date()) {
+  return termIndex(key) < termIndex(termForDate(now));
 }
 
 /**

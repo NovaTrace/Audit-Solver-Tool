@@ -8,6 +8,9 @@ import {
   parsePrereqs,
   termIndex,
   termFromIndex,
+  termAfter,
+  termBefore,
+  isPastTerm,
   termLabel,
   shortTermLabel,
   isTermKey,
@@ -133,6 +136,23 @@ describe("terms", () => {
     expect(termFromIndex(termIndex("FA26") + 1)).toBe("SP27");
   });
 
+  it("finds the term after and before another, across the new year", () => {
+    expect(termAfter("SP27")).toBe("SU27");
+    expect(termAfter("SU27")).toBe("FA27");
+    expect(termAfter("FA27")).toBe("SP28");
+    expect(termBefore("SP27")).toBe("FA26");
+    expect(termBefore("FA26")).toBe("SU26");
+    expect(termBefore("SU26")).toBe("SP26");
+    expect(isTermKey(termBefore("SP00"))).toBe(false); // nothing before 2000
+  });
+
+  it("knows which terms are already over", () => {
+    const nov2026 = new Date(2026, 10, 5); // Fall 2026 is the current term
+    expect(isPastTerm("SU26", nov2026)).toBe(true);
+    expect(isPastTerm("FA26", nov2026)).toBe(false);
+    expect(isPastTerm("SP27", nov2026)).toBe(false);
+  });
+
   it("tells real term keys from anything else", () => {
     expect(["FA26", "SP27", "SU27"].every(isTermKey)).toBe(true);
     expect(["FA2026", "WI26", "fa26", "", null, 26].some(isTermKey)).toBe(
@@ -140,12 +160,9 @@ describe("terms", () => {
     );
   });
 
-  it("writes the short label used on term pills", () => {
+  it("labels terms, in full and short for term pills", () => {
     expect(shortTermLabel("FA26")).toBe("Fall ’26");
     expect(shortTermLabel("SU27")).toBe("Summer ’27");
-  });
-
-  it("labels terms", () => {
     expect(termLabel("SU27")).toBe("Summer 2027");
   });
 
