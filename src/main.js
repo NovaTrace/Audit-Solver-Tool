@@ -196,8 +196,10 @@ setupExport(getAudit);
 // (and their buttons) are rebuilt on every redraw.
 // state.js decides whether the change is allowed; we just save and redraw.
 document.getElementById("sched-grid").addEventListener("click", (e) => {
-  if (e.target.closest(".term-add")) {
-    if (addTerm()) saveAndRefresh();
+  // Each '+' block carries the term it adds in data-term
+  const addBtn = e.target.closest(".term-add");
+  if (addBtn) {
+    if (addTerm(addBtn.dataset.term)) saveAndRefresh();
     return;
   }
 
@@ -218,7 +220,7 @@ document.getElementById("sched-grid").addEventListener("click", (e) => {
 
 document.getElementById("reset-btn").addEventListener("click", () => {
   const ok = confirm(
-    "Clear all term picks and locks? Registered courses stay in their terms.",
+    "Clear all term picks and locks, and put the semesters back to the default ones? Registered courses stay in their terms.",
   );
   if (!ok) return;
   resetPlan();

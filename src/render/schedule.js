@@ -2,7 +2,8 @@
 //   #stat-earned / #stat-assigned / #stat-total   the three stat tiles
 //   #pool-status  progress on requirements the student chooses courses for
 //   #sched-grid   one card per term in the plan (each with a '−' button),
-//                 then a '+' block that adds the next term
+//                 with '+' blocks before, between (in gaps) and after
+//                 them that add a term
 //   #unassigned   required courses that still need a term
 // They're drawn together because they all change whenever a pick changes.
 //
@@ -18,7 +19,14 @@ import {
   unplacedRequired,
 } from "../logic/credits.js";
 import { creditText } from "../logic/courses.js";
-import { termAfter, termLabel } from "../logic/courseText.js";
+import {
+  termAfter,
+  termBefore,
+  termLabel,
+  isTermKey,
+  isPastTerm,
+  MAX_TERMS,
+} from "../logic/courseText.js";
 
 /** Redraws the stat tiles and all three schedule boxes from the audit. */
 export function renderSchedule(audit) {
@@ -115,15 +123,50 @@ function renderTermCards(audit) {
     return card;
   });
 
-  // The '+' block after the last card, named for the term it would add
-  const next = termLabel(termAfter(audit.plan.terms.at(-1).key));
+  // '+' blocks go wherever a semester could be added: before the first
+  // card, in any gap between two cards, and after the last card. None is
+  // offered for a term that is already over (state.js would refuse it).
+  const terms = audit.plan.terms;
+  const isFull = terms.length >= MAX_TERMS;
+  const nodes = [];
+
+  const earlier = termBefore(terms[0].key);
+  if (isTermKey(earlier) && !isPastTerm(earlier)) {
+    nodes.push(addBlock(earlier, isFull));
+  }
+
+  cards.forEach((card, i) => {
+    nodes.push(card);
+    // A gap: the term after this card isn't the next card (it was removed)
+    const following = termAfter(terms[i].key);
+    if (
+      terms[i + 1] &&
+      terms[i + 1].key !== following &&
+      !isPastTerm(following)
+    ) {
+      nodes.push(addBlock(following, isFull));
+    }
+  });
+
+  nodes.push(addBlock(termAfter(terms.at(-1).key), isFull));
+  grid.replaceChildren(...nodes);
+}
+
+// One narrow '+' box. The term it adds is in its tooltip and its label
+// for screen readers: "Add Summer 2028"
+function addBlock(key, isFull) {
+  const label = termLabel(key);
   const add = document.createElement("button");
   add.type = "button";
   add.className = "term-add";
-  add.textContent = `+ ${next}`;
-  add.setAttribute("aria-label", `Add ${next}`);
-
-  grid.replaceChildren(...cards, add);
+  add.dataset.term = key; // read by the click listener in main.js
+  add.textContent = "+";
+  add.setAttribute("aria-label", `Add ${label}`);
+  add.disabled = isFull;
+  add.title = isFull
+    ? `A plan can have at most ${MAX_TERMS} semesters`
+    : `Add ${label}`;
+  return add;
 }
 
 function renderUnassigned(audit) {

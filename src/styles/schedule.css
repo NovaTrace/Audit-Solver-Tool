@@ -27,14 +27,18 @@
 }
 
 /* ---------- Term cards (#sched-grid) ---------- */
+/* A wrapping row, not a grid, so the narrow '+' boxes can sit between
+   the cards without taking a whole card's width */
 .sched-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
 }
 
 .term-card {
+  flex: 1 1 190px; /* at least 190px wide; shares the spare room */
+  max-width: 340px; /* so a card alone on a row doesn't stretch across it */
   background: var(--panel);
   border: 1px solid var(--ink-faint);
   padding: 12px 14px;
@@ -80,21 +84,30 @@
   cursor: default;
 }
 
-/* '+' block after the last card: adds the next semester. Dashed, so it
-   reads as an empty slot rather than a real semester. */
+/* '+' boxes (before the first card, in gaps, after the last): each adds
+   one semester; hovering says which. Narrow and dashed, so it reads as a
+   place to add something rather than a real semester. It is as tall as
+   the cards in its row. */
 .term-add {
+  flex: 0 0 30px; /* always 30px wide */
   min-height: 74px;
+  padding: 0;
   border: 1px dashed var(--ink-faint);
   background: none;
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 16px;
   cursor: pointer;
 }
 
-.term-add:hover {
+.term-add:hover:not(:disabled) {
   background: var(--panel);
   color: var(--ink);
+}
+
+.term-add:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .term-courses {

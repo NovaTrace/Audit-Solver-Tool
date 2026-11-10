@@ -14,13 +14,19 @@
 // =====================================================================
 
 import { parseAudit, AuditError } from "./logic/parser.js";
-import { termAfter, termLabel } from "./logic/courseText.js";
+import {
+  termAfter,
+  termLabel,
+  termIndex,
+  isTermKey as isRealTerm, // "is this text a term at all?" ("FA26": yes)
+  isPastTerm,
+  MAX_TERMS,
+} from "./logic/courseText.js";
 import sample from "./data/sample-audit.json";
 
 const STORAGE_KEY = "audit-solver-state";
 
-/** The most semester columns a plan can have (8 years of 3 terms). */
-export const MAX_TERMS = 24;
+export { MAX_TERMS }; // the most semester columns a plan can have
 
 // The current audit. Other files READ it through getAudit(). To CHANGE it,
 // use the functions below, so the rules (e.g. "locked courses can't move")
@@ -66,19 +72,25 @@ export function loadSample() {
 }
 
 /**
- * Clear every pick on the current audit. Registered courses go back into
- * their registered term, locked (parseAudit does that). Semester columns
- * are kept.
+ * Put the plan back to how it starts: every pick cleared and the semester
+ * columns back to the default ones, so added or removed semesters are
+ * undone too. Registered courses go back into their registered term,
+ * locked (parseAudit does that).
  */
 export function resetPlan() {
-  const wasSample = sampleLoaded;
+  if (sampleLoaded) {
+    loadSample(); // the demo's starting plan is the sample file itself
+    return;
+  }
   const copy = structuredClone(audit);
   for (const course of Object.values(copy.courses)) {
     delete course.plannedTerm;
     delete course.locked;
   }
+  // With no columns, parseAudit makes the default ones again: from the
+  // current term (or the first registered one), at least 6 terms
+  delete copy.plan.terms;
   loadAudit(parseAudit(copy));
-  sampleLoaded = wasSample; // resetting the demo leaves it the demo
 }
 
 /**
@@ -124,14 +136,23 @@ export function toggleLock(id) {
 // ---------- Changing the semester columns ----------
 
 /**
- * The '+' was clicked: add the term that follows the last column.
- * Returns true if a column was added (false once the plan is at MAX_TERMS).
+ * A '+' block was clicked: add a semester column. `key` is the term to
+ * add ("SP27"): one before the first column (back to the current term,
+ * no further), one missing in the middle, or one after the last. With no key, it's the term after the last column.
+ * Returns true if a column was added.
+ *
+ * Refused (false) when the plan is at MAX_TERMS, `key` isn't a real term,
+ * that term is already a column, or it is already over (a semester that
+ * has finished can't be planned).
  */
-export function addTerm() {
+export function addTerm(key = termAfter(audit.plan.terms.at(-1).key)) {
   const terms = audit.plan.terms;
   if (terms.length >= MAX_TERMS) return false;
-  const key = termAfter(terms.at(-1).key);
+  if (!isRealTerm(key) || isTermKey(key)) return false;
+  if (isPastTerm(key)) return false;
   terms.push({ key, label: termLabel(key) });
+  // Keep the columns in time order, wherever the new one belongs
+  terms.sort((a, b) => termIndex(a.key) - termIndex(b.key));
   return true;
 }
 
