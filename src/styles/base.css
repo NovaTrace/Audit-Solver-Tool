@@ -7,7 +7,7 @@
   --panel: #194c76;
   --panel-alt: #133a61;
   --note: rgba(25, 76, 118, 0.4);
-  --course: #204365;
+  --course: rgba(46, 106, 158, 0.674);
   --line: rgba(183, 215, 243, 0.1);
   --line-strong: rgba(183, 215, 243);
   --ink-header: #1d639f;
@@ -22,7 +22,7 @@
   --accent-bg: rgba(31, 51, 125, 0.674);
   --accent-ink: #162f55;
   --lock: #0b274f;
-  --lock-bg: rgba(46, 106, 158, 0.674);
+  --lock-bg: #204365;
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 }

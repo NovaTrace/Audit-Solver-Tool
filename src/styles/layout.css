@@ -83,7 +83,7 @@
 
 .tb-catalogbox dd {
   margin: 0;
-  color: var(--accent-ink);
+  color: var(--ink);
 }
 
 .tb-catalogbox b {
@@ -106,7 +106,7 @@
   font: 600 14px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--accent-ink);
+  color: var(--ink);
 }
 
 /* The panel is a <details>: <summary> is the heading row that's always
@@ -126,7 +126,7 @@
 /* Our own arrow: points right when closed, down when open */
 .get-started summary::before {
   content: "\25B8"; /* ▸ */
-  color: var(--accent-ink);
+  color: var(--ink-dim);
   font-size: 12px;
   transition: transform 0.15s;
 }
@@ -176,7 +176,7 @@
   display: grid;
   place-items: center;
   border: 2px solid var(--accent);
-  color: var(--accent-ink);
+  color: var(--ink-faint);
   font: 600 12px var(--mono);
 }
 
@@ -191,7 +191,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--accent-ink);
+  color: var(--ink-faint);
   text-decoration: underline;
   cursor: pointer;
 }
