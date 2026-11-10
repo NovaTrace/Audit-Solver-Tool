@@ -4,16 +4,16 @@
 
 :root {
   --bg: #193752;
-  --panel: #194C76;
+  --panel: #194c76;
   --panel-alt: #133a61;
-  --note: rgba(25, 76, 118, .4);
+  --note: rgba(25, 76, 118, 0.4);
   --course: #204365;
   --line: rgba(183, 215, 243, 0.1);
   --line-strong: rgba(183, 215, 243);
   --ink-header: #1d639f;
-  --ink: #FBFEFD;
-  --ink-dim: #DEF7EF;
-  --ink-faint: #E6E6E6;
+  --ink: #fbfefd;
+  --ink-dim: #def7ef;
+  --ink-faint: #e6e6e6;
   --ink-dark: #193752;
   --button: #193752;
   --button-border: #83879d;
@@ -49,8 +49,8 @@ strong {
   margin: 0 auto;
   padding: 10px 5px 60px;
   background-image:
-    linear-gradient(var(--line) 1px, transparent .1px),
-    linear-gradient(90deg, var(--line) 1px, transparent .1px);
+    linear-gradient(var(--line) 1px, transparent 0.1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 0.1px);
   background-size: 50px 50px;
 }
 

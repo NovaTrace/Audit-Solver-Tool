@@ -11,7 +11,11 @@
     <div class="sheet">
       <header class="titleblock">
         <div class="logo">
-          <img src="src/imgs/Audit-Solver-logo-no-grid.png" alt="Audit Solver logo" style="max-width:80%; height:min-content">
+          <img
+            src="src/imgs/Audit-Solver-logo-no-grid.png"
+            alt="Audit Solver logo"
+            style="max-width: 80%; height: min-content"
+          />
         </div>
         <div class="tb-left">
           <h1>AUDIT SOLVER</h1>
@@ -115,8 +119,11 @@
                 ⓘ
               </button>
               <span class="info-text">
-                Click the '+' icon to add a semester block.<br />
-                Click the '-' to remove a semester block.
+                Click the '+' block to add the next semester.<br />
+                Click a block's '−' to remove it. Its courses go back to
+                unplaced.<br />
+                A block with a locked course can't be removed: unlock the course
+                first.
               </span>
             </div>
             <span id="save-status" class="save-status">
@@ -136,6 +143,7 @@
             <article class="term-card">
               <h3>
                 <span class="term-name"></span><span class="term-cr"></span>
+                <button type="button" class="term-remove">−</button>
               </h3>
               <ul class="term-courses"></ul>
             </article>

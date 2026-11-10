@@ -119,6 +119,11 @@ export function termFromIndex(index) {
   return SEASONS[index % 3] + String(year).padStart(2, "0");
 }
 
+/** The term that follows: "FA26" -> "SP27", "SP27" -> "SU27". */
+export function termAfter(key) {
+  return termFromIndex(termIndex(key) + 1);
+}
+
 /** "FA26" -> "Fall 2026" */
 export function termLabel(key) {
   return `${SEASON_NAMES[key.slice(0, 2)]} 20${key.slice(2)}`;

@@ -8,6 +8,7 @@ import {
   parsePrereqs,
   termIndex,
   termFromIndex,
+  termAfter,
   termLabel,
   shortTermLabel,
   isTermKey,
@@ -131,6 +132,12 @@ describe("terms", () => {
     expect(termIndex("SP27") < termIndex("SU27")).toBe(true);
     expect(termFromIndex(termIndex("SU27"))).toBe("SU27");
     expect(termFromIndex(termIndex("FA26") + 1)).toBe("SP27");
+  });
+
+  it("finds the term after another, across the new year", () => {
+    expect(termAfter("SP27")).toBe("SU27");
+    expect(termAfter("SU27")).toBe("FA27");
+    expect(termAfter("FA27")).toBe("SP28");
   });
 
   it("tells real term keys from anything else", () => {

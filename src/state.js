@@ -14,9 +14,13 @@
 // =====================================================================
 
 import { parseAudit, AuditError } from "./logic/parser.js";
+import { termAfter, termLabel } from "./logic/courseText.js";
 import sample from "./data/sample-audit.json";
 
 const STORAGE_KEY = "audit-solver-state";
+
+/** The most semester columns a plan can have (8 years of 3 terms). */
+export const MAX_TERMS = 24;
 
 // The current audit. Other files READ it through getAudit(). To CHANGE it,
 // use the functions below, so the rules (e.g. "locked courses can't move")
@@ -114,6 +118,42 @@ export function toggleLock(id) {
   }
   if (!course.plannedTerm) return false; // can't lock a course with no term
   course.locked = true;
+  return true;
+}
+
+// ---------- Changing the semester columns ----------
+
+/**
+ * The '+' was clicked: add the term that follows the last column.
+ * Returns true if a column was added (false once the plan is at MAX_TERMS).
+ */
+export function addTerm() {
+  const terms = audit.plan.terms;
+  if (terms.length >= MAX_TERMS) return false;
+  const key = termAfter(terms.at(-1).key);
+  terms.push({ key, label: termLabel(key) });
+  return true;
+}
+
+/**
+ * A column's '−' was clicked: remove that column. Courses planned in it
+ * go back to unplaced. Returns true if the column was removed.
+ *
+ * Refused (false) when:
+ * - `key` isn't one of the columns;
+ * - it's the only column left (the plan needs somewhere to put courses);
+ * - a locked course is in it. Locking means "this one stays here", so the
+ *   student unlocks it first rather than losing it by accident.
+ */
+export function removeTerm(key) {
+  const terms = audit.plan.terms;
+  if (!isTermKey(key) || terms.length <= 1) return false;
+  const inTerm = Object.values(audit.courses).filter(
+    (c) => c.plannedTerm === key,
+  );
+  if (inTerm.some((c) => c.locked)) return false;
+  for (const course of inTerm) course.plannedTerm = null;
+  audit.plan.terms = terms.filter((t) => t.key !== key);
   return true;
 }
 

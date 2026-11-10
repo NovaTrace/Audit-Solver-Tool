@@ -1,9 +1,9 @@
-.cat-head{
+.cat-head {
   max-width: 1380px;
   height: auto;
   background-color: var(--accent-bg);
   padding: 10px;
-  margin:auto;
+  margin: auto;
 }
 
 .controls {

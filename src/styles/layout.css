@@ -17,6 +17,7 @@
   letter-spacing: 0.3px;
   margin: 0 0 6px;
   color: var(--ink);
+}
 
 .logo{
   display: flex;
@@ -83,6 +84,7 @@
 .tb-catalogbox dd {
   margin: 0;
   color: var(--accent-ink);
+}
 
 .tb-catalogbox b {
   color: var(--ink);
@@ -306,3 +308,4 @@
   margin-left: auto; /* pushes status + Reset to the right */
   font-size: 11px;
   color: var(--ink-dim);
+}

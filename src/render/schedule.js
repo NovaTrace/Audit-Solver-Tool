@@ -1,7 +1,8 @@
 // Draws the stat tiles and the three schedule boxes in index.html:
 //   #stat-earned / #stat-assigned / #stat-total   the three stat tiles
 //   #pool-status  progress on requirements the student chooses courses for
-//   #sched-grid   one card per term in the plan
+//   #sched-grid   one card per term in the plan (each with a '−' button),
+//                 then a '+' block that adds the next term
 //   #unassigned   required courses that still need a term
 // They're drawn together because they all change whenever a pick changes.
 //
@@ -17,6 +18,7 @@ import {
   unplacedRequired,
 } from "../logic/credits.js";
 import { creditText } from "../logic/courses.js";
+import { termAfter, termLabel } from "../logic/courseText.js";
 
 /** Redraws the stat tiles and all three schedule boxes from the audit. */
 export function renderSchedule(audit) {
@@ -78,6 +80,20 @@ function renderTermCards(audit) {
     card.querySelector(".term-name").textContent = term.label;
     card.querySelector(".term-cr").textContent = `${sumCredits(items)} cr`;
 
+    // The '−' button. It can't be used on the only column left, or on a
+    // column holding a locked course; hovering says which.
+    const remove = card.querySelector(".term-remove");
+    remove.dataset.term = term.key; // read by the click listener in main.js
+    remove.setAttribute("aria-label", `Remove ${term.label}`);
+    const isOnlyTerm = audit.plan.terms.length <= 1;
+    const hasLocked = items.some((course) => course.locked);
+    remove.disabled = isOnlyTerm || hasLocked;
+    remove.title = hasLocked
+      ? "Unlock its courses first"
+      : isOnlyTerm
+        ? "The plan needs at least one semester"
+        : `Remove ${term.label}`;
+
     const list = card.querySelector(".term-courses");
 
     if (items.length === 0) {
@@ -99,7 +115,15 @@ function renderTermCards(audit) {
     return card;
   });
 
-  grid.replaceChildren(...cards);
+  // The '+' block after the last card, named for the term it would add
+  const next = termLabel(termAfter(audit.plan.terms.at(-1).key));
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "term-add";
+  add.textContent = `+ ${next}`;
+  add.setAttribute("aria-label", `Add ${next}`);
+
+  grid.replaceChildren(...cards, add);
 }
 
 function renderUnassigned(audit) {

@@ -7,6 +7,9 @@ import {
   resetPlan,
   toggleTerm,
   toggleLock,
+  addTerm,
+  removeTerm,
+  MAX_TERMS,
   loadState,
   saveState,
   clearSaved,
@@ -166,6 +169,69 @@ describe("toggleTerm", () => {
     expect(toggleTerm("__proto__", "FA27")).toBe(false);
     expect(toggleTerm("cs4500", "FA35")).toBe(false);
     expect(course("cs4500").plannedTerm).toBeNull();
+  });
+});
+
+describe("addTerm and removeTerm", () => {
+  const keys = () => getAudit().plan.terms.map((t) => t.key);
+  // The sample's columns: FA26 SP27 SU27 FA27 SP28
+
+  it("adds the term after the last column, with its label", () => {
+    expect(addTerm()).toBe(true);
+    expect(getAudit().plan.terms.at(-1)).toEqual({
+      key: "SU28",
+      label: "Summer 2028",
+    });
+    addTerm();
+    expect(keys().slice(-2)).toEqual(["SU28", "FA28"]);
+  });
+
+  it("stops adding at MAX_TERMS", () => {
+    while (keys().length < MAX_TERMS) addTerm();
+    expect(addTerm()).toBe(false);
+    expect(keys()).toHaveLength(MAX_TERMS);
+  });
+
+  it("removes a column and unplaces its courses", () => {
+    toggleTerm("cs4500", "SU27");
+    toggleTerm("ece3020", "FA27");
+    expect(removeTerm("SU27")).toBe(true);
+    expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28"]);
+    expect(course("cs4500").plannedTerm).toBeNull();
+    expect(course("ece3020").plannedTerm).toBe("FA27"); // other terms untouched
+  });
+
+  it("won't remove a column holding a locked course", () => {
+    toggleTerm("cs4500", "SU27");
+    toggleLock("cs4500");
+    expect(removeTerm("SU27")).toBe(false);
+    expect(keys()).toContain("SU27");
+    expect(course("cs4500").plannedTerm).toBe("SU27");
+  });
+
+  it("won't remove the last column, or one that isn't there", () => {
+    expect(removeTerm("FA35")).toBe(false);
+    for (const key of ["FA26", "SP27", "SU27", "FA27"]) removeTerm(key);
+    expect(removeTerm("SP28")).toBe(false);
+    expect(keys()).toEqual(["SP28"]);
+  });
+
+  it("adds after the last column even when one in the middle was removed", () => {
+    removeTerm("SU27");
+    addTerm();
+    expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28", "SU28"]);
+  });
+
+  it("keeps the changed columns through a save, a reload and a re-import", () => {
+    removeTerm("SU27");
+    addTerm();
+    saveState();
+    loadSample(); // like a fresh page load
+    loadState();
+    expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28", "SU28"]);
+    importAudit(structuredClone(sample)); // a fresh scrape
+    expect(keys()).not.toContain("SU27");
+    expect(keys()).toContain("SU28");
   });
 });
 

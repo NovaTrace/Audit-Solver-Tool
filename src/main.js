@@ -37,11 +37,14 @@ import {
   resetPlan,
   toggleTerm,
   toggleLock,
+  addTerm,
+  removeTerm,
   importAudit,
   AuditError,
   clearAllData,
 } from "./state.js";
 import { allSections, filterGroups } from "./logic/courses.js";
+import { coursesInTerm } from "./logic/credits.js";
 import { setupPopups } from "./ui/popups.js";
 import { setupImport, setupPaste, setupReceiver } from "./ui/importer.js";
 import {
@@ -186,8 +189,33 @@ setupExport(getAudit);
 
 // =====================================================================
 // SCHEDULE SECTION (#pool-status, #sched-grid, #unassigned)
-// Drawing lives in render/schedule.js; only the Reset button is wired here.
+// Drawing lives in render/schedule.js; the clicks are wired here.
 // =====================================================================
+
+// Add / remove semester blocks: ONE listener on the grid, since the cards
+// (and their buttons) are rebuilt on every redraw.
+// state.js decides whether the change is allowed; we just save and redraw.
+document.getElementById("sched-grid").addEventListener("click", (e) => {
+  if (e.target.closest(".term-add")) {
+    if (addTerm()) saveAndRefresh();
+    return;
+  }
+
+  const removeBtn = e.target.closest(".term-remove");
+  if (!removeBtn) return;
+  const term = removeBtn.dataset.term;
+
+  // An empty block goes straight away; one with courses asks first
+  const count = coursesInTerm(getAudit(), term).length;
+  if (count > 0) {
+    const ok = confirm(
+      `Remove this semester? Its ${count} course${count === 1 ? "" : "s"} will go back to unplaced.`,
+    );
+    if (!ok) return;
+  }
+  if (removeTerm(term)) saveAndRefresh();
+});
+
 document.getElementById("reset-btn").addEventListener("click", () => {
   const ok = confirm(
     "Clear all term picks and locks? Registered courses stay in their terms.",

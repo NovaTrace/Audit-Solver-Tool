@@ -52,6 +52,51 @@
   font-weight: bolder;
 }
 
+/* The term name takes the spare room, so the credits and the '−' button
+   sit together on the right */
+.term-name {
+  margin-right: auto;
+}
+
+/* '−' on each card: removes that semester */
+.term-remove {
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 4px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.term-remove:hover:not(:disabled) {
+  background: var(--panel-alt);
+}
+
+.term-remove:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* '+' block after the last card: adds the next semester. Dashed, so it
+   reads as an empty slot rather than a real semester. */
+.term-add {
+  min-height: 74px;
+  border: 1px dashed var(--ink-faint);
+  background: none;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.term-add:hover {
+  background: var(--panel);
+  color: var(--ink);
+}
+
 .term-courses {
   list-style: none;
   margin: 0;
