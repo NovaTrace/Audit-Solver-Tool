@@ -1,24 +1,33 @@
 {
   "name": "audit-solver-tool",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm run build:bookmarklet",
     "dev": "vite",
+    "prebuild": "npm run build:bookmarklet",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "test": "vitest"
+    "test": "vitest",
+    "build:bookmarklet": "vite build --config vite.bookmarklet.config.js",
+    "dev:bookmarklet": "vite build --config vite.bookmarklet.config.js --watch"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "eslint": "^10.12.0",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.13.0",
+    "happy-dom": "^21.0.4",
     "prettier": "^3.9.9",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/inter": "^5.3.0"
   }
 }

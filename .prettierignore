@@ -1,0 +1,4 @@
+# Built files: not edited by hand
+dist
+src/generated
+package-lock.json
