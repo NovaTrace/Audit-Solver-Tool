@@ -11,6 +11,7 @@ import {
   requirementProgress,
   unplacedRequired,
 } from "../logic/credits.js";
+import { makeRegistered } from "./helpers.js";
 
 const audit = () => parseAudit(structuredClone(sample));
 const progressFor = (a, id) => requirementProgress(a).find((r) => r.id === id);
@@ -72,6 +73,27 @@ describe("requirementProgress", () => {
     expect(progressFor(a, "ee-lecture-electives").done).toBe(true);
   });
 
+  it("includes an unfinished either/or course requirement", () => {
+    // "ECE 4480 OR CS 4200", as if neither had been taken yet
+    const data = structuredClone(sample);
+    const arch = data.requirements.find((r) => r.id === "cpe-arch");
+    Object.assign(arch, { status: "needs", applied: [], needCourses: null });
+    data.requirements.find((r) => r.id === "ee-lecture-electives").applied = [];
+    Object.assign(data.courses.ece4480, { status: "option", attempts: [] });
+    const a = parseAudit(data);
+
+    expect(progressFor(a, "cpe-arch")).toMatchObject({
+      needCourses: 1, // one of the two, even with no count on the audit
+      plannedCourses: 0,
+      done: false,
+    });
+    a.courses.cs4200.plannedTerm = "FA27";
+    expect(progressFor(a, "cpe-arch")).toMatchObject({
+      plannedCourses: 1,
+      done: true,
+    });
+  });
+
   it("includes rule requirements with nothing planned", () => {
     expect(progressFor(audit(), "math-minor-electives")).toMatchObject({
       type: "rule",
@@ -84,13 +106,7 @@ describe("requirementProgress", () => {
 describe("unplacedRequired", () => {
   it("lists needed courses with no term, not options or registered ones", () => {
     // The demo has no registered courses, so make ECE 2050 one for this test
-    const data = structuredClone(sample);
-    Object.assign(data.courses.ece2050, {
-      status: "registered",
-      attempts: [
-        { term: "SP27", grade: "***", credits: 3, flags: [], transfer: false },
-      ],
-    });
+    const data = makeRegistered(structuredClone(sample), "ece2050", "SP27");
     const codes = unplacedRequired(parseAudit(data)).map((c) => c.code);
     expect(codes).toEqual([
       "CS 3300",

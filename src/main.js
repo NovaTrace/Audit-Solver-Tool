@@ -6,6 +6,20 @@
 //   main.js    listens for clicks, asks state.js to change, then redraws
 // =====================================================================
 
+// ---------- Fonts ----------
+// Served from our own site (the @fontsource packages) instead of Google
+// Fonts, so the page asks no other site for anything and works offline.
+// The names stay "Inter" and "IBM Plex Mono" (see --sans and --mono in
+// styles/base.css).
+// To keep the site small, only two weights of each are shipped (400
+// regular, 600 bold: the CSS uses no others), and only the Latin alphabet
+// ("latin-" files). A character outside it, like "ł" in a name, is drawn
+// in the computer's own font.
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "@fontsource/ibm-plex-mono/latin-600.css";
+
 // ---------- Styles ----------
 // Order matters: when two files style the same thing, the later one wins.
 import "./styles/base.css";
@@ -27,9 +41,9 @@ import {
   AuditError,
   clearAllData,
 } from "./state.js";
-import { visibleSections } from "./logic/courses.js";
+import { allSections, filterGroups } from "./logic/courses.js";
 import { setupPopups } from "./ui/popups.js";
-import { setupImport, setupReceiver } from "./ui/importer.js";
+import { setupImport, setupPaste, setupReceiver } from "./ui/importer.js";
 import {
   setupBookmarkletPanel,
   BOOKMARKLET_VERSION,
@@ -37,7 +51,6 @@ import {
 import { setupExport } from "./ui/exporter.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
-import { renderStats } from "./render/stats.js";
 import { renderCourseList, renderFilterChips } from "./render/courseList.js";
 
 // The chosen filter chip: "all" or a section name. This is display state,
@@ -71,28 +84,27 @@ function refreshHeader() {
 
 // Stats tiles + schedule section
 function refreshSchedule() {
-  renderSchedule(getAudit());
-  renderStats(getAudit());
+  renderSchedule(getAudit()); // draws the stat tiles too
 }
 
 // Chips + course list, keeping the current chip and search text
 function refreshList() {
   const audit = getAudit();
+  // Worked out once, then used for both the chips and the list
+  const everything = allSections(audit);
   // One chip per section that still has something to plan
-  const sections = visibleSections({
-    audit,
-    filterSection: "all",
-    query: "",
-  }).map((group) => group.section);
+  const sections = everything.map((group) => group.section);
   // A new audit may not have the section that was chosen before
   if (activeSection !== "all" && !sections.includes(activeSection)) {
     activeSection = "all";
   }
   renderFilterChips(sections, activeSection);
+
+  const query = document.getElementById("search").value.trim().toLowerCase();
   renderCourseList({
     audit,
-    filterSection: activeSection,
-    query: document.getElementById("search").value.trim().toLowerCase(),
+    groups: filterGroups(everything, { filterSection: activeSection, query }),
+    query,
   });
 }
 
@@ -103,13 +115,16 @@ function refreshAll() {
   refreshSchedule();
 }
 
+// The save-status text while the demo audit is showing
+const SAMPLE_STATUS = "Sample data: changes aren't saved";
+
 // Save, update the "Saved 3:42 PM" text, and redraw.
 // Call this after any change to the plan.
 function saveAndRefresh() {
   if (saveState()) {
     setSaveStatus("Saved " + new Date().toLocaleTimeString());
   } else if (isSampleLoaded()) {
-    setSaveStatus("Sample data: changes aren't saved");
+    setSaveStatus(SAMPLE_STATUS);
   } else {
     // Storage full or blocked (e.g. a private window): don't keep showing
     // an old "Saved" time
@@ -127,7 +142,8 @@ function setSaveStatus(text) {
 // =====================================================================
 setupPopups(); // handles every .info-popup on the page
 
-// Import: from a file (Import button) or from the bookmarklet (Send).
+// Import: from a file (Import button), pasted text (Ctrl+V), or the
+// bookmarklet (Send).
 // importAudit() runs parseAudit(), which throws AuditError for data that
 // isn't a valid audit; the current plan is left untouched in that case.
 function handleImport(raw) {
@@ -159,6 +175,7 @@ function warnIfOldBookmark(data) {
   panel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 setupImport(handleImport);
+setupPaste(handleImport);
 setupReceiver(handleImport);
 
 // The "Grab my audit" bookmarklet link and its Copy code button
@@ -187,7 +204,7 @@ document.getElementById("clear-data-btn").addEventListener("click", () => {
   );
   if (!ok) return;
   clearAllData();
-  setSaveStatus("Sample data: changes aren't saved");
+  setSaveStatus(SAMPLE_STATUS);
   refreshAll();
 });
 
@@ -228,9 +245,5 @@ document.getElementById("list").addEventListener("click", (e) => {
 // STARTUP
 // =====================================================================
 loadState(); // state.js starts from the demo; this swaps in a saved audit
-setSaveStatus(
-  isSampleLoaded()
-    ? "Sample data: changes aren't saved"
-    : "Autosaves in browser",
-);
+setSaveStatus(isSampleLoaded() ? SAMPLE_STATUS : "Autosaves in browser");
 refreshAll(); // first draw

@@ -21,6 +21,7 @@ import {
   termFromIndex,
   termLabel,
   termForDate,
+  isTermKey,
 } from "./courseText.js";
 
 export const SCHEMA = "audit-solver/v1";
@@ -82,6 +83,38 @@ const SOURCE_DEFAULTS = {
   exportedAt: null,
 };
 
+// Every student has exactly these fields, so the page never prints
+// "undefined".
+const STUDENT_DEFAULTS = {
+  name: "Unknown student",
+  degreeTitle: null,
+  programCode: null,
+  programs: [],
+  catalogYear: null,
+  preparedOn: null,
+  graduationDate: null,
+  allRequirementsMet: false,
+  hoursRequired: null,
+  hoursEarned: null,
+  hoursInProgress: null,
+  gpa: null,
+  attemptedHours: null,
+};
+
+// Every requirement has exactly these fields. `title` and `type` have no
+// fixed default: fillRequirement works them out.
+const REQUIREMENT_DEFAULTS = {
+  section: "Other requirements",
+  status: "needs",
+  needCourses: null,
+  needHours: null,
+  earnedHours: 0,
+  inProgressHours: 0,
+  options: [],
+  applied: [],
+  description: "",
+};
+
 /**
  * Check, merge and complete audit data.
  *
@@ -99,14 +132,19 @@ export function parseAudit(data, previous = null, now = new Date()) {
   checkRequirements(audit);
 
   // 2. Merge with what the student already had
-  if (previous) mergePrevious(audit, previous);
+  const keptColumns = previous ? mergePrevious(audit, previous) : false;
 
   // 3. Repair
   audit.source = { ...SOURCE_DEFAULTS, ...audit.source };
+  audit.student = { ...structuredClone(STUDENT_DEFAULTS), ...audit.student };
+  for (const req of audit.requirements) fillRequirement(req);
   for (const course of Object.values(audit.courses)) fillCourse(course);
-  fillPlan(audit, now);
-  placeRegistered(audit);
-  cleanPicks(audit);
+  fillPlan(audit, now, keptColumns);
+
+  // Both pick repairs need to know which columns exist
+  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+  placeRegistered(audit, termKeys);
+  cleanPicks(audit, termKeys);
 
   return audit;
 }
@@ -140,13 +178,32 @@ function checkShape(data) {
   if (data.plan !== undefined && !isPlainObject(data.plan)) {
     throw new AuditError(`"plan" must be an object.`);
   }
+  mustBeList(data.student.programs, `"student.programs"`);
 }
 
-/** Reject 3: each course's key, id and code agree. */
+/** Reject 3: each course's key, id and code agree, and the fields the
+ *  page does math or loops with have the right type. */
 function checkCourses(audit) {
   for (const [key, course] of Object.entries(audit.courses)) {
     if (!isPlainObject(course) || typeof course.code !== "string") {
       throw new AuditError(`Course "${key}" needs a "code" string.`);
+    }
+    for (const field of ["attempts", "requirementIds", "termsOffered"]) {
+      mustBeList(course[field], `Course "${key}": "${field}"`);
+    }
+    for (const field of ["credits", "minCredits", "maxCredits"]) {
+      mustBeNumber(course[field], `Course "${key}": "${field}"`);
+    }
+    if (!(course.attempts ?? []).every(isPlainObject)) {
+      throw new AuditError(`Course "${key}": every attempt must be an object.`);
+    }
+    if (
+      course.availability !== undefined &&
+      !isPlainObject(course.availability)
+    ) {
+      throw new AuditError(
+        `Course "${key}": "availability" must be an object.`,
+      );
     }
     if (course.id !== key) {
       throw new AuditError(
@@ -175,8 +232,25 @@ function checkRequirements(audit) {
     }
     reqIds.add(req.id);
 
+    // The lists and numbers the page loops over and adds up
+    mustBeList(req.options, `Requirement "${req.id}": "options"`);
+    mustBeList(req.applied, `Requirement "${req.id}": "applied"`);
+    mustBeNumber(req.needHours, `Requirement "${req.id}": "needHours"`);
+    mustBeNumber(req.needCourses, `Requirement "${req.id}": "needCourses"`);
+    if (!(req.options ?? []).every((code) => typeof code === "string")) {
+      throw new AuditError(
+        `Requirement "${req.id}": every option must be a course code.`,
+      );
+    }
+
     // 5. every applied course exists and lists this requirement back
-    for (const { code } of req.applied ?? []) {
+    for (const entry of req.applied ?? []) {
+      if (!isPlainObject(entry) || typeof entry.code !== "string") {
+        throw new AuditError(
+          `Requirement "${req.id}": every applied course needs a "code" string.`,
+        );
+      }
+      const { code } = entry;
       const course = audit.courses[idFromCode(code)];
       if (!course) {
         throw new AuditError(
@@ -214,11 +288,15 @@ function checkRequirements(audit) {
  * - An exported file (has `exportedAt`) is a saved plan: its own picks win.
  * - Either way, if the new data lacks course details (a PDF import) and the
  *   previous state had them (from the bookmarklet), keep the old details.
+ *
+ * Returns true if the student's old semester columns were kept (fillPlan
+ * then brings them up to date).
  */
 function mergePrevious(audit, previous) {
   const isExport = audit.source?.exportedAt != null;
+  const keptColumns = !isExport && Boolean(previous.plan);
 
-  if (!isExport && previous.plan) {
+  if (keptColumns) {
     audit.plan = structuredClone(previous.plan);
   }
 
@@ -226,13 +304,7 @@ function mergePrevious(audit, previous) {
     const old = previous.courses?.[id];
     if (!old) continue; // a course that's new in this import
 
-    // Keep the old pick, unless the audit now says the course is registered
-    // or completed: then the audit's fact replaces the plan (a registered
-    // course is placed in its real term below; a completed one is cleared)
-    const nowSettled =
-      course.status !== old.status &&
-      (course.status === "registered" || course.status === "completed");
-    if (!isExport && !nowSettled) {
+    if (!isExport && !auditOverridesPick(course, old)) {
       course.plannedTerm = old.plannedTerm;
       course.locked = old.locked;
     }
@@ -242,6 +314,29 @@ function mergePrevious(audit, previous) {
       }
     }
   }
+  return keptColumns;
+}
+
+/**
+ * True when the new audit states a fact that replaces the student's old
+ * pick for a course:
+ * - it's completed now (the pick is cleared);
+ * - it's registered now, and it wasn't before or its term changed (it's
+ *   placed in its real term by placeRegistered);
+ * - it was registered and isn't any more, e.g. dropped (it goes back to
+ *   unplaced instead of staying locked in a term it's no longer in).
+ * A registered course whose term is unchanged keeps the old pick, so a
+ * student who unlocked and moved it doesn't lose that.
+ */
+function auditOverridesPick(course, old) {
+  if (course.status === "completed") return true;
+  if (course.status === "registered") {
+    return (
+      old.status !== "registered" ||
+      registeredTerm(course) !== registeredTerm(old)
+    );
+  }
+  return old.status === "registered";
 }
 
 // =====================================================================
@@ -256,19 +351,37 @@ function fillCourse(course) {
       course[field] = structuredClone(value);
     }
   }
+  course.locked = course.locked === true; // anything else isn't a lock
 }
 
-/** Repair 1: make sure there's a plan with semester columns. */
-function fillPlan(audit, now) {
+/** Every requirement gets every field (the page loops over `options` and
+ *  `applied`, so a missing one would stop it drawing). */
+function fillRequirement(req) {
+  for (const [field, value] of Object.entries(REQUIREMENT_DEFAULTS)) {
+    if (req[field] === undefined) req[field] = structuredClone(value);
+  }
+  req.title ??= req.id;
+  // With no type given: a list of options is a pool, none is a rule
+  req.type ??= req.options.length ? "pool" : "rule";
+}
+
+/**
+ * Repair 1: make sure there's a plan with usable semester columns.
+ * `keptColumns` is true when they are the student's old ones, kept through
+ * a fresh scrape: those are brought up to date (see rollTerms).
+ */
+function fillPlan(audit, now, keptColumns) {
   audit.plan = { lastSaved: null, ...audit.plan };
-  if (!Array.isArray(audit.plan.terms) || audit.plan.terms.length === 0) {
+  const terms = cleanTerms(audit.plan.terms);
+  if (terms.length === 0) {
     audit.plan.terms = generateTerms(audit, now);
+  } else {
+    audit.plan.terms = keptColumns ? rollTerms(terms, audit, now) : terms;
   }
 }
 
 /** Repair 3: registered courses start in their registered term, locked. */
-function placeRegistered(audit) {
-  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+function placeRegistered(audit, termKeys) {
   for (const course of Object.values(audit.courses)) {
     if (course.status !== "registered" || course.plannedTerm) continue;
     const term = registeredTerm(course);
@@ -281,8 +394,7 @@ function placeRegistered(audit) {
 
 /** Repairs 4 + 5: picks must point at a real column; locks need a term;
  *  a completed course can't be planned (its hours are already earned). */
-function cleanPicks(audit) {
-  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+function cleanPicks(audit, termKeys) {
   for (const course of Object.values(audit.courses)) {
     if (course.plannedTerm !== null && !termKeys.has(course.plannedTerm)) {
       course.plannedTerm = null;
@@ -303,11 +415,7 @@ const MIN_TERMS = 6; // always show at least this many columns
  * at least MIN_TERMS columns and at least the last registered term.
  */
 function generateTerms(audit, now) {
-  const registered = Object.values(audit.courses)
-    .filter((c) => c.status === "registered")
-    .map(registeredTerm)
-    .filter(Boolean)
-    .map(termIndex);
+  const registered = registeredTerms(audit).map(termIndex);
 
   const current = termIndex(termForDate(now));
   const first = Math.min(current, ...registered);
@@ -321,6 +429,55 @@ function generateTerms(audit, now) {
   return terms;
 }
 
+/**
+ * The plan's columns with anything unusable removed: each one needs a real
+ * term key ("FA26"), listed once, in time order. A missing label is filled
+ * in. Returns [] if nothing usable is left.
+ */
+function cleanTerms(terms) {
+  if (!Array.isArray(terms)) return [];
+  const byKey = new Map();
+  for (const term of terms) {
+    if (!isPlainObject(term) || !isTermKey(term.key)) continue;
+    if (byKey.has(term.key)) continue;
+    const label =
+      typeof term.label === "string" ? term.label : termLabel(term.key);
+    byKey.set(term.key, { ...term, label });
+  }
+  return [...byKey.values()].sort(
+    (a, b) => termIndex(a.key) - termIndex(b.key),
+  );
+}
+
+/**
+ * Bring the student's old columns up to date after a fresh scrape:
+ * - terms that are over are dropped (picks left in them are cleared by
+ *   cleanPicks, so those courses show as unplaced again);
+ * - new terms are added at the end, so there are always columns to plan
+ *   in and every registered course has its column;
+ * - a term the student left out in the middle stays out, unless a course
+ *   is registered in it.
+ */
+function rollTerms(terms, audit, now) {
+  const fresh = generateTerms(audit, now); // what a brand-new plan would get
+  const first = termIndex(fresh[0].key);
+  const kept = terms.filter((t) => termIndex(t.key) >= first);
+  if (kept.length === 0) return fresh;
+
+  const keptKeys = new Set(kept.map((t) => t.key));
+  const firstKept = termIndex(kept[0].key);
+  const lastKept = termIndex(kept.at(-1).key);
+  const registered = new Set(registeredTerms(audit));
+  const added = fresh.filter((t) => {
+    if (keptKeys.has(t.key)) return false;
+    const i = termIndex(t.key);
+    return i < firstKept || i > lastKept || registered.has(t.key);
+  });
+  return [...kept, ...added].sort(
+    (a, b) => termIndex(a.key) - termIndex(b.key),
+  );
+}
+
 // =====================================================================
 // HELPERS
 // =====================================================================
@@ -329,6 +486,26 @@ function generateTerms(audit, now) {
 function registeredTerm(course) {
   const attempt = (course.attempts ?? []).findLast((a) => a.grade === "***");
   return attempt?.term ?? null;
+}
+
+/** The terms that registered courses are in (real term keys only). */
+function registeredTerms(audit) {
+  return Object.values(audit.courses)
+    .filter((c) => c.status === "registered")
+    .map(registeredTerm)
+    .filter(isTermKey);
+}
+
+// Reject helpers: a field that is present must have the right type
+function mustBeList(value, what) {
+  if (value !== undefined && !Array.isArray(value)) {
+    throw new AuditError(`${what} must be a list.`);
+  }
+}
+function mustBeNumber(value, what) {
+  if (value != null && !Number.isFinite(value)) {
+    throw new AuditError(`${what} must be a number.`);
+  }
 }
 
 // True for a {...} object (not null, not an array)

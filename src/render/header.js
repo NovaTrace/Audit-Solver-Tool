@@ -11,7 +11,8 @@ export function renderHeader(audit, { isSample, now }) {
   const { student, source } = audit;
 
   // Name, then one "· ..." line per detail that exists
-  const lines = [student.name, `· ${student.degreeTitle}`];
+  const lines = [student.name];
+  if (student.degreeTitle) lines.push(`· ${student.degreeTitle}`);
   const programs = student.programs ?? [];
   const majors = programs.filter((p) => p.includes("-") && !p.endsWith("-MIN"));
   const minors = programs

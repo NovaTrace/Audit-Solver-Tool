@@ -16,6 +16,7 @@ import {
 } from "../state.js";
 import { parseAudit } from "../logic/parser.js";
 import sample from "../data/sample-audit.json";
+import { NOV_2026, makeRegistered } from "./helpers.js";
 
 const STORAGE_KEY = "audit-solver-state";
 
@@ -34,6 +35,10 @@ function fakeStorage() {
 }
 
 beforeEach(() => {
+  // Pin "today" to Nov 5, 2026: an import keeps the semester columns
+  // current, so the tests would otherwise change with the calendar
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOV_2026);
   vi.stubGlobal("localStorage", fakeStorage());
   // Every test starts from the sample, loaded as if it were a real import.
   // (The demo has its own rules; see "the demo audit" below.)
@@ -41,6 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -106,13 +112,7 @@ describe("loading an audit", () => {
 describe("resetPlan", () => {
   it("clears picks but re-places registered courses and keeps the columns", () => {
     // The demo has no registered courses, so make ECE 2050 one for this test
-    const data = structuredClone(sample);
-    Object.assign(data.courses.ece2050, {
-      status: "registered",
-      attempts: [
-        { term: "SP27", grade: "***", credits: 3, flags: [], transfer: false },
-      ],
-    });
+    const data = makeRegistered(structuredClone(sample), "ece2050", "SP27");
     loadAudit(parseAudit(data));
 
     toggleTerm("cs4500", "SP27");

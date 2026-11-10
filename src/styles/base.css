@@ -31,6 +31,16 @@ body {
   font-family: var(--sans);
 }
 
+/* Only two weights of each font are shipped: 400 (regular) and 600 (bold).
+   Browsers make headings and <b> 700 by default, so point them at 600. */
+h1,
+h2,
+h3,
+b,
+strong {
+  font-weight: 600;
+}
+
 .sheet {
   max-width: 1180px;
   margin: 0 auto;

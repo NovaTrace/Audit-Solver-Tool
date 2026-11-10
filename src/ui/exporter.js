@@ -5,6 +5,9 @@
 // The file is the same format as everything else (the Audit JSON Data
 // Guide), with `source.exportedAt` set. That stamp is how parseAudit()
 // knows a file is a saved plan, so importing it restores its own picks.
+//
+// downloadJsonFile() is also used by the bookmarklet's Download button
+// (bookmarklet/send.js), so saving a file works the same way in both.
 
 /**
  * The file to download for an audit: { filename, text }.
@@ -23,13 +26,15 @@ export function exportFile(audit, now = new Date()) {
 export function setupExport(getAudit) {
   document.getElementById("export-btn").addEventListener("click", () => {
     const { filename, text } = exportFile(getAudit());
-    download(filename, text);
+    downloadJsonFile(filename, text);
   });
 }
 
-// Make the browser save `text` as a file: wrap it in a Blob, give it a
-// temporary URL, and click a hidden link with a `download` attribute.
-function download(filename, text) {
+/**
+ * Save `text` as a file called `filename`: wrap it in a Blob, give it a
+ * temporary URL, and click a hidden link with a `download` attribute.
+ */
+export function downloadJsonFile(filename, text) {
   const blob = new Blob([text], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

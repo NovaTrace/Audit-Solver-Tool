@@ -23,17 +23,27 @@ export function coursesInTerm(audit, termKey) {
 
 /** Credit hours planned across all of the plan's terms. */
 export function totalPlannedCredits(audit) {
-  return audit.plan.terms.reduce(
-    (sum, t) => sum + sumCredits(coursesInTerm(audit, t.key)),
-    0,
+  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+  return sumCredits(
+    Object.values(audit.courses).filter((c) => termKeys.has(c.plannedTerm)),
   );
+}
+
+// A requirement where the student picks which course to take: a pool, a
+// rule, or an either/or course requirement ("ECE 4480 OR CS 4200"). A
+// course requirement with ONE option isn't a choice: that course has status
+// "needed" and is listed by unplacedRequired instead.
+function isChoice(req) {
+  if (req.type === "pool") return true;
+  if (req.type === "rule") return req.needHours > 0; // not e.g. a GPA rule
+  return req.type === "course" && req.options.length > 1;
 }
 
 /**
  * Progress on every requirement that still needs hours or courses and
- * lets the student choose (pools and rules). Requirements the audit marks
- * "in-progress" are left out: the audit assumes registered courses will be
- * passed, so those are already covered.
+ * lets the student choose (pools, rules and either/or courses).
+ * Requirements the audit marks "in-progress" are left out: the audit
+ * assumes registered courses will be passed, so those are already covered.
  * Returns one object per requirement:
  *   { id, type, title, needHours, needCourses, plannedHours, plannedCourses, done }
  *
@@ -44,9 +54,11 @@ export function totalPlannedCredits(audit) {
 export function requirementProgress(audit) {
   return audit.requirements
     .filter((r) => r.status === "needs")
-    .filter((r) => r.type === "pool" || r.type === "rule")
-    .filter((r) => r.type !== "rule" || r.needHours > 0) // e.g. a GPA rule
+    .filter(isChoice)
     .map((r) => {
+      // An either/or needs one of its courses, even if the audit gave no count
+      const needCourses =
+        r.type === "course" ? (r.needCourses ?? 1) : r.needCourses;
       const applied = new Set(r.applied.map((a) => a.code));
       const planned = r.options
         .filter((code) => !applied.has(code))
@@ -58,12 +70,12 @@ export function requirementProgress(audit) {
         type: r.type,
         title: r.title,
         needHours: r.needHours,
-        needCourses: r.needCourses,
+        needCourses,
         plannedHours,
         plannedCourses: planned.length,
         done:
           plannedHours >= (r.needHours ?? 0) &&
-          planned.length >= (r.needCourses ?? 0),
+          planned.length >= (needCourses ?? 0),
       };
     });
 }

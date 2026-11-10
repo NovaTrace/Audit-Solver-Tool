@@ -29,8 +29,28 @@ export function sectionNames(audit) {
  * query:         search text, already trimmed and lower-cased
  */
 export function visibleSections({ audit, filterSection, query }) {
+  return filterGroups(allSections(audit), { filterSection, query });
+}
+
+/**
+ * Narrow a list of groups (from allSections) to one section and the
+ * courses matching the search, dropping groups left empty. Lets the page
+ * work the full list out once and reuse it for the chips and the list.
+ */
+export function filterGroups(groups, { filterSection, query }) {
+  return groups
+    .filter((g) => filterSection === "all" || g.section === filterSection)
+    .map((g) => ({
+      section: g.section,
+      courses: g.courses.filter((c) => matchesQuery(c, query)),
+    }))
+    .filter((g) => g.courses.length > 0);
+}
+
+/** Every section with something to plan: no chip or search applied. */
+export function allSections(audit) {
   const plannable = Object.values(audit.courses)
-    .filter((c) => c.status !== "completed" && matchesQuery(c, query))
+    .filter((c) => c.status !== "completed")
     .sort((a, b) => a.code.localeCompare(b.code));
 
   // Courses the audit doesn't tie to any requirement (e.g. an F in a course
@@ -41,7 +61,6 @@ export function visibleSections({ audit, filterSection, query }) {
   }
 
   return sections
-    .filter((section) => filterSection === "all" || section === filterSection)
     .map((section) => {
       if (section === UNLINKED) {
         return {

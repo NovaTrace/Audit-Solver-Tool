@@ -120,7 +120,7 @@
 .r-title {
   color: var(--ink);
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .r-sub {
   display: block;
@@ -186,6 +186,11 @@
   background: var(--panel);
   color: var(--ink-faint);
   cursor: pointer;
+  /* Wide enough for "Locked 🔒", so the button doesn't change size (and
+     nudge the pills) when it switches from "Lock 🔓" */
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .lock-btn.on {
@@ -196,7 +201,7 @@
 }
 .lock-btn:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default; /* the regular arrow: greyed out already says "not yet" */
 }
 
 /* Term the course isn't scheduled in (from the course details) */

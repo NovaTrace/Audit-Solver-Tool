@@ -9,6 +9,8 @@ import {
   termIndex,
   termFromIndex,
   termLabel,
+  shortTermLabel,
+  isTermKey,
   termKeyFromName,
   termForDate,
   availabilityByTerm,
@@ -44,6 +46,14 @@ describe("course codes", () => {
     expect(codesIn("MATH 2350 or MATH 2350")).toEqual(["MATH 2350"]);
     expect(codesIn("Instructor consent")).toEqual([]);
   });
+
+  it("keeps a letter suffix and skips a term that looks like a code", () => {
+    expect(codesIn("CS 1150L or PSY 2999TC")).toEqual([
+      "CS 1150L",
+      "PSY 2999TC",
+    ]);
+    expect(codesIn("Offered FALL 2026 only")).toEqual([]);
+  });
 });
 
 describe("parsePrereqs", () => {
@@ -60,6 +70,28 @@ describe("parsePrereqs", () => {
     ).toEqual([
       { anyOf: ["ECE 2050"], minGrade: null },
       { anyOf: ["ECE 2205", "ECE 2210"], minGrade: null },
+    ]);
+  });
+
+  it("treats a plain 'and' as two required groups", () => {
+    expect(parsePrereqs("MATH 1350 and PES 1110").groups).toEqual([
+      { anyOf: ["MATH 1350"], minGrade: null },
+      { anyOf: ["PES 1110"], minGrade: null },
+    ]);
+    expect(parsePrereqs("CS 2060 or ECE 1021 and CS 2080").groups).toEqual([
+      { anyOf: ["CS 2060", "ECE 1021"], minGrade: null },
+      { anyOf: ["CS 2080"], minGrade: null },
+    ]);
+  });
+
+  it("shares a grade written once after 'and', but not across ';'", () => {
+    const text =
+      "CS 2060 and CS 2080 with a grade of C or better; MATH 1350; PES 1110 with a grade of B";
+    expect(parsePrereqs(text).groups).toEqual([
+      { anyOf: ["CS 2060"], minGrade: "C" },
+      { anyOf: ["CS 2080"], minGrade: "C" },
+      { anyOf: ["MATH 1350"], minGrade: null },
+      { anyOf: ["PES 1110"], minGrade: "B" },
     ]);
   });
 
@@ -99,6 +131,18 @@ describe("terms", () => {
     expect(termIndex("SP27") < termIndex("SU27")).toBe(true);
     expect(termFromIndex(termIndex("SU27"))).toBe("SU27");
     expect(termFromIndex(termIndex("FA26") + 1)).toBe("SP27");
+  });
+
+  it("tells real term keys from anything else", () => {
+    expect(["FA26", "SP27", "SU27"].every(isTermKey)).toBe(true);
+    expect(["FA2026", "WI26", "fa26", "", null, 26].some(isTermKey)).toBe(
+      false,
+    );
+  });
+
+  it("writes the short label used on term pills", () => {
+    expect(shortTermLabel("FA26")).toBe("Fall ’26");
+    expect(shortTermLabel("SU27")).toBe("Summer ’27");
   });
 
   it("labels terms", () => {

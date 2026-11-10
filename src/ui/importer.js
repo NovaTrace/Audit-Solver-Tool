@@ -1,8 +1,11 @@
-// ui/importer.js — Import button: pick a file, check it, read it,
-// and hand the contents to main.js, which loads it with importAudit().
+// ui/importer.js — the three ways audit data reaches the planner:
+//   setupImport    the Import button: pick a .json file
+//   setupPaste     Ctrl+V: audit JSON copied by the bookmarklet's Copy button
+//   setupReceiver  the bookmarklet's Send button (a message from its tab)
+// Each hands the contents to main.js, which loads it with importAudit().
 //
-// This file only READS files. Whether the contents are a valid audit is
-// decided by parseAudit() (through state.js), not here.
+// This file only READS the data. Whether it's a valid audit is decided by
+// parseAudit() (through state.js), not here.
 
 // Sites the bookmarklet may send an audit from. While developing, a local
 // test page counts too.
@@ -40,7 +43,7 @@ export function setupImport(onImport) {
       return;
     }
     if (name.endsWith(".pdf")) {
-      // Step 8: read the PDF's text with pdf.js and turn it into audit JSON
+      // Later: read the PDF's text with pdf.js and turn it into audit JSON
       alert(
         "PDF import isn't available yet. Use the bookmarklet, or a .json file you exported.",
       );
@@ -57,6 +60,43 @@ export function setupImport(onImport) {
       alert("Sorry, that file couldn't be read. Is it a .json file?");
       return;
     }
+    onImport({ kind: "json", content });
+  });
+}
+
+/**
+ * The audit in a piece of pasted text, or null if the text isn't one.
+ * Only JSON whose `schema` starts with "audit-solver/" counts, so pasting
+ * anything else on the page does nothing. (parseAudit still decides
+ * whether the audit is valid.) Pure, so it's tested in importer.test.js.
+ */
+export function auditFromText(text) {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("{")) return null; // not a JSON object: skip quickly
+  let data;
+  try {
+    data = JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+  const schema = data?.schema;
+  return typeof schema === "string" && schema.startsWith("audit-solver/")
+    ? data
+    : null;
+}
+
+/**
+ * Let the student paste (Ctrl+V) audit JSON anywhere on the page: the
+ * other half of the bookmarklet's Copy button. Pasting into a text box
+ * (the search field) is left alone.
+ * `onImport` gets { kind: "json", content: object }, like a file import.
+ */
+export function setupPaste(onImport) {
+  document.addEventListener("paste", (event) => {
+    if (event.target.closest?.("input, textarea")) return;
+    const content = auditFromText(event.clipboardData?.getData("text") ?? "");
+    if (!content) return;
+    event.preventDefault();
     onImport({ kind: "json", content });
   });
 }

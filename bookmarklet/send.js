@@ -2,7 +2,7 @@
 //
 //   sendToApp     opens the planner in a tab and hands it the JSON
 //   downloadJson  saves a .json file the student imports with Import
-//   copyJson      copies the JSON text, as a last resort
+//   copyJson      copies the JSON text, to paste on the planner page
 //
 // The handshake for sendToApp, using postMessage (the browser's safe way
 // for two tabs on different sites to talk):
@@ -10,6 +10,8 @@
 //   2. the planner says   { type: "audit-solver:ready" }
 //   3. this tab answers   { type: "audit-solver:audit", payload: audit }
 // Each side checks who sent a message before trusting it.
+
+import { downloadJsonFile } from "../src/ui/exporter.js";
 
 const WAIT_MS = 20000; // give the planner tab this long to say it's ready
 
@@ -59,20 +61,11 @@ export function sendToApp(audit, appUrl) {
 
 /** Save the audit as a .json file, for the planner's Import button. */
 export function downloadJson(audit) {
-  const blob = new Blob([JSON.stringify(audit, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "my-audit.json";
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000); // after the download starts
+  downloadJsonFile("my-audit.json", JSON.stringify(audit, null, 2));
 }
 
-/** Copy the audit's JSON text to the clipboard. */
+/** Copy the audit's JSON text to the clipboard. The student then pastes it
+ *  (Ctrl+V) on the planner page: see setupPaste in src/ui/importer.js. */
 export function copyJson(audit) {
   return navigator.clipboard.writeText(JSON.stringify(audit));
 }

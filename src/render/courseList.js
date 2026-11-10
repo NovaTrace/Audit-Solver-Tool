@@ -8,15 +8,13 @@
 // run as HTML.
 
 import {
-  visibleSections,
   creditText,
   countsTowardText,
   offeredText,
   prereqText,
   notOfferedIn,
 } from "../logic/courses.js";
-
-const SHORT_SEASON = { SP: "Spring", SU: "Summer", FA: "Fall" };
+import { shortTermLabel } from "../logic/courseText.js";
 
 /** One chip for "All", then one per section. `active` is the chosen one. */
 export function renderFilterChips(sections, active) {
@@ -34,11 +32,14 @@ export function renderFilterChips(sections, active) {
   box.replaceChildren(...chips);
 }
 
-/** Redraws the course list for the chosen section and search text. */
-export function renderCourseList({ audit, filterSection, query }) {
+/**
+ * Redraws the course list. `groups` is what to show, already narrowed to
+ * the chosen section and search text: [{ section, courses }, ...] from
+ * logic/courses.js. `query` only picks the wording when nothing matches.
+ */
+export function renderCourseList({ audit, groups, query }) {
   const list = document.getElementById("list");
   const rowTemplate = document.getElementById("course-row-tpl");
-  const groups = visibleSections({ audit, filterSection, query });
 
   if (groups.length === 0) {
     const empty = document.createElement("p");
@@ -115,12 +116,15 @@ function buildRow(template, audit, course) {
   lockBtn.classList.toggle("on", course.locked);
   lockBtn.setAttribute("aria-pressed", course.locked);
   lockBtn.disabled = !course.plannedTerm && !course.locked; // nothing to lock
-  lockBtn.textContent = course.locked ? "Locked🔒" : "lock🔓";
+  // Hovering a greyed-out button says why it can't be clicked
+  lockBtn.title = lockBtn.disabled ? "Pick a term first" : "";
+  // Screen readers hear a steady name ("Lock CS 4500") plus pressed / not
+  // pressed from aria-pressed, and skip the padlock picture
+  lockBtn.setAttribute("aria-label", `Lock ${course.code}`);
+  const padlock = document.createElement("span");
+  padlock.setAttribute("aria-hidden", "true");
+  padlock.textContent = course.locked ? "🔒" : "🔓";
+  lockBtn.replaceChildren(course.locked ? "Locked " : "Lock ", padlock);
 
   return fragment;
-}
-
-// "FA26" -> "Fall ’26" (short enough for a pill)
-function shortTermLabel(key) {
-  return `${SHORT_SEASON[key.slice(0, 2)]} ’${key.slice(2)}`;
 }

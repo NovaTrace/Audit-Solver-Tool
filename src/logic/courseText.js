@@ -2,7 +2,7 @@
 // logic/courseText.js — turning the audit site's text into our values
 //
 // Shared by everything that reads audit data: parseAudit(), the app's
-// helpers, the bookmarklet's scrapers (step 7) and the PDF reader (step 8).
+// helpers, the bookmarklet's scrapers and (later) the PDF reader.
 // Keeping them here means "MATH1350" becomes "MATH 1350", and "Fall 2026"
 // becomes "FA26", the same way everywhere.
 //
@@ -30,11 +30,17 @@ export function idFromCode(code) {
   return code.replace(/\s+/g, "").toLowerCase();
 }
 
-/** Every course code in a piece of text, normalized, each listed once. */
+// Words that look like a department but aren't one: "FALL 2026" is a term
+const NOT_DEPARTMENTS = new Set(["FALL"]);
+
+/**
+ * Every course code in a piece of text, normalized, each listed once.
+ * Allows the same letter suffix as CODE_PATTERN ("CS 1150L").
+ */
 export function codesIn(text = "") {
-  const found = [...text.matchAll(/\b([A-Z]{2,4})\s?(\d{4})\b/g)].map(
-    (m) => `${m[1]} ${m[2]}`,
-  );
+  const found = [...text.matchAll(/\b([A-Z]{2,4})\s?(\d{4}[A-Z]*)\b/g)]
+    .filter((m) => !NOT_DEPARTMENTS.has(m[1]))
+    .map((m) => `${m[1]} ${m[2]}`);
   return [...new Set(found)];
 }
 
@@ -51,7 +57,10 @@ const GRADE = /grade of\s*["“”']?([A-F][+-]?)["“”']?/i;
  *
  * Every group is required; any one course inside a group satisfies it.
  * - Sentences (split on ". ") with no course code become `notes`.
- * - Groups are split on ";" and ", and".
+ * - Groups are split on ";" and on the word "and" (with or without a
+ *   comma), so "A and B" is two groups: both are required.
+ * - "A and B with a grade of C": a group with no grade of its own takes
+ *   the grade of the next group in the same ";" piece.
  * - null in -> null out (details never loaded); "" -> no groups.
  */
 export function parsePrereqs(text) {
@@ -65,11 +74,20 @@ export function parsePrereqs(text) {
       notes.push(sentence.trim());
       continue;
     }
-    for (const part of sentence.split(/;|,\s*and\s+/i)) {
-      const anyOf = codesIn(part);
-      if (anyOf.length) {
-        groups.push({ anyOf, minGrade: part.match(GRADE)?.[1] ?? null });
+    for (const piece of sentence.split(";")) {
+      const pieceGroups = [];
+      for (const part of piece.split(/,?\s+and\s+/i)) {
+        const anyOf = codesIn(part);
+        if (anyOf.length) {
+          pieceGroups.push({ anyOf, minGrade: part.match(GRADE)?.[1] ?? null });
+        }
       }
+      // Work backwards, so a grade written once at the end reaches the
+      // groups before it
+      for (let i = pieceGroups.length - 2; i >= 0; i--) {
+        pieceGroups[i].minGrade ??= pieceGroups[i + 1].minGrade;
+      }
+      groups.push(...pieceGroups);
     }
   }
   return { groups, notes };
@@ -82,6 +100,11 @@ export function parsePrereqs(text) {
 const SEASONS = ["SP", "SU", "FA"]; // order within a calendar year
 const SEASON_NAMES = { SP: "Spring", SU: "Summer", FA: "Fall" };
 const SEASON_KEYS = { Spring: "SP", Summer: "SU", Fall: "FA" };
+
+/** True for a real term key: "FA26", "SP27", "SU27". */
+export function isTermKey(key) {
+  return typeof key === "string" && /^(SP|SU|FA)\d{2}$/.test(key);
+}
 
 /** "FA26" -> a number that sorts in time order (year × 3 + season). */
 export function termIndex(key) {
@@ -99,6 +122,11 @@ export function termFromIndex(index) {
 /** "FA26" -> "Fall 2026" */
 export function termLabel(key) {
   return `${SEASON_NAMES[key.slice(0, 2)]} 20${key.slice(2)}`;
+}
+
+/** "FA26" -> "Fall ’26" (short enough for a term pill) */
+export function shortTermLabel(key) {
+  return `${SEASON_NAMES[key.slice(0, 2)]} ’${key.slice(2)}`;
 }
 
 /** "Fall 2026" -> "FA26" (the site's spelling); null if it doesn't fit. */

@@ -8,6 +8,8 @@ import {
   matchesQuery,
   sectionNames,
   visibleSections,
+  allSections,
+  filterGroups,
   UNLINKED,
   creditText,
   countsTowardText,
@@ -118,6 +120,34 @@ describe("visibleSections", () => {
       query: "",
     });
     expect(groups).toEqual([]);
+  });
+});
+
+describe("allSections and filterGroups", () => {
+  // main.js works the full list out once (allSections), then narrows it
+  // (filterGroups). Together they must match visibleSections exactly.
+  it.each([
+    ["all", ""],
+    ["all", "ece"],
+    ["Electrical Engineering - Core", ""],
+    ["Electrical Engineering - Core", "semiconductor"],
+    ["all", "no such course"],
+  ])("match visibleSections for chip %j and search %j", (section, query) => {
+    const a = audit();
+    const options = { filterSection: section, query };
+    expect(codes(filterGroups(allSections(a), options))).toEqual(
+      codes(visibleSections({ audit: a, ...options })),
+    );
+  });
+
+  it("narrows to the search text and drops sections left empty", () => {
+    const groups = filterGroups(allSections(audit()), {
+      filterSection: "all",
+      query: "operating",
+    });
+    expect(codes(groups)).toEqual([
+      ["Computer Engineering - Core", ["CS 4500"]],
+    ]);
   });
 });
 

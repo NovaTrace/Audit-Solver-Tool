@@ -1,7 +1,9 @@
-// Draws the three schedule boxes in index.html:
+// Draws the stat tiles and the three schedule boxes in index.html:
+//   #stat-earned / #stat-assigned / #stat-total   the three stat tiles
 //   #pool-status  progress on requirements the student chooses courses for
 //   #sched-grid   one card per term in the plan
 //   #unassigned   required courses that still need a term
+// They're drawn together because they all change whenever a pick changes.
 //
 // This file only DISPLAYS results. All math comes from logic/credits.js.
 // Text is always set with textContent (never innerHTML), so course data from
@@ -10,16 +12,28 @@
 import {
   coursesInTerm,
   sumCredits,
+  totalPlannedCredits,
   requirementProgress,
   unplacedRequired,
 } from "../logic/credits.js";
 import { creditText } from "../logic/courses.js";
 
-/** Redraws all three schedule boxes from the current audit. */
+/** Redraws the stat tiles and all three schedule boxes from the audit. */
 export function renderSchedule(audit) {
+  renderStats(audit);
   renderPoolStatus(audit);
   renderTermCards(audit);
   renderUnassigned(audit);
+}
+
+// The three stat tiles: hours earned, hours assigned, and their total
+function renderStats(audit) {
+  const earned = audit.student.hoursEarned ?? 0;
+  const assigned = totalPlannedCredits(audit);
+
+  document.getElementById("stat-earned").textContent = earned;
+  document.getElementById("stat-assigned").textContent = assigned;
+  document.getElementById("stat-total").textContent = earned + assigned;
 }
 
 function renderPoolStatus(audit) {

@@ -65,6 +65,7 @@ export function showOverlay() {
     close,
     /**
      * Show the finished buttons. Each action is { label, run, main? }.
+     * `run` is handed say(text, isError): isError true shows the text red.
      * `list` (optional) goes behind a "See more" toggle under the message.
      */
     ready(text, actions, list = []) {

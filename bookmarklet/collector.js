@@ -85,7 +85,7 @@ async function run() {
           run: (say) =>
             sendToApp(audit, APP_URL).then(
               () => say("Sent! Switch to the Audit Solver tab."),
-              (e) => say(e.message),
+              (e) => say(e.message, true), // true = show it as an error (red)
             ),
         },
         {
@@ -99,8 +99,8 @@ async function run() {
           label: "Copy",
           run: (say) =>
             copyJson(audit).then(
-              () => say("Copied."),
-              () => say("Couldn't copy. Use Download instead."),
+              () => say("Copied. Open Audit Solver and press Ctrl+V."),
+              () => say("Couldn't copy. Use Download instead.", true),
             ),
         },
       ],

@@ -16,6 +16,7 @@ import {
   toCourseDetails,
   fetchCourseDetails,
   addCourseDetails,
+  applyDetails,
   needsDetails,
   SessionExpiredError,
   SlowDownError,
@@ -230,6 +231,33 @@ describe("course details", () => {
     expect(details.availability.FA26).toBe("available");
     expect(details.availability.SP27).toBe("unknown");
     expect(details.detailsLoaded).toBe(true);
+  });
+
+  it("keeps the audit's credits when the catalog has none, or the course is registered", () => {
+    const details = toCourseDetails(responses["ECE 3020"]); // 3 credits
+
+    // Variable credit: the catalog gives no single number
+    const variable = { code: "ECE 4910", credits: 2, attempts: [] };
+    applyDetails(variable, { ...details, credits: null });
+    expect(variable.credits).toBe(2);
+    expect(variable.detailsLoaded).toBe(true); // the rest is still copied
+
+    // Registered: the hours the student signed up for win
+    const registered = {
+      code: "ECE 4910",
+      credits: 2,
+      attempts: [{ term: "SP27", grade: "***", credits: 2 }],
+    };
+    applyDetails(registered, details);
+    expect(registered.credits).toBe(2);
+
+    // Otherwise the catalog's number is used
+    const plain = { code: "ECE 3020", credits: null, attempts: [] };
+    applyDetails(plain, details);
+    expect(plain.credits).toBe(3);
+    const retake = { code: "ECE 3020", credits: 4, attempts: [{ grade: "F" }] };
+    applyDetails(retake, details);
+    expect(retake.credits).toBe(3);
   });
 
   it("reads coreqs", () => {

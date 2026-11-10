@@ -101,7 +101,7 @@ export async function fetchCourseDetails(
         courseId: "",
       }),
     }).then((res) => {
-      if (res.type === "opaqueredirect" || res.redirected) {
+      if (res.type === "opaqueredirect") {
         throw new SessionExpiredError();
       }
       if (res.status === 429 || res.status === 503) {
@@ -131,6 +131,23 @@ function waitTime(retryAfter) {
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Copy fetched details onto a course, without losing credits the audit
+ * already gave it:
+ * - the catalog lists no single number for a variable-credit course
+ *   (`credits: null`), so the hours from the course history are kept;
+ * - a registered course ("***") keeps the hours the student signed up for,
+ *   which can differ from the catalog's number.
+ */
+export function applyDetails(course, details) {
+  const fromAudit = course.credits ?? null;
+  const registered = (course.attempts ?? []).some((a) => a.grade === "***");
+  Object.assign(course, details);
+  if (fromAudit !== null && (details.credits == null || registered)) {
+    course.credits = fromAudit;
+  }
+}
 
 /**
  * Add details to every course, AT_ONCE at a time, calling
@@ -167,7 +184,7 @@ export async function addCourseDetails(courses, options = {}) {
     while (queue.length) {
       const course = queue.shift();
       try {
-        Object.assign(course, await fetchWithRetry(course.code));
+        applyDetails(course, await fetchWithRetry(course.code));
       } catch (e) {
         if (e instanceof SessionExpiredError || e instanceof SlowDownError) {
           stopError ??= e;
