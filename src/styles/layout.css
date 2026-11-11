@@ -22,6 +22,8 @@
 .logo {
   display: flex;
   justify-content: center;
+  align-items: center; /* don't stretch the image to the box's height */
+  min-width: 0; /* let the box shrink on a narrow screen */
 }
 
 .tb-left p {
