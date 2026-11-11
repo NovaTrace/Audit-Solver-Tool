@@ -59,11 +59,11 @@ function renderPoolStatus(audit) {
   box.replaceChildren(...badges);
 }
 
-// "TECHNICAL ELECTIVES: 3/6 hrs planned", or for a rule with no option
-// list, just what's still needed
+// "TECHNICAL ELECTIVES: 3/6 hrs planned". A rule ("any MATH course 3100 or
+// higher") lists no courses, so its badge also says how to plan for it.
 function badgeText(req) {
   if (req.type === "rule") {
-    return `${req.title}: needs ${req.needHours} hrs (see audit)`;
+    return `${req.title}: ${req.plannedHours}/${req.needHours} hrs planned (add your own courses below)`;
   }
   const parts = [];
   if (req.needHours != null) {

@@ -48,8 +48,9 @@ function isChoice(req) {
  *   { id, type, title, needHours, needCourses, plannedHours, plannedCourses, done }
  *
  * "Planned" counts the requirement's options the student has put in a term
- * that the audit hasn't already applied. Rule requirements have no option
- * list, so their planned counts stay 0; the badge just shows what's needed.
+ * that the audit hasn't already applied. A rule ("any MATH course 3100 or
+ * higher") has no options from the audit; the courses the student adds by
+ * hand for it become its options, so they count the same way.
  */
 export function requirementProgress(audit) {
   return audit.requirements

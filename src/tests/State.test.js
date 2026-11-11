@@ -11,6 +11,8 @@ import {
   toggleLock,
   addTerm,
   removeTerm,
+  addCustomCourse,
+  removeCustomCourse,
   MAX_TERMS,
   loadState,
   saveState,
@@ -236,6 +238,103 @@ describe("removeTerm", () => {
     expect(keys()).toEqual(["SU27"]);
     toggleLock("cs4500"); // unlocked: only "last column" stops it now
     expect(removeTerm("SU27")).toBe(false);
+  });
+});
+
+describe("custom courses", () => {
+  // The sample's rule with no course list: "any MATH course 3100 or higher"
+  const RULE = "math-minor-electives";
+  const rule = () => getAudit().requirements.find((r) => r.id === RULE);
+  const add = (fields) =>
+    addCustomCourse({ code: "math 3110", credits: "3", ...fields });
+
+  it("adds a course with every field, linked to its requirement", () => {
+    expect(add({ title: " Theory of Numbers ", requirementId: RULE })).toEqual({
+      ok: true,
+      code: "MATH 3110",
+    });
+    expect(course("math3110")).toMatchObject({
+      code: "MATH 3110",
+      title: "Theory of Numbers",
+      credits: 3,
+      status: "option",
+      custom: true,
+      requirementIds: [RULE],
+      attempts: [], // filled in by parseAudit, like any course
+      plannedTerm: null,
+    });
+    expect(rule().options).toContain("MATH 3110");
+    expect(toggleTerm("math3110", "FA27")).toBe(true); // plans like any course
+  });
+
+  it("can be added with no requirement and no title", () => {
+    expect(add().ok).toBe(true);
+    expect(course("math3110")).toMatchObject({
+      title: null,
+      requirementIds: [],
+    });
+  });
+
+  it.each([
+    ["isn't a course code", { code: "calculus" }, /course code/],
+    [
+      "is already in the list",
+      { code: "CS 4500" },
+      /already in the course list/,
+    ],
+    ["is already completed", { code: "MATH3400" }, /already completed/],
+    ["has no credits", { credits: "" }, /Credits/],
+    ["has too many credits", { credits: "40" }, /Credits/],
+    [
+      "names a requirement that isn't there",
+      { requirementId: "nope" },
+      /requirement/,
+    ],
+  ])("refuses a course that %s, and says why", (_name, fields, message) => {
+    const before = Object.keys(getAudit().courses).length;
+    const result = add(fields);
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(message);
+    expect(Object.keys(getAudit().courses)).toHaveLength(before);
+  });
+
+  it("removes a custom course and its link, but not audit or locked courses", () => {
+    add({ requirementId: RULE });
+    expect(removeCustomCourse("cs4500")).toBe(false); // from the audit
+    expect(removeCustomCourse("nope")).toBe(false);
+
+    toggleTerm("math3110", "FA27");
+    toggleLock("math3110");
+    expect(removeCustomCourse("math3110")).toBe(false); // locked
+    toggleLock("math3110");
+    expect(removeCustomCourse("math3110")).toBe(true);
+    expect(course("math3110")).toBeUndefined();
+    expect(rule().options).not.toContain("MATH 3110");
+  });
+
+  it("survives a save, a reload, Reset plan and a fresh audit import", () => {
+    add({ requirementId: RULE });
+    toggleTerm("math3110", "FA27");
+    saveState();
+    loadSample(); // like a fresh page load
+    loadState();
+    expect(course("math3110")).toMatchObject({
+      custom: true,
+      plannedTerm: "FA27",
+    });
+
+    importAudit(structuredClone(sample)); // a fresh scrape doesn't list it
+    expect(course("math3110")).toMatchObject({
+      custom: true,
+      plannedTerm: "FA27",
+    });
+    expect(rule().options).toContain("MATH 3110");
+
+    resetPlan(); // clears the pick, keeps the course
+    expect(course("math3110")).toMatchObject({
+      custom: true,
+      plannedTerm: null,
+    });
   });
 });
 

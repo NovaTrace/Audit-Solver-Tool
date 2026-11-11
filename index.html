@@ -185,6 +185,51 @@
           </div>
         </div>
 
+        <!-- Add a course the audit doesn't list (wired in src/main.js) -->
+        <details class="add-course" id="add-course">
+          <summary>Add a course that isn't listed</summary>
+          <p class="add-course-hint">
+            For requirements like "any MATH course numbered 3100 or higher",
+            where the audit doesn't name the choices. Check the catalog for
+            what counts: this page can't.
+          </p>
+          <form class="add-course-form" id="add-course-form">
+            <label>
+              Course code
+              <input
+                type="text"
+                id="add-code"
+                placeholder="MATH 3110"
+                autocomplete="off"
+                required
+              />
+            </label>
+            <label>
+              Title (optional)
+              <input type="text" id="add-title" autocomplete="off" />
+            </label>
+            <label>
+              Credits
+              <input
+                type="number"
+                id="add-credits"
+                min="0.5"
+                max="12"
+                step="0.5"
+                value="3"
+                required
+              />
+            </label>
+            <label>
+              Counts toward
+              <!-- Options filled by src/render/courseList.js -->
+              <select id="add-req"></select>
+            </label>
+            <button type="submit">Add course</button>
+          </form>
+          <p class="add-course-msg" id="add-course-msg" role="status"></p>
+        </details>
+
         <!-- Filled by src/render/courseList.js -->
         <section id="list" aria-label="Courses"></section>
 
