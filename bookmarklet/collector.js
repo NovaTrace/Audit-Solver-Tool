@@ -5,7 +5,7 @@
 //   check the page -> show the overlay -> read the audit -> fetch course
 //   details -> check the result with parseAudit() -> offer Send/Download
 //
-// vite.bookmarklet.config.js bundles this and everything it imports into
+// bookmarklet/vite.config.js bundles this and everything it imports into
 // one file, src/generated/collector.js. The app's "Grab my audit" link is
 // that file's code (see src/ui/bookmarkletPanel.js).
 // =====================================================================

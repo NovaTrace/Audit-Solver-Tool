@@ -1,0 +1,53 @@
+# Publishes the planner to GitHub Pages.
+#
+# Runs on every push to main (and from the Actions tab by hand): installs
+# the packages, runs the tests, builds the site into dist/, and hands
+# dist/ to GitHub Pages. If the tests fail, nothing is published and the
+# site stays as it was.
+#
+# One-time setup on GitHub: Settings > Pages > Source > "GitHub Actions".
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# What this workflow is allowed to do: read the code, publish to Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# If two pushes land close together, finish the first deploy before
+# starting the next rather than running both at once
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --run
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
