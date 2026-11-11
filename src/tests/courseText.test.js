@@ -3,6 +3,7 @@
 import { describe, it, expect } from "vitest";
 import {
   normalizeCode,
+  isCourseCode,
   idFromCode,
   codesIn,
   parsePrereqs,
@@ -33,6 +34,15 @@ describe("course codes", () => {
 
   it("leaves shapes it doesn't recognize alone, apart from case", () => {
     expect(normalizeCode("port 30")).toBe("PORT 30");
+  });
+
+  it("tells a course code from other text", () => {
+    expect(["MATH 3110", "math3110", " cs 1150L "].every(isCourseCode)).toBe(
+      true,
+    );
+    expect(["calculus", "MATH", "3110", "", null].some(isCourseCode)).toBe(
+      false,
+    );
   });
 
   it("turns codes into ids", () => {

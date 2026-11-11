@@ -55,6 +55,7 @@ const COURSE_DEFAULTS = {
   coreqText: null,
   coreqs: null,
   detailsLoaded: false,
+  custom: false, // true for a course the student added by hand
   plannedTerm: null,
   locked: false,
 };
@@ -314,7 +315,35 @@ function mergePrevious(audit, previous) {
       }
     }
   }
+  if (!isExport) keepCustomCourses(audit, previous);
   return keptColumns;
+}
+
+/**
+ * A fresh scrape only knows the courses on the audit, so the ones the
+ * student added by hand (`custom: true`) are brought over from the
+ * previous state, with their picks.
+ * - If the audit now lists that course itself (e.g. the student registered
+ *   for it), the audit's version is used and the hand-made one is dropped.
+ * - A link to a requirement that no longer exists is removed; the course
+ *   then shows under "Not linked to a requirement".
+ * An exported file is a whole plan and already holds its own custom courses.
+ */
+function keepCustomCourses(audit, previous) {
+  const reqIds = new Set(audit.requirements.map((r) => r.id));
+  for (const [id, old] of Object.entries(previous.courses ?? {})) {
+    if (!old.custom || audit.courses[id]) continue;
+    const course = structuredClone(old);
+    course.requirementIds = (course.requirementIds ?? []).filter((reqId) =>
+      reqIds.has(reqId),
+    );
+    audit.courses[id] = course;
+    // List it as an option again, so it counts toward the requirement
+    for (const req of audit.requirements) {
+      if (!course.requirementIds.includes(req.id)) continue;
+      req.options = [...new Set([...(req.options ?? []), course.code])];
+    }
+  }
 }
 
 /**
@@ -352,6 +381,7 @@ function fillCourse(course) {
     }
   }
   course.locked = course.locked === true; // anything else isn't a lock
+  course.custom = course.custom === true;
 }
 
 /** Every requirement gets every field (the page loops over `options` and

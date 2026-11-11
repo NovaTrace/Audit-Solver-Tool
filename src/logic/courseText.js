@@ -25,6 +25,11 @@ export function normalizeCode(code) {
   return match ? `${match[1]} ${match[2]}`.toUpperCase() : text.toUpperCase();
 }
 
+/** True for text shaped like a course code: "MATH 3110", "cs1150L". */
+export function isCourseCode(code) {
+  return typeof code === "string" && CODE_PATTERN.test(code.trim());
+}
+
 /** "MATH 1350" or "MATH1350" -> "math1350" (the key in `courses`). */
 export function idFromCode(code) {
   return code.replace(/\s+/g, "").toLowerCase();

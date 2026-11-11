@@ -94,6 +94,29 @@ describe("requirementProgress", () => {
     });
   });
 
+  it("counts planned courses listed as a rule's options (added by hand)", () => {
+    const data = structuredClone(sample);
+    data.courses.math3110 = {
+      id: "math3110",
+      code: "MATH 3110",
+      credits: 3,
+      status: "option",
+      requirementIds: ["math-minor-electives"],
+      custom: true,
+    };
+    data.requirements
+      .find((r) => r.id === "math-minor-electives")
+      .options.push("MATH 3110");
+    const a = parseAudit(data);
+    expect(progressFor(a, "math-minor-electives").plannedHours).toBe(0);
+    a.courses.math3110.plannedTerm = "FA27";
+    expect(progressFor(a, "math-minor-electives")).toMatchObject({
+      plannedHours: 3,
+      needHours: 6,
+      done: false,
+    });
+  });
+
   it("includes rule requirements with nothing planned", () => {
     expect(progressFor(audit(), "math-minor-electives")).toMatchObject({
       type: "rule",

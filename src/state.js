@@ -20,6 +20,9 @@ import {
   termIndex,
   isTermKey as isRealTerm, // "is this text a term at all?" ("FA26": yes)
   isPastTerm,
+  isCourseCode,
+  normalizeCode,
+  idFromCode,
   MAX_TERMS,
 } from "./logic/courseText.js";
 import sample from "./data/sample-audit.json";
@@ -130,6 +133,83 @@ export function toggleLock(id) {
   }
   if (!course.plannedTerm) return false; // can't lock a course with no term
   course.locked = true;
+  return true;
+}
+
+// ---------- Courses the student adds by hand ----------
+
+/**
+ * Add a course the audit doesn't list, for requirements like "any MATH
+ * course numbered 3100 or higher" where the audit names no choices.
+ *
+ *   code           "MATH 3110" (any spacing or case)
+ *   title          optional
+ *   credits        a number above 0, at most 12
+ *   requirementId  the requirement it counts toward, or "" for none
+ *
+ * Returns { ok: true, code } or { ok: false, message } with words to show
+ * the student. The course is marked `custom: true`, so it can be removed
+ * again and is kept when a new audit is imported.
+ */
+export function addCustomCourse({
+  code,
+  title = "",
+  credits,
+  requirementId = "",
+}) {
+  if (!isCourseCode(code)) {
+    return { ok: false, message: "Enter a course code like MATH 3110." };
+  }
+  const normalized = normalizeCode(code);
+  const id = idFromCode(normalized);
+  const existing = findCourse(id);
+  if (existing) {
+    const where =
+      existing.status === "completed"
+        ? "already completed on your audit"
+        : "already in the course list";
+    return { ok: false, message: `${normalized} is ${where}.` };
+  }
+  const hours = Number(credits);
+  if (!Number.isFinite(hours) || hours <= 0 || hours > 12) {
+    return { ok: false, message: "Credits must be a number from 0.5 to 12." };
+  }
+  const req = audit.requirements.find((r) => r.id === requirementId);
+  if (requirementId !== "" && !req) {
+    return { ok: false, message: "Pick a requirement from the list." };
+  }
+
+  audit.courses[id] = {
+    id,
+    code: normalized,
+    title: String(title).trim() || null,
+    credits: hours,
+    minCredits: hours,
+    maxCredits: hours,
+    status: "option", // a choice, like the options the audit lists itself
+    requirementIds: req ? [req.id] : [],
+    custom: true,
+  };
+  // Listing it as one of the requirement's options is what makes it count
+  // toward that requirement's progress
+  if (req) req.options.push(normalized);
+  // parseAudit gives the new course every other field (attempts, prereqs…)
+  audit = parseAudit(audit);
+  return { ok: true, code: normalized };
+}
+
+/**
+ * Remove a course the student added by hand. Returns true if it was
+ * removed. Refused (false) for a course from the audit, an unknown id, or
+ * a locked course (unlock it first, as with removing a semester).
+ */
+export function removeCustomCourse(id) {
+  const course = findCourse(id);
+  if (!course || !course.custom || course.locked) return false;
+  for (const req of audit.requirements) {
+    req.options = req.options.filter((code) => code !== course.code);
+  }
+  delete audit.courses[id];
   return true;
 }
 

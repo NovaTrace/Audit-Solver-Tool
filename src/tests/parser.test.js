@@ -204,11 +204,19 @@ describe("parseAudit: repairs", () => {
     const data = copy();
     Object.assign(data.courses.cs4500, { plannedTerm: "FA35", locked: true });
     data.courses.ece3020.locked = true; // locked, but with no term
-    Object.assign(data.courses.ece3210, { plannedTerm: "FA27", locked: "yes" });
+    Object.assign(data.courses.ece3210, {
+      plannedTerm: "FA27",
+      locked: "yes",
+      custom: "yes", // only `custom: true` marks a hand-added course
+    });
     const { cs4500, ece3020, ece3210 } = parseAudit(data).courses;
     expect(cs4500).toMatchObject({ plannedTerm: null, locked: false });
     expect(ece3020.locked).toBe(false);
-    expect(ece3210).toMatchObject({ plannedTerm: "FA27", locked: false });
+    expect(ece3210).toMatchObject({
+      plannedTerm: "FA27",
+      locked: false,
+      custom: false,
+    });
   });
 });
 
@@ -346,6 +354,59 @@ describe("parseAudit: merging with previous", () => {
     expect(course.title).toBe("Operating Systems I");
     expect(course.prereqs.groups).toHaveLength(3);
     expect(course.detailsLoaded).toBe(true);
+  });
+
+  // A course the student added by hand, planned for Fall '27
+  const withCustom = (requirementIds) => {
+    const previous = parseAudit(copy());
+    previous.courses.math3110 = {
+      ...previous.courses.cs4500,
+      id: "math3110",
+      code: "MATH 3110",
+      custom: true,
+      requirementIds,
+      plannedTerm: "FA27",
+    };
+    return previous;
+  };
+
+  it("keeps a course the student added by hand, with its pick and its link", () => {
+    const result = parseAudit(copy(), withCustom(["math-minor-electives"]));
+    expect(result.courses.math3110).toMatchObject({
+      custom: true,
+      plannedTerm: "FA27",
+      requirementIds: ["math-minor-electives"],
+    });
+    const rule = result.requirements.find(
+      (r) => r.id === "math-minor-electives",
+    );
+    expect(rule.options).toEqual(["MATH 3110"]);
+  });
+
+  it("unlinks a hand-added course whose requirement is gone", () => {
+    const result = parseAudit(copy(), withCustom(["no-longer-there"]));
+    expect(result.courses.math3110.requirementIds).toEqual([]);
+  });
+
+  it("uses the audit's own version once it lists a hand-added course", () => {
+    const data = copy();
+    data.courses.math3110 = {
+      id: "math3110",
+      code: "MATH 3110",
+      status: "option",
+      requirementIds: [],
+    };
+    const result = parseAudit(data, withCustom([]));
+    expect(result.courses.math3110.custom).toBe(false);
+    expect(result.courses.math3110.plannedTerm).toBe("FA27"); // the pick stays
+  });
+
+  it("doesn't bring hand-added courses into an exported file's plan", () => {
+    const exported = copy();
+    exported.source.exportedAt = "2026-11-05T21:00:00";
+    expect(
+      parseAudit(exported, withCustom([])).courses.math3110,
+    ).toBeUndefined();
   });
 
   it("ignores previous courses that are no longer on the audit", () => {

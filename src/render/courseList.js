@@ -2,8 +2,10 @@
 // per audit section, then one row per course built from
 // <template id="course-row-tpl"> in index.html.
 //
-// This file only DISPLAYS. Clicks on chips, pills and lock buttons are
-// handled by listeners in main.js, which owns the state and saving.
+// It also fills the "Counts toward" choices of the add-a-course form.
+//
+// This file only DISPLAYS. Clicks on chips, pills, lock and remove buttons
+// are handled by listeners in main.js, which owns the state and saving.
 // All text is set with textContent, so imported course data can never be
 // run as HTML.
 
@@ -30,6 +32,42 @@ export function renderFilterChips(sections, active) {
     return chip;
   });
   box.replaceChildren(...chips);
+}
+
+/**
+ * Fills the add-a-course form's "Counts toward" list: "nothing", then
+ * every requirement that isn't finished. Rules come first, since a rule
+ * ("any MATH course 3100 or higher") is what the form is mostly for.
+ * The student's current choice is kept across redraws.
+ */
+export function renderRequirementChoices(audit) {
+  const select = document.getElementById("add-req");
+  const chosen = select.value;
+
+  const open = audit.requirements.filter((r) => r.status !== "complete");
+  const rules = open.filter((r) => r.type === "rule");
+  const others = open.filter((r) => r.type !== "rule");
+
+  const none = document.createElement("option");
+  none.value = "";
+  none.textContent = "Nothing: just plan it";
+  const choices = [...rules, ...others].map((req) => {
+    const option = document.createElement("option");
+    option.value = req.id;
+    option.textContent = `${req.title} (${req.section})`;
+    return option;
+  });
+  select.replaceChildren(none, ...choices);
+
+  // Keep what was chosen if it's still there; on the first draw, start on
+  // the first rule
+  const values = [...select.options].map((o) => o.value);
+  if (select.dataset.drawn && values.includes(chosen)) {
+    select.value = chosen;
+  } else {
+    select.value = rules[0]?.id ?? "";
+  }
+  select.dataset.drawn = "true";
 }
 
 /**
@@ -73,14 +111,16 @@ function buildRow(template, audit, course) {
 
   row.classList.toggle("pool", course.status === "option");
   row.classList.toggle("locked", course.locked);
+  row.classList.toggle("custom", course.custom);
 
   // Column 1: code and credits
   row.querySelector(".r-code").textContent = course.code;
   row.querySelector(".r-cr").textContent = creditText(course);
 
   // Column 2: details
+  // A course added by hand has no details to load, so it says so instead
   row.querySelector(".r-title").textContent =
-    course.title ?? "Details not loaded";
+    course.title ?? (course.custom ? "Added by you" : "Details not loaded");
   const sub = row.querySelector(".r-sub");
   const counts = countsTowardText(audit, course);
   if (counts) {
@@ -125,6 +165,21 @@ function buildRow(template, audit, course) {
   padlock.setAttribute("aria-hidden", "true");
   padlock.textContent = course.locked ? "🔒" : "🔓";
   lockBtn.replaceChildren(course.locked ? "Locked " : "Lock ", padlock);
+
+  // Courses the student added by hand get a remove button after the lock
+  if (course.custom) {
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-course-btn";
+    remove.dataset.id = course.id; // read by the click listener in main.js
+    remove.textContent = "Remove";
+    remove.setAttribute("aria-label", `Remove ${course.code}`);
+    remove.disabled = course.locked; // like a semester: unlock it first
+    remove.title = course.locked
+      ? "Unlock it first"
+      : "Remove this course you added";
+    pills.append(remove);
+  }
 
   return fragment;
 }

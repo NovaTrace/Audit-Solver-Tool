@@ -39,6 +39,8 @@ import {
   toggleLock,
   addTerm,
   removeTerm,
+  addCustomCourse,
+  removeCustomCourse,
   importAudit,
   AuditError,
   clearAllData,
@@ -54,7 +56,11 @@ import {
 import { setupExport } from "./ui/exporter.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
-import { renderCourseList, renderFilterChips } from "./render/courseList.js";
+import {
+  renderCourseList,
+  renderFilterChips,
+  renderRequirementChoices,
+} from "./render/courseList.js";
 
 // The chosen filter chip: "all" or a section name. This is display state,
 // not plan data, so it lives here rather than in state.js and isn't saved.
@@ -102,6 +108,7 @@ function refreshList() {
     activeSection = "all";
   }
   renderFilterChips(sections, activeSection);
+  renderRequirementChoices(audit); // the add-a-course form's list
 
   const query = document.getElementById("search").value.trim().toLowerCase();
   renderCourseList({
@@ -255,20 +262,49 @@ document.getElementById("chips").addEventListener("click", (e) => {
 // Search box
 document.getElementById("search").addEventListener("input", refreshList);
 
-// Term pills and lock buttons: ONE listener on the whole list.
+// Term pills, lock buttons and remove buttons: ONE listener on the whole
+// list.
 // state.js decides whether the click is allowed; we just save and redraw.
 document.getElementById("list").addEventListener("click", (e) => {
   const pill = e.target.closest(".pill");
   const lockBtn = e.target.closest(".lock-btn");
+  const removeBtn = e.target.closest(".remove-course-btn");
 
   let changed = false;
   if (pill) {
     changed = toggleTerm(pill.dataset.id, pill.dataset.term);
   } else if (lockBtn) {
     changed = toggleLock(lockBtn.dataset.id);
+  } else if (removeBtn) {
+    changed = removeCustomCourse(removeBtn.dataset.id);
   }
 
   if (changed) saveAndRefresh();
+});
+
+// Add-a-course form: for courses the audit doesn't list. state.js checks
+// what was typed and says what's wrong; we show its message.
+document.getElementById("add-course-form").addEventListener("submit", (e) => {
+  e.preventDefault(); // don't reload the page, which a form does by default
+  const field = (id) => document.getElementById(id);
+  const result = addCustomCourse({
+    code: field("add-code").value,
+    title: field("add-title").value,
+    credits: field("add-credits").value,
+    requirementId: field("add-req").value,
+  });
+
+  const message = field("add-course-msg");
+  message.classList.toggle("error", !result.ok);
+  if (!result.ok) {
+    message.textContent = result.message;
+    return;
+  }
+  message.textContent = `Added ${result.code}. Pick its term in the list below.`;
+  // Ready for the next one; credits and the requirement stay as chosen
+  field("add-code").value = "";
+  field("add-title").value = "";
+  saveAndRefresh();
 });
 
 // =====================================================================
