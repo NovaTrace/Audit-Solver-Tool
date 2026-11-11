@@ -113,6 +113,23 @@ describe("visibleSections", () => {
     expect(core(a)).toContain("CS 4200");
   });
 
+  it("hides the courses of a requirement the student switched off", () => {
+    const a = audit();
+    const codesIn = (section) =>
+      visibleSections({ audit: a, filterSection: section, query: "" })
+        .flatMap((g) => g.courses)
+        .map((c) => c.code);
+    const core = "Computer Engineering - Core";
+    expect(codesIn(core)).toContain("CS 4500");
+
+    a.requirements.find((r) => r.id === "cpe-cs4500").ignored = true;
+    expect(codesIn(core)).not.toContain("CS 4500");
+    expect(codesIn(core)).toContain("CS 3300"); // its own requirement is on
+
+    a.courses.cs4500.plannedTerm = "FA27"; // once planned, it shows again
+    expect(codesIn(core)).toContain("CS 4500");
+  });
+
   it("skips sections with nothing left to show", () => {
     const groups = visibleSections({
       audit: audit(),

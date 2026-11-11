@@ -213,6 +213,37 @@ export function removeCustomCourse(id) {
   return true;
 }
 
+// ---------- Switching requirements on and off ----------
+
+/**
+ * A requirement's badge or tick box was clicked: switch it off, or back
+ * on. Off means "I don't need to finish this one" (a track the student
+ * isn't taking, a minor they're dropping): its courses leave the course
+ * list and it stops counting as something to plan. The audit's own facts
+ * (status, hours) are not changed. Returns true if something changed.
+ */
+export function toggleRequirement(id) {
+  const req = audit.requirements.find((r) => r.id === id);
+  if (!req) return false;
+  req.ignored = !req.ignored;
+  return true;
+}
+
+/**
+ * A section's tick box was clicked: switch every unmet requirement in the
+ * section off (`off` true) or back on, in one go. This is what makes a
+ * track of many single courses one click instead of many.
+ * Returns true if anything changed.
+ */
+export function setSectionOff(section, off) {
+  const reqs = audit.requirements.filter(
+    (r) => r.section === section && r.status === "needs",
+  );
+  const changed = reqs.some((r) => r.ignored !== off);
+  for (const req of reqs) req.ignored = off;
+  return changed;
+}
+
 // ---------- Changing the semester columns ----------
 
 /**

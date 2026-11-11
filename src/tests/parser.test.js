@@ -142,6 +142,7 @@ describe("parseAudit: repairs", () => {
       options: [],
       applied: [],
       description: "",
+      ignored: false,
     });
     expect(result.requirements.at(-1).type).toBe("pool"); // it has options
     expect(result.student).toMatchObject({
@@ -407,6 +408,25 @@ describe("parseAudit: merging with previous", () => {
     expect(
       parseAudit(exported, withCustom([])).courses.math3110,
     ).toBeUndefined();
+  });
+
+  it("keeps a requirement switched off on a fresh scrape, but not for an export", () => {
+    const previous = parseAudit(copy());
+    previous.requirements.find((r) => r.id === "cpe-cs4500").ignored = true;
+    const off = (audit) =>
+      audit.requirements.filter((r) => r.ignored).map((r) => r.id);
+
+    expect(off(parseAudit(copy(), previous))).toEqual(["cpe-cs4500"]);
+
+    const exported = copy();
+    exported.source.exportedAt = "2026-11-05T21:00:00";
+    expect(off(parseAudit(exported, previous))).toEqual([]); // its own plan
+  });
+
+  it("only treats `ignored: true` as switched off", () => {
+    const data = copy();
+    data.requirements[0].ignored = "yes";
+    expect(parseAudit(data).requirements[0].ignored).toBe(false);
   });
 
   it("ignores previous courses that are no longer on the audit", () => {

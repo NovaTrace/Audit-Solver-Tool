@@ -29,6 +29,14 @@ export function totalPlannedCredits(audit) {
   );
 }
 
+/**
+ * True for a requirement the student is still planning for: the audit
+ * says it isn't finished, and the student hasn't switched it off.
+ */
+export function isOpen(req) {
+  return req.status !== "complete" && !req.ignored;
+}
+
 // A requirement where the student picks which course to take: a pool, a
 // rule, or an either/or course requirement ("ECE 4480 OR CS 4200"). A
 // course requirement with ONE option isn't a choice: that course has status
@@ -45,7 +53,10 @@ function isChoice(req) {
  * Requirements the audit marks "in-progress" are left out: the audit
  * assumes registered courses will be passed, so those are already covered.
  * Returns one object per requirement:
- *   { id, type, title, needHours, needCourses, plannedHours, plannedCourses, done }
+ *   { id, type, title, needHours, needCourses, plannedHours, plannedCourses,
+ *     done, ignored }
+ * A switched-off requirement stays in the list (`ignored: true`), so its
+ * badge can still be shown and switched back on.
  *
  * "Planned" counts the requirement's options the student has put in a term
  * that the audit hasn't already applied. A rule ("any MATH course 3100 or
@@ -74,6 +85,7 @@ export function requirementProgress(audit) {
         needCourses,
         plannedHours,
         plannedCourses: planned.length,
+        ignored: r.ignored,
         done:
           plannedHours >= (r.needHours ?? 0) &&
           planned.length >= (needCourses ?? 0),
@@ -81,9 +93,15 @@ export function requirementProgress(audit) {
     });
 }
 
-/** Specific required courses (status "needed") that have no term yet. */
+/**
+ * Specific required courses (status "needed") that have no term yet. A
+ * course only counts while a requirement that lists it is still open: if
+ * the student switched all of those off, it isn't required any more.
+ */
 export function unplacedRequired(audit) {
+  const open = new Set(audit.requirements.filter(isOpen).map((r) => r.id));
   return Object.values(audit.courses)
     .filter((c) => c.status === "needed" && !c.plannedTerm)
+    .filter((c) => c.requirementIds.some((id) => open.has(id)))
     .sort((a, b) => a.code.localeCompare(b.code));
 }

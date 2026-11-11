@@ -117,6 +117,13 @@ describe("requirementProgress", () => {
     });
   });
 
+  it("keeps a switched-off requirement in the list, marked", () => {
+    const a = audit();
+    expect(progressFor(a, "ee-lecture-electives").ignored).toBe(false);
+    a.requirements.find((r) => r.id === "ee-lecture-electives").ignored = true;
+    expect(progressFor(a, "ee-lecture-electives").ignored).toBe(true);
+  });
+
   it("includes rule requirements with nothing planned", () => {
     expect(progressFor(audit(), "math-minor-electives")).toMatchObject({
       type: "rule",
@@ -139,6 +146,14 @@ describe("unplacedRequired", () => {
       "ECE 4891",
       "ECE 4899",
     ]);
+  });
+
+  it("drops a course whose requirement the student switched off", () => {
+    const a = audit();
+    a.requirements.find((r) => r.id === "cpe-cs4500").ignored = true;
+    const codes = unplacedRequired(a).map((c) => c.code);
+    expect(codes).not.toContain("CS 4500");
+    expect(codes).toContain("ECE 3020"); // the others still count
   });
 
   it("drops a course once it has a term", () => {

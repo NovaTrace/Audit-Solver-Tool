@@ -17,6 +17,8 @@ import {
   notOfferedIn,
 } from "../logic/courses.js";
 import { shortTermLabel } from "../logic/courseText.js";
+import { unlocks } from "../logic/prereqs.js";
+import { courseWarnings } from "../logic/planChecks.js";
 
 /** One chip for "All", then one per section. `active` is the chosen one. */
 export function renderFilterChips(sections, active) {
@@ -130,6 +132,28 @@ function buildRow(template, audit, course) {
   }
   row.querySelector(".r-term").textContent = offeredText(course);
   row.querySelector(".r-prereq").textContent = prereqText(course);
+  // Which courses need this one first: a reason to take it early
+  const neededFor = unlocks(audit, course);
+  const unlocksLine = row.querySelector(".r-unlocks");
+  if (neededFor.length) {
+    unlocksLine.textContent = `Needed for: ${neededFor.join(", ")}`;
+  } else {
+    unlocksLine.remove(); // nothing to say: drop the empty span
+  }
+  // Planned too early, or in a term it isn't offered? One line per warning
+  const warn = row.querySelector(".r-warn");
+  const warnings = courseWarnings(audit, course);
+  if (warnings.length) {
+    warn.replaceChildren(
+      ...warnings.map((text) => {
+        const line = document.createElement("span");
+        line.textContent = text;
+        return line;
+      }),
+    );
+  } else {
+    warn.remove();
+  }
 
   // Column 3: one pill per term, placed before the lock button
   const pills = row.querySelector(".pills");

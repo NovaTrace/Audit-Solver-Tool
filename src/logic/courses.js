@@ -2,6 +2,8 @@
 // shown about each one.
 // No `document` here, so these can be tested with Vitest (see courses.test.js).
 
+import { isOpen } from "./credits.js";
+
 /** True if the course matches the search text (empty search matches all). */
 export function matchesQuery(course, query) {
   if (!query) return true;
@@ -69,13 +71,14 @@ export function allSections(audit) {
         };
       }
       // A course shows under a section while one of its requirements there
-      // is unfinished, or once the student has placed it in a term
+      // is open (unfinished, and not switched off by the student), or once
+      // the student has placed it in a term
       const inSection = (id) =>
         audit.requirements.some((r) => r.id === id && r.section === section);
       const reqIds = new Set(
         audit.requirements
           .filter((r) => r.section === section)
-          .filter((r) => r.status !== "complete")
+          .filter(isOpen)
           .map((r) => r.id),
       );
       return {

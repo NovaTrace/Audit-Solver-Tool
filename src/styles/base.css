@@ -23,6 +23,7 @@
   --accent-ink: #162f55;
   --lock: #0b274f;
   --lock-bg: #204365;
+  --warn: #f5c563; /* prerequisite warnings */
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 }
