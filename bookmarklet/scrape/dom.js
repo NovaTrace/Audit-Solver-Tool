@@ -75,3 +75,25 @@ export function selectFromCodes(el) {
       `${c.getAttribute("department").trim()} ${c.getAttribute("number").trim()}`,
   );
 }
+
+/**
+ * Everything read from one .subrequirement, as plain values: the shape
+ * src/logic/auditBuild.js works from (the PDF import builds the same one).
+ * A total that isn't on the page is null.
+ */
+export function readSubrequirement(sub) {
+  const gpaTable = sub.querySelector(".gpaDetail");
+  return {
+    status: subStatus(sub),
+    titleLines: lines(sub.querySelector(".subreqTitle")),
+    select: selectFromCodes(sub),
+    applied: [...sub.querySelectorAll(".takenCourse")].map(readTakenRow),
+    needHours: num(sub.querySelector(".subreqNeeds .hours")),
+    needCourses: num(sub.querySelector(".subreqNeeds .count")),
+    earnedHours: num(sub.querySelector(".subreqEarned .hours")),
+    inProgressHours: num(sub.querySelector(".subreqIpHours .hours")),
+    hasGpa: Boolean(gpaTable),
+    gpa: num(gpaTable?.querySelector(".gpa")),
+    attemptedHours: num(gpaTable?.querySelector(".hours")),
+  };
+}

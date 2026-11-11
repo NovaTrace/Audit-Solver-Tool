@@ -340,3 +340,26 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* Prerequisite warning under a course planned too early */
+.r-warn {
+  display: block;
+  margin-top: 4px;
+  color: var(--warn);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* Each warning on its own line */
+.r-warn span {
+  display: block;
+}
+
+/* "Needed for: CS 4500, ECE 4899" under a course's prerequisites */
+.r-unlocks {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-dim);
+  font-size: 11.5px;
+  line-height: 1.4;
+}

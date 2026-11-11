@@ -158,3 +158,86 @@
 .unassigned b {
   color: var(--ink);
 }
+
+/* ---------- Switching requirements on and off ---------- */
+/* The badges are buttons: clicking one switches its requirement off */
+button.ps {
+  cursor: pointer;
+}
+
+.ps.off {
+  border-style: dotted;
+  color: var(--ink-faint);
+  background: none;
+  opacity: 0.6;
+}
+
+.req-toggles {
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border: 1px dashed var(--ink-faint);
+  font-size: 12.5px;
+}
+
+.req-toggles summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.req-toggles-hint {
+  margin: 8px 0;
+  color: var(--ink-dim);
+  max-width: 70ch;
+}
+
+.req-toggle-section {
+  margin: 10px 0 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ink-dim);
+}
+
+.req-toggle {
+  display: block;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+/* ---------- Prerequisite warning on a term card's course ---------- */
+.term-courses li.has-warning .course-code::after {
+  content: " \26A0"; /* ⚠ */
+  color: var(--warn);
+}
+
+/* A section's heading in the requirements panel is a label with its own
+   tick box, which switches everything under it */
+label.req-toggle-section {
+  display: block;
+  cursor: pointer;
+}
+
+/* ---------- Plan check line (#plan-check) ---------- */
+.plan-check {
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--warn);
+}
+
+.plan-check.ok {
+  color: var(--ink-dim);
+}
+
+.plan-check:empty {
+  display: none; /* nothing planned yet: no line at all */
+}
+
+/* Credit-load warning under a semester card's heading */
+.term-warn {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--warn);
+}

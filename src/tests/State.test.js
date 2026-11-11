@@ -13,6 +13,8 @@ import {
   removeTerm,
   addCustomCourse,
   removeCustomCourse,
+  toggleRequirement,
+  setSectionOff,
   MAX_TERMS,
   loadState,
   saveState,
@@ -238,6 +240,52 @@ describe("removeTerm", () => {
     expect(keys()).toEqual(["SU27"]);
     toggleLock("cs4500"); // unlocked: only "last column" stops it now
     expect(removeTerm("SU27")).toBe(false);
+  });
+});
+
+describe("toggleRequirement", () => {
+  const req = (id) => getAudit().requirements.find((r) => r.id === id);
+
+  it("switches a requirement off and back on, and ignores unknown ones", () => {
+    expect(toggleRequirement("cpe-cs4500")).toBe(true);
+    expect(req("cpe-cs4500").ignored).toBe(true);
+    expect(req("cpe-cs4500").status).toBe("needs"); // the audit's fact stays
+    expect(toggleRequirement("cpe-cs4500")).toBe(true);
+    expect(req("cpe-cs4500").ignored).toBe(false);
+    expect(toggleRequirement("nope")).toBe(false);
+  });
+
+  it("switches a whole section's unmet requirements at once", () => {
+    const core = "Computer Engineering - Core";
+    const offIn = (section) =>
+      getAudit()
+        .requirements.filter((r) => r.section === section && r.ignored)
+        .map((r) => r.id);
+
+    expect(setSectionOff(core, true)).toBe(true);
+    expect(offIn(core)).toEqual([
+      "cpe-cs3300",
+      "cpe-cs4500",
+      "cpe-ece4891",
+      "cpe-ece4899",
+    ]); // not cpe-arch: the audit says that one is already met
+    expect(offIn("Electrical Engineering - Core")).toEqual([]);
+    expect(setSectionOff(core, true)).toBe(false); // already all off
+
+    toggleRequirement("cpe-cs4500"); // one back on by hand…
+    expect(setSectionOff(core, false)).toBe(true); // …then the rest
+    expect(offIn(core)).toEqual([]);
+    expect(setSectionOff("No such section", true)).toBe(false);
+  });
+
+  it("is remembered through a save, a reload and a fresh audit import", () => {
+    toggleRequirement("cpe-cs4500");
+    saveState();
+    loadSample(); // like a fresh page load
+    loadState();
+    expect(req("cpe-cs4500").ignored).toBe(true);
+    importAudit(structuredClone(sample));
+    expect(req("cpe-cs4500").ignored).toBe(true);
   });
 });
 

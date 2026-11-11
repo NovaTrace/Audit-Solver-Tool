@@ -114,6 +114,7 @@ const REQUIREMENT_DEFAULTS = {
   options: [],
   applied: [],
   description: "",
+  ignored: false, // true when the student switched the requirement off
 };
 
 /**
@@ -315,8 +316,26 @@ function mergePrevious(audit, previous) {
       }
     }
   }
-  if (!isExport) keepCustomCourses(audit, previous);
+  if (!isExport) {
+    keepCustomCourses(audit, previous);
+    keepSwitchedOff(audit, previous);
+  }
   return keptColumns;
+}
+
+/**
+ * A fresh scrape doesn't know which requirements the student switched off
+ * (a track they aren't taking, say), so that choice is carried over from
+ * the previous state. Requirements are matched by id, which is made from
+ * the section and title and so stays the same from one audit to the next.
+ */
+function keepSwitchedOff(audit, previous) {
+  const off = new Set(
+    (previous.requirements ?? []).filter((r) => r.ignored).map((r) => r.id),
+  );
+  for (const req of audit.requirements) {
+    if (off.has(req.id)) req.ignored = true;
+  }
 }
 
 /**
@@ -393,6 +412,7 @@ function fillRequirement(req) {
   req.title ??= req.id;
   // With no type given: a list of options is a pool, none is a rule
   req.type ??= req.options.length ? "pool" : "rule";
+  req.ignored = req.ignored === true; // anything else isn't "switched off"
 }
 
 /**

@@ -1,0 +1,146 @@
+[37]PREPARED: 11/05/26 - 01:32 PM 100000001
+[37]Curly, Brace
+[37]REQUESTED: ESBS---CPEN CATALOG YEAR: 20237
+[227]BS in Computer Engineering
+[37]THIS EVALUATION IS PROVIDED FOR ADVISEMENT; IT IS NOT AN
+[37]OFFICIAL RECORD.
+[37]Program: CUSPG, ENGRU, CPEN-BS, MATH-MIN
+[137]AT LEAST ONE REQUIREMENT HAS NOT BEEN SATISFIED
+[37]IP College of Engineering - General Information
+[57]EARNED: 88.0 HOURS
+[57]IN PROGRESS 6.0 HOURS
+[56]+ MINIMUM HOURS
+[103]A minimum of 128 applicable hours are required.
+[126]88.0 HOURS ADDED
+[103]IN-P ---> 6.0 HOURS
+[263]Page 1 of 3
+[103]Term Course Credits Grade Title
+[103]FA21 MATH1350 4.0 TB Calculus I
+[298]CO-PPCC: MAT201
+[103]SP26 ECE 4480 3.0 B Computer Architecture & Design
+[103]FA26 CS 3300 3.0 *** Intro to Software Engineering
+[103]SP27 ECE 2050 3.0 *** Intro to Physical Electronics
+[56]+ UNIVERSITY OF COLORADO GPA
+[103]Once a student has been admitted to the College of
+[103]Engineering, a minimum 2.0 CU GPA must be maintained.
+[126]82.0 ATTEMPTED HOURS 263.5 POINTS 3.214 GPA
+[103]NEEDS: 2.000 GPA
+[103]COURSE PREREQUISITES
+[103]Course prerequisites are strictly enforced in the
+[103]College of Engineering.
+[37]NO Compass Curriculum
+[56]+ NAVIGATE
+[103]Complete one of the Navigate courses listed below.
+[103]NOTE: The Navigate course may double count with
+[103]other requirements for your degree program.
+[103]Term Course Credits Grade Title
+[103]FA26 CS 3300 3.0 *** Intro to Software Engineering
+[58]- SUMMIT
+[103]Complete ECE 4891/4899 which are required for your
+[103]major.
+[56]+ INCLUSIVENESS
+[103]Complete one of the courses listed below.
+[103]Term Course Credits Grade Title
+[103]SP22 COMM2240 3.0 TB Intro Organiz Comm
+[298]CO-PPCC: COM225
+[298]>>MATCHED AS: CCINCLUSIVELIST
+[37]NO Computer Engineering - Core
+[57]EARNED: 3.0 HOURS 3.000 GPA
+[57]IN PROGRESS 3.0 HOURS
+[57]NEEDS: 3.0 HOURS 2.000 GPA
+[263]Page 2 of 3
+[103]COMPUTER ENGINEERING PROGRAM INFORMATION
+[103]1. Students must complete CS 1150, CS 1450, ECE 1411,
+[103]ECE 2411, and ECE 2610 with a grade of C or better.
+[103]2. Students must have a grade of C or better in
+[103]CS 1150 before proceeding to CS 1450.
+[56]+ CS 3300 Software Engineering
+[103]Term Course Credits Grade Title
+[103]FA26 CS 3300 3.0 *** Intro to Software Engineering
+[58]- CS 4500 Operating Systems I
+[103]SELECT FROM: CS 4500
+[56]+ ECE 4480 Computer Architecture and Design
+[103]OR
+[103]CS 4200 Computer Architecture I
+[103]NOTE: Beginning fall 2023, if you have not passed
+[103]ECE 4480 already, take that course.
+[103]Term Course Credits Grade Title
+[103]SP26 ECE 4480 3.0 B Computer Architecture & Design
+[37]NO Electrical Engineering - Core
+[58]- ECE 3020 Semiconductor Devices I
+[103]NOTE: Fall Only
+[103]SELECT FROM: ECE 3020
+[103]EXIT INTERVIEW
+[103]All students must complete an Exit Interview.
+[58]- ELECTRICAL ENGINEERING ELECTIVES - LECTURE
+[103]Complete 2 courses and 6 credit hours from the
+[103]Electrical Engineering elective courses below.
+[139]3.0 HOURS ADDED 1 COURSE TAKEN
+[103]Term Course Credits Grade Title
+[103]SP26 ECE 4480 3.0 B Computer Architecture & Design
+[103]NEEDS: 3.0 HOURS 1 COURSE
+[103]SELECT FROM: ECE 4020,4910,
+[212]CS 4200
+[37]NO Mathematics Minor
+[57]EARNED: 2 SUB-GROUPS 3.500 GPA
+[57]NEEDS: 1 SUB-GROUP 2.000 GPA
+[103]GENERAL INFORMATION
+[103]> All courses for the minor must be completed with
+[103]grades of "C" or better.
+[56]+ MATH 1350 Calculus I
+[103]Term Course Credits Grade Title
+[103]FA21 MATH1350 4.0 TB Calculus I
+[298]CO-PPCC: MAT201
+[58]- MATHEMATICS ELECTIVES
+[103]Complete 9 credit hours of any MATH course numbered
+[103]3100 or higher.
+[139]3.0 HOURS ADDED
+[103]Term Course Credits Grade Title
+[103]SU26 MATH3400 3.0 B Introduction to Diff Equations
+[103]NEEDS: 6.0 HOURS
+[101]WORK NOT APPLIED TO THIS PROGRAM
+[103]The following courses are not needed for the degree
+[103]program.
+[132]0.0 HOURS ADDED
+[103]Term Course Credits Grade Title
+[103]SP23 MATH3400 0.0 W Introduction to Diff Equations
+[103]SU23 MATH3400 0.0 C- >E Introduction to Diff Equations
+[263]Page 3 of 3
+[101]***LEGEND***
+[37]*** = Registered
+[37]>E = Grade Forgiveness, not in GPA
+[37]T* = Transfer Grade
+[101]Course History
+[57]* Transfer credit
+[132]7.0 HOURS ADDED
+[103]Term Course Credits Grade Title
+[103]FA21 MATH1350 4.0 TB Calculus I
+[298]CO-PPCC: MAT201
+[103]SP22 COMM2240 3.0 TB Intro Organiz Comm
+[298]CO-PPCC: COM225
+[57]* SP2023
+[103]Term Course Credits Grade Title
+[103]SP23 MATH3400 0.0 W Introduction to Diff Equations
+[57]* SU2023
+[103]Term Course Credits Grade Title
+[103]SU23 MATH3400 0.0 C- >E Introduction to Diff Equations
+[57]* SP2026
+[132]( 3.0 HOURS TAKEN) 1 COURSE TAKEN 3.000 GPA
+[103]Term Course Credits Grade Title
+[103]SP26 ECE 4480 3.0 B Computer Architecture & Design
+[57]* SU2026
+[132]( 3.0 HOURS TAKEN) 1 COURSE TAKEN 3.000 GPA
+[103]Term Course Credits Grade Title
+[103]SU26 MATH3400 3.0 B Introduction to Diff Equations
+[57]* FA2026
+[132]( 0.0 HOURS TAKEN) 0 COURSES TAKEN
+[103]IN-P ---> 3.0 HOURS 1 COURSES TAKEN
+[103]Term Course Credits Grade Title
+[103]FA26 CS 3300 3.0 *** Intro to Software Engineering
+[57]* SP2027
+[132]( 0.0 HOURS TAKEN) 0 COURSES TAKEN
+[103]IN-P ---> 3.0 HOURS 1 COURSES TAKEN
+[103]Term Course Credits Grade Title
+[103]SP27 ECE 2050 3.0 *** Intro to Physical Electronics
+[136]************************ END OF ANALYSIS ************************
+[263]Page 3 of 3

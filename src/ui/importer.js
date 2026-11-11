@@ -1,11 +1,14 @@
 // ui/importer.js — the three ways audit data reaches the planner:
-//   setupImport    the Import button: pick a .json file
+//   setupImport    the Import button: pick a .json file, or an audit PDF
 //   setupPaste     Ctrl+V: audit JSON copied by the bookmarklet's Copy button
 //   setupReceiver  the bookmarklet's Send button (a message from its tab)
 // Each hands the contents to main.js, which loads it with importAudit().
 //
 // This file only READS the data. Whether it's a valid audit is decided by
 // parseAudit() (through state.js), not here.
+
+import { textLines, pdfToAudit } from "../logic/pdfAudit.js";
+import { AuditError } from "../logic/parser.js";
 
 // Sites the bookmarklet may send an audit from. While developing, a local
 // test page counts too.
@@ -43,10 +46,8 @@ export function setupImport(onImport) {
       return;
     }
     if (name.endsWith(".pdf")) {
-      // Later: read the PDF's text with pdf.js and turn it into audit JSON
-      alert(
-        "PDF import isn't available yet. Use the bookmarklet, or a .json file you exported.",
-      );
+      const content = await auditFromPdf(file);
+      if (content) onImport({ kind: "json", content });
       return;
     }
 
@@ -62,6 +63,27 @@ export function setupImport(onImport) {
     }
     onImport({ kind: "json", content });
   });
+}
+
+/**
+ * An audit PDF -> audit JSON, or null (after telling the student why) if
+ * it couldn't be read. Both kinds of audit PDF work: the audit page
+ * printed to PDF, and the audit site's own PDF.
+ */
+async function auditFromPdf(file) {
+  try {
+    // Loaded only now, so pdf.js isn't downloaded unless a PDF is chosen
+    const { readPdfPages } = await import("./pdfReader.js");
+    return pdfToAudit(textLines(await readPdfPages(file)));
+  } catch (e) {
+    console.warn("PDF import failed:", e);
+    alert(
+      e instanceof AuditError
+        ? e.message // e.g. "That PDF doesn't look like a degree audit…"
+        : "Sorry, that PDF couldn't be read. Try the bookmarklet instead.",
+    );
+    return null;
+  }
 }
 
 /**

@@ -1,6 +1,9 @@
 // Draws the stat tiles and the three schedule boxes in index.html:
 //   #stat-earned / #stat-assigned / #stat-total   the three stat tiles
 //   #pool-status  progress on requirements the student chooses courses for
+//   #req-toggles  a tick box per unmet requirement (and per section), to
+//                 switch it on or off
+//   #plan-check   one line adding up the plan's warnings
 //   #sched-grid   one card per term in the plan (each with a '−' button),
 //                 with '+' blocks before, between (in gaps) and after
 //                 them that add a term
@@ -18,6 +21,11 @@ import {
   requirementProgress,
   unplacedRequired,
 } from "../logic/credits.js";
+import {
+  courseWarnings,
+  termWarning,
+  planCheckText,
+} from "../logic/planChecks.js";
 import { creditText } from "../logic/courses.js";
 import {
   termAfter,
@@ -32,6 +40,8 @@ import {
 export function renderSchedule(audit) {
   renderStats(audit);
   renderPoolStatus(audit);
+  renderRequirementToggles(audit);
+  renderPlanCheck(audit);
   renderTermCards(audit);
   renderUnassigned(audit);
 }
@@ -49,14 +59,84 @@ function renderStats(audit) {
 function renderPoolStatus(audit) {
   const box = document.getElementById("pool-status");
 
+  // Each badge is a button: clicking it switches the requirement off or
+  // back on (the click is handled in main.js)
   const badges = requirementProgress(audit).map((req) => {
-    const badge = document.createElement("div");
-    badge.className = `ps ${req.done ? "done" : "pending"}`;
-    badge.textContent = badgeText(req);
+    const badge = document.createElement("button");
+    badge.type = "button";
+    const state = req.ignored ? "off" : req.done ? "done" : "pending";
+    badge.className = `ps ${state}`;
+    badge.dataset.id = req.id; // read by the click listener in main.js
+    badge.setAttribute("aria-pressed", !req.ignored); // pressed = it counts
+    badge.title = req.ignored
+      ? "Switched off. Click to plan for it again."
+      : "Click to switch this requirement off";
+    badge.textContent = req.ignored
+      ? `${req.title}: switched off`
+      : badgeText(req);
     return badge;
   });
 
   box.replaceChildren(...badges);
+}
+
+// The "Requirements you're planning for" panel: every requirement the
+// audit says isn't met, under its section, each with a tick box. Unlike
+// the badges, this lists single required courses too.
+function renderRequirementToggles(audit) {
+  const unmet = audit.requirements.filter((r) => r.status === "needs");
+  const off = unmet.filter((r) => r.ignored).length;
+  document.getElementById("req-toggles-summary").textContent =
+    "Requirements you're planning for" + (off ? ` (${off} switched off)` : "");
+
+  const nodes = [];
+  let section = null;
+  for (const req of unmet) {
+    if (req.section !== section) {
+      section = req.section;
+      nodes.push(sectionToggle(section, unmet));
+    }
+    const label = document.createElement("label");
+    label.className = "req-toggle";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = !req.ignored;
+    box.dataset.id = req.id; // read by the change listener in main.js
+    label.append(box, " " + req.title);
+    nodes.push(label);
+  }
+  if (nodes.length === 0) {
+    const none = document.createElement("p");
+    none.textContent = "The audit lists no unmet requirements.";
+    nodes.push(none);
+  }
+  document.getElementById("req-toggles-list").replaceChildren(...nodes);
+}
+
+// A section's heading in the panel, with a tick box that switches every
+// requirement under it at once. Ticked = all on; a dash = some on, some off.
+function sectionToggle(section, unmet) {
+  const inSection = unmet.filter((r) => r.section === section);
+  const off = inSection.filter((r) => r.ignored).length;
+
+  const label = document.createElement("label");
+  label.className = "req-toggle-section";
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.checked = off === 0;
+  box.indeterminate = off > 0 && off < inSection.length; // the dash
+  box.dataset.section = section; // read by the change listener in main.js
+  label.append(box, " " + section);
+  return label;
+}
+
+// The one-line summary of the plan's warnings, above the semester cards.
+// Empty (and so hidden by CSS) while nothing is planned.
+function renderPlanCheck(audit) {
+  const line = document.getElementById("plan-check");
+  const text = planCheckText(audit);
+  line.textContent = text;
+  line.classList.toggle("ok", text.endsWith("no problems found"));
 }
 
 // "TECHNICAL ELECTIVES: 3/6 hrs planned". A rule ("any MATH course 3100 or
@@ -88,6 +168,15 @@ function renderTermCards(audit) {
     card.querySelector(".term-name").textContent = term.label;
     card.querySelector(".term-cr").textContent = `${sumCredits(items)} cr`;
 
+    // Too many or too few credits? Say so under the heading
+    const load = card.querySelector(".term-warn");
+    const loadWarning = termWarning(audit, term.key);
+    if (loadWarning) {
+      load.textContent = loadWarning;
+    } else {
+      load.remove();
+    }
+
     // The '−' button. It can't be used on the only column left, or on a
     // column holding a locked course; hovering says which.
     const remove = card.querySelector(".term-remove");
@@ -114,7 +203,13 @@ function renderTermCards(audit) {
     items.forEach((course) => {
       // Fresh copy of one course row from <template id="term-course-tpl">
       const row = courseTemplate.content.cloneNode(true);
-      row.querySelector("li").classList.toggle("is-locked", course.locked);
+      const item = row.querySelector("li");
+      item.classList.toggle("is-locked", course.locked);
+      // A course planned before its prerequisites, or in a term it isn't
+      // offered, gets a warning mark; hovering says why
+      const warnings = courseWarnings(audit, course);
+      item.classList.toggle("has-warning", warnings.length > 0);
+      if (warnings.length) item.title = warnings.join("\n");
       row.querySelector(".course-code").textContent = course.code;
       row.querySelector(".course-cr").textContent = creditText(course);
       list.append(row);
