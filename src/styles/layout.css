@@ -19,7 +19,7 @@
   color: var(--ink);
 }
 
-.logo{
+.logo {
   display: flex;
   justify-content: center;
 }
