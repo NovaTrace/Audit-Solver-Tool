@@ -53,4 +53,4 @@ Every push to `main` runs the tests and, if they pass, publishes the site.
 
 ## How the code is laid out
 
--# God help you
+<sub>God help you</sub>
