@@ -61,7 +61,7 @@
             class="title-anim"
             aria-label="Audit Solver"
             duration="4000"
-            settle=".15"
+            settle=".18"
             turned=".07"
           ></sliced-word>
         </div>
@@ -150,20 +150,6 @@
             >. Your audit never leaves this browser.
           </p>
         </details>
-        <dl class="stats">
-          <div class="stat">
-            <dt>Hours earned</dt>
-            <dd id="stat-earned">0</dd>
-          </div>
-          <div class="stat">
-            <dt>Hours assigned</dt>
-            <dd id="stat-assigned">0</dd>
-          </div>
-          <div class="stat">
-            <dt>Running total</dt>
-            <dd id="stat-total">0</dd>
-          </div>
-        </dl>
         <aside class="note">
           <h2>
             <span aria-hidden="true">⚑</span> A quick note about our website
@@ -174,171 +160,198 @@
             speciality tracks, multiple majors/minors, etc.
           </p>
         </aside>
-        <section class="schedule">
-          <div class="section-header">
-            <h2>Your schedule</h2>
-            <div class="info-popup info-popup--left">
-              <button
-                type="button"
-                class="info-btn"
-                aria-label="Schedule help"
-                aria-expanded="false"
-              >
-                ⓘ
-              </button>
-              <span class="info-text">
-                Click a '+' box to add a semester.<br />
-                Click a block's '−' to remove it.<br />
-                A block with a locked course can't be removed.<br />
-              </span>
+        <!-- Two columns: the course list on the left, and "Your plan" on the
+             right, which stays in view while the list scrolls (layout.css).
+             On narrow screens the plan drops below the list. -->
+        <div class="cols">
+          <section class="list-col" aria-labelledby="req-title">
+            <div class="col-head">
+              <h2 class="col-title" id="req-title">Requirements</h2>
+              <!-- Only shown when the plan sits below the list (narrow screens) -->
+              <a class="jump-plan" href="#plan">Jump to your plan ↓</a>
             </div>
-            <span id="save-status" class="save-status">
-              Autosaves in browser
-            </span>
-            <button type="button" id="reset-btn" class="reset-btn">
-              Reset plan
-            </button>
-          </div>
+            <div class="controls">
+              <!-- Filter chips, one per audit section: filled by src/render/courseList.js -->
+              <div
+                class="chips"
+                id="chips"
+                role="group"
+                aria-label="Filter courses by section"
+              ></div>
 
-          <!-- Filled by src/render/schedule.js -->
-          <div class="pool-status" id="pool-status"></div>
-          <details class="req-toggles" id="req-toggles">
-            <summary id="req-toggles-summary">
-              Requirements you're planning for
-            </summary>
-            <p class="req-toggles-hint">
-              Untick a requirement you don't need to finish, such as a track you
-              aren't taking. Its courses leave the list below. Your audit itself
-              doesn't change.
-            </p>
-            <div id="req-toggles-list"></div>
-          </details>
-          <div class="plan-check" id="plan-check"></div>
-          <div class="sched-grid" id="sched-grid"></div>
-          <div class="unassigned" id="unassigned"></div>
-          <!-- Templates: never shown directly; JS copies them to build the term cards -->
-          <template id="term-card-tpl">
-            <article class="term-card">
-              <h3>
-                <span class="term-name"></span><span class="term-cr"></span>
-                <button type="button" class="term-remove">−</button>
-              </h3>
-              <p class="term-warn"></p>
-              <ul class="term-courses"></ul>
-            </article>
-          </template>
-
-          <template id="term-course-tpl">
-            <li>
-              <span class="course-code"></span><span class="course-cr"></span>
-            </li>
-          </template>
-        </section>
-
-        <div class="controls">
-          <!-- Filter chips, one per audit section: filled by src/render/courseList.js -->
-          <div
-            class="chips"
-            id="chips"
-            role="group"
-            aria-label="Filter courses by section"
-          ></div>
-
-          <!-- SEARCH BAR AND CLASS INFO POPUP-->
-          <div class="search-container">
-            <div class="info-popup info-popup--right">
-              <button
-                type="button"
-                class="info-btn"
-                aria-label="Class selection help"
-                aria-expanded="false"
-              >
-                ⓘ
-              </button>
-              <span class="info-text">
-                Click the dropdown to assign the class to the term.<br />
-                Click the 'lock' button to lock the class in that semester
-                block.
-              </span>
+              <!-- SEARCH BAR AND CLASS INFO POPUP-->
+              <div class="search-container">
+                <div class="info-popup info-popup--right">
+                  <button
+                    type="button"
+                    class="info-btn"
+                    aria-label="Class selection help"
+                    aria-expanded="false"
+                  >
+                    ⓘ
+                  </button>
+                  <span class="info-text">
+                    Click the dropdown to assign the class to the term.<br />
+                    Click the 'lock' button to lock the class in that semester
+                    block.
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  id="search"
+                  aria-label="Search courses"
+                  placeholder="Search course code or title…"
+                />
+              </div>
             </div>
-            <input
-              type="text"
-              id="search"
-              aria-label="Search courses"
-              placeholder="Search course code or title…"
-            />
-          </div>
+
+            <!-- Add a course the audit doesn't list (wired in src/main.js) -->
+            <details class="add-course" id="add-course">
+              <summary>Add a course that isn't listed</summary>
+              <p class="add-course-hint">
+                For requirements like "any MATH course numbered 3100 or higher",
+                where the audit doesn't name the choices. Check the catalog for
+                what counts: this page can't.
+              </p>
+              <form class="add-course-form" id="add-course-form">
+                <label>
+                  Course code
+                  <input
+                    type="text"
+                    id="add-code"
+                    placeholder="MATH 3110"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label>
+                  Title (optional)
+                  <input type="text" id="add-title" autocomplete="off" />
+                </label>
+                <label>
+                  Credits
+                  <input
+                    type="number"
+                    id="add-credits"
+                    min="0.5"
+                    max="12"
+                    step="0.5"
+                    value="3"
+                    required
+                  />
+                </label>
+                <label>
+                  Counts toward
+                  <!-- Options filled by src/render/courseList.js -->
+                  <select id="add-req"></select>
+                </label>
+                <button type="submit">Add course</button>
+              </form>
+              <p class="add-course-msg" id="add-course-msg" role="status"></p>
+            </details>
+
+            <!-- Filled by src/render/courseList.js -->
+            <section id="list" aria-label="Courses"></section>
+
+            <!-- Template: one course row (never shown directly; JS copies it) -->
+            <template id="course-row-tpl">
+              <div class="row">
+                <div>
+                  <span class="r-code"></span>
+                  <span class="r-cr"></span>
+                </div>
+                <div>
+                  <span class="r-title"></span>
+                  <span class="r-sub"></span>
+                  <span class="r-term"></span>
+                  <span class="r-prereq"></span>
+                  <span class="r-unlocks"></span>
+                  <span class="r-warn"></span>
+                </div>
+                <div class="pills">
+                  <!-- term pills are inserted here by JS -->
+                  <button type="button" class="lock-btn"></button>
+                </div>
+              </div>
+            </template>
+          </section>
+
+          <aside class="plan" id="plan" aria-labelledby="plan-title">
+            <div class="section-header">
+              <h2 id="plan-title">Your plan</h2>
+              <div class="info-popup info-popup--left">
+                <button
+                  type="button"
+                  class="info-btn"
+                  aria-label="Schedule help"
+                  aria-expanded="false"
+                >
+                  ⓘ
+                </button>
+                <span class="info-text">
+                  Click a '+' box to add a semester.<br />
+                  Click a block's '−' to remove it.<br />
+                  A block with a locked course can't be removed.<br />
+                </span>
+              </div>
+              <span id="save-status" class="save-status">
+                Autosaves in browser
+              </span>
+              <button type="button" id="reset-btn" class="reset-btn">
+                Reset plan
+              </button>
+            </div>
+
+            <dl class="stats">
+              <div class="stat">
+                <dt>Hours earned</dt>
+                <dd id="stat-earned">0</dd>
+              </div>
+              <div class="stat">
+                <dt>Hours assigned</dt>
+                <dd id="stat-assigned">0</dd>
+              </div>
+              <div class="stat">
+                <dt>Running total</dt>
+                <dd id="stat-total">0</dd>
+              </div>
+            </dl>
+
+            <!-- Filled by src/render/schedule.js -->
+            <div class="pool-status" id="pool-status"></div>
+            <details class="req-toggles" id="req-toggles">
+              <summary id="req-toggles-summary">
+                Requirements you're planning for
+              </summary>
+              <p class="req-toggles-hint">
+                Untick a requirement you don't need to finish, such as a track
+                you aren't taking. Its courses leave the list below. Your audit
+                itself doesn't change.
+              </p>
+              <div id="req-toggles-list"></div>
+            </details>
+            <div class="plan-check" id="plan-check"></div>
+            <div class="sched-grid" id="sched-grid"></div>
+            <div class="unassigned" id="unassigned"></div>
+            <!-- Templates: never shown directly; JS copies them to build the term cards -->
+            <template id="term-card-tpl">
+              <article class="term-card">
+                <h3>
+                  <span class="term-name"></span><span class="term-cr"></span>
+                  <button type="button" class="term-remove">−</button>
+                </h3>
+                <p class="term-warn"></p>
+                <ul class="term-courses"></ul>
+              </article>
+            </template>
+
+            <template id="term-course-tpl">
+              <li>
+                <span class="course-code"></span><span class="course-cr"></span>
+              </li>
+            </template>
+          </aside>
         </div>
-
-        <!-- Add a course the audit doesn't list (wired in src/main.js) -->
-        <details class="add-course" id="add-course">
-          <summary>Add a course that isn't listed</summary>
-          <p class="add-course-hint">
-            For requirements like "any MATH course numbered 3100 or higher",
-            where the audit doesn't name the choices. Check the catalog for what
-            counts: this page can't.
-          </p>
-          <form class="add-course-form" id="add-course-form">
-            <label>
-              Course code
-              <input
-                type="text"
-                id="add-code"
-                placeholder="MATH 3110"
-                autocomplete="off"
-                required
-              />
-            </label>
-            <label>
-              Title (optional)
-              <input type="text" id="add-title" autocomplete="off" />
-            </label>
-            <label>
-              Credits
-              <input
-                type="number"
-                id="add-credits"
-                min="0.5"
-                max="12"
-                step="0.5"
-                value="3"
-                required
-              />
-            </label>
-            <label>
-              Counts toward
-              <!-- Options filled by src/render/courseList.js -->
-              <select id="add-req"></select>
-            </label>
-            <button type="submit">Add course</button>
-          </form>
-          <p class="add-course-msg" id="add-course-msg" role="status"></p>
-        </details>
-
-        <!-- Filled by src/render/courseList.js -->
-        <section id="list" aria-label="Courses"></section>
-
-        <!-- Template: one course row (never shown directly; JS copies it) -->
-        <template id="course-row-tpl">
-          <div class="row">
-            <div>
-              <span class="r-code"></span>
-              <span class="r-cr"></span>
-            </div>
-            <div>
-              <span class="r-title"></span>
-              <span class="r-sub"></span>
-              <span class="r-term"></span>
-              <span class="r-prereq"></span>
-              <span class="r-unlocks"></span>
-              <span class="r-warn"></span>
-            </div>
-            <div class="pills">
-              <!-- term pills are inserted here by JS -->
-              <button type="button" class="lock-btn"></button>
-            </div>
-          </div>
-        </template>
       </main>
 
       <footer>

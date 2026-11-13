@@ -9,15 +9,18 @@
 .ps {
   font-family: var(--mono);
   font-size: 11.5px;
+  text-align: left;
   padding: 6px 12px;
   border: 1px solid var(--line2);
-  background: var(--surface);
+  border-radius: 6px;
+  background: var(--raised);
+  color: var(--ink);
 }
 
 .ps.done {
-  border-color: var(--accent);
+  border-color: var(--done);
   color: var(--muted);
-  background: var(--surface);
+  background: var(--raised);
 }
 
 .ps.pending {
@@ -27,19 +30,19 @@
 }
 
 /* ---------- Term cards (#sched-grid) ---------- */
-/* A wrapping row, not a grid, so the narrow '+' boxes can sit between
-   the cards without taking a whole card's width */
+/* Two columns inside the plan panel. A '+' box takes one cell, like a card
+   (phase 5 moves '+' to after the last semester only). */
 .sched-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-bottom: 14px;
 }
 
 .term-card {
-  flex: 1 1 190px; /* at least 190px wide; shares the spare room */
-  max-width: 340px; /* so a card alone on a row doesn't stretch across it */
-  background: var(--surface);
+  min-width: 0;
+  border-radius: 6px;
+  background: var(--raised);
   border: 1px solid var(--line2);
   padding: 12px 14px;
 }
@@ -89,19 +92,19 @@
    place to add something rather than a real semester. It is as tall as
    the cards in its row. */
 .term-add {
-  flex: 0 0 30px; /* always 30px wide */
   min-height: 74px;
+  border-radius: 6px;
   padding: 0;
   border: 1px dashed var(--line2);
   background: none;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
 }
 
 .term-add:hover:not(:disabled) {
-  background: var(--surface);
+  background: var(--raised);
   color: var(--ink);
 }
 
@@ -148,7 +151,8 @@
 
 /* ---------- Not-yet-placed message (#unassigned) ---------- */
 .unassigned {
-  background: var(--surface);
+  border-radius: 6px;
+  background: var(--raised);
   border: 1px dashed var(--line2);
   padding: 12px 14px;
   font-size: 12.5px;
