@@ -105,3 +105,133 @@ export function unplacedRequired(audit) {
     .filter((c) => c.requirementIds.some((id) => open.has(id)))
     .sort((a, b) => a.code.localeCompare(b.code));
 }
+
+/**
+ * Credit totals for the plan panel's headline and progress bar:
+ *   { earned, inProgress, planned, required, left }
+ * - earned:     hours the audit says are done
+ * - inProgress: hours registered this term (the audit's figure, or the
+ *               registered courses added up if that's larger)
+ * - planned:    hours placed in a semester that aren't registered yet
+ * - required:   hours the degree needs, or null if the audit doesn't say
+ * - left:       required hours not yet earned, in progress or planned
+ *               (never below 0), or null when `required` is unknown
+ */
+export function creditSummary(audit) {
+  const { student } = audit;
+  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
+  const inPlan = Object.values(audit.courses).filter((c) =>
+    termKeys.has(c.plannedTerm),
+  );
+  const registered = inPlan.filter((c) => c.status === "registered");
+
+  const earned = student.hoursEarned ?? 0;
+  const inProgress = Math.max(
+    student.hoursInProgress ?? 0,
+    sumCredits(registered),
+  );
+  const planned = sumCredits(inPlan.filter((c) => c.status !== "registered"));
+  const required = student.hoursRequired ?? null;
+  const left =
+    required == null
+      ? null
+      : Math.max(0, required - earned - inProgress - planned);
+  return { earned, inProgress, planned, required, left };
+}
+
+/**
+ * Progress per audit section, counted in requirements, for the
+ * "Requirement categories" bars. One object per section, in audit order:
+ *   { section, total, done, inProgress, planned, needed, off, other }
+ * Each requirement lands in exactly one count:
+ * - done:       the audit says it's complete
+ * - off:        the student switched it off
+ * - other:      no course can satisfy it (e.g. "Apply for graduation", a
+ *               GPA rule), so it can't be planned here
+ * - inProgress: the audit says in progress, or registered courses cover it
+ * - planned:    courses placed in semesters cover it
+ * - needed:     none of the above yet
+ * `total` leaves out `off` and `other`: it's what planning can move.
+ */
+export function categoryProgress(audit) {
+  const states = requirementStates(audit);
+  const sections = [...new Set(audit.requirements.map((r) => r.section))];
+
+  return sections.map((section) => {
+    const counts = {
+      done: 0,
+      inProgress: 0,
+      planned: 0,
+      needed: 0,
+      off: 0,
+      other: 0,
+    };
+    const reqs = audit.requirements.filter((r) => r.section === section);
+    for (const req of reqs) counts[states.get(req.id)]++;
+    const total = reqs.length - counts.off - counts.other;
+    return { section, total, ...counts };
+  });
+}
+
+/**
+ * The same counts as categoryProgress, added up over every section: the
+ * plan panel's headline ("14 requirements still need a semester") and
+ * main bar. A course that counts toward requirements in both majors is
+ * counted wherever the audit applies it, never as extra credits.
+ */
+export function requirementTotals(audit) {
+  const sum = { total: 0, done: 0, inProgress: 0, planned: 0, needed: 0 };
+  sum.off = 0;
+  sum.other = 0;
+  for (const group of categoryProgress(audit)) {
+    for (const key of Object.keys(sum)) sum[key] += group[key];
+  }
+  return sum;
+}
+
+/**
+ * Requirements no course can satisfy ("Apply for graduation", a GPA
+ * rule), unfinished and not switched off. Listed apart, since the only
+ * thing to do about them is check with an advisor.
+ */
+export function otherRequirements(audit) {
+  const states = requirementStates(audit);
+  return audit.requirements.filter((r) => states.get(r.id) === "other");
+}
+
+// Every requirement's count (see categoryProgress), by requirement id
+function requirementStates(audit) {
+  const choices = new Map(requirementProgress(audit).map((p) => [p.id, p]));
+  return new Map(
+    audit.requirements.map((r) => [r.id, requirementState(audit, r, choices)]),
+  );
+}
+
+// Which count one requirement goes in (see categoryProgress)
+function requirementState(audit, req, choices) {
+  if (req.status === "complete") return "done";
+  if (req.ignored) return "off";
+  if (req.status === "in-progress") return "inProgress";
+
+  // A choice (pool, rule, either/or): covered once enough is planned
+  const choice = choices.get(req.id);
+  if (choice) {
+    const somethingPlanned = choice.plannedCourses > 0;
+    return choice.done && somethingPlanned ? "planned" : "needed";
+  }
+
+  // Specific courses: covered once every one has a term (or is done).
+  // No courses at all means no course can satisfy it.
+  const courses = req.options
+    .map((code) => audit.courses[idFromCode(code)])
+    .filter(Boolean);
+  if (courses.length === 0) return "other";
+  const covered = courses.every(
+    (c) => c.plannedTerm || c.status === "completed",
+  );
+  if (!covered) return "needed";
+  const allTaking = courses.every(
+    (c) => c.status === "registered" || c.status === "completed",
+  );
+  return allTaking ? "inProgress" : "planned";
+}

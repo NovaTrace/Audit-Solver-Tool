@@ -47,6 +47,7 @@ function keepOnScreen(el) {
   el.style.transform = ""; // clear any earlier nudge
   const box = el.getBoundingClientRect(); // where it is right now
   let shift = 0;
+  let drop = 0;
 
   if (box.right > window.innerWidth - margin) {
     shift = window.innerWidth - margin - box.right; // off the right edge: move left
@@ -54,5 +55,8 @@ function keepOnScreen(el) {
   if (box.left + shift < margin) {
     shift = margin - box.left; // off the left edge: move right
   }
-  el.style.transform = `translateX(${shift}px)`;
+  if (box.top < margin) {
+    drop = margin - box.top; // off the top: move down
+  }
+  el.style.transform = `translate(${shift}px, ${drop}px)`;
 }

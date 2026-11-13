@@ -111,9 +111,9 @@ function refreshHeader() {
   }
 }
 
-// Stats tiles + schedule section
+// The plan panel (everything below its heading row)
 function refreshSchedule() {
-  renderSchedule(getAudit()); // draws the stat tiles too
+  renderSchedule(getAudit());
 }
 
 // Chips + course list, keeping the current chip and search text
@@ -164,7 +164,10 @@ function saveAndRefresh() {
 }
 
 function setSaveStatus(text) {
-  document.getElementById("save-status").textContent = text;
+  const status = document.getElementById("save-status");
+  status.textContent = text;
+  // The green dot only shows after a real save
+  status.classList.toggle("is-saved", text.startsWith("Saved"));
 }
 
 // =====================================================================
@@ -217,7 +220,8 @@ function setupHeader() {
 }
 
 // =====================================================================
-// SEMESTERS — the '+' and '−' on the semester cards (#sched-grid)
+// SEMESTERS — '+ Add', the last semester's '−', and the lock on each
+// course in the semester cards (#sched-grid)
 // Drawing lives in render/schedule.js.
 // =====================================================================
 function setupSemesters() {
@@ -225,7 +229,14 @@ function setupSemesters() {
   // rebuilt on every redraw: a listener on each button would be thrown
   // away with it.
   document.getElementById("sched-grid").addEventListener("click", (e) => {
-    // Each '+' box carries the term it adds in data-term
+    // The grip / padlock on a course: lock or unlock it in that semester
+    const lockBtn = e.target.closest(".tc-lock");
+    if (lockBtn) {
+      if (toggleLock(lockBtn.dataset.id)) saveAndRefresh();
+      return;
+    }
+
+    // The '+ Add' tile carries the term it adds in data-term
     const addBtn = e.target.closest(".term-add");
     if (addBtn) {
       if (addTerm(addBtn.dataset.term)) saveAndRefresh();
@@ -250,27 +261,20 @@ function setupSemesters() {
 
 // =====================================================================
 // REQUIREMENTS — switching one off ("I don't need to finish this") or
-// back on. Two places do it: the progress badges (#pool-status) and the
-// tick boxes in the "Requirements you're planning for" panel.
+// back on, with the tick boxes in the plan panel's "Requirement
+// categories" dropdown (drawn by render/schedule.js).
 // =====================================================================
 function setupRequirements() {
-  document.getElementById("pool-status").addEventListener("click", (e) => {
-    const badge = e.target.closest(".ps");
-    if (badge && toggleRequirement(badge.dataset.id)) saveAndRefresh();
-  });
-
   // A tick box reports "change" (not "click") when it's ticked or unticked
-  document
-    .getElementById("req-toggles-list")
-    .addEventListener("change", (e) => {
-      // A section's box switches everything under it; ticked means "on"
-      const { id, section } = e.target.dataset;
-      const changed =
-        section !== undefined
-          ? setSectionOff(section, !e.target.checked)
-          : toggleRequirement(id);
-      if (changed) saveAndRefresh();
-    });
+  document.getElementById("req-categories").addEventListener("change", (e) => {
+    // A section's box switches everything under it; ticked means "on"
+    const { id, section } = e.target.dataset;
+    const changed =
+      section !== undefined
+        ? setSectionOff(section, !e.target.checked)
+        : toggleRequirement(id);
+    if (changed) saveAndRefresh();
+  });
 }
 
 // =====================================================================

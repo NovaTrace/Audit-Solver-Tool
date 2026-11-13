@@ -289,9 +289,11 @@
                   ⓘ
                 </button>
                 <span class="info-text">
-                  Click a '+' box to add a semester.<br />
-                  Click a block's '−' to remove it.<br />
-                  A block with a locked course can't be removed.<br />
+                  Click '+ Add' after the last semester to add one.<br />
+                  Click the last semester's '−' to remove it.<br />
+                  Click a course's grip to lock it in its semester; click the
+                  padlock to unlock it.<br />
+                  A semester with a locked course can't be removed.
                 </span>
               </div>
               <span id="save-status" class="save-status">
@@ -302,52 +304,125 @@
               </button>
             </div>
 
+            <!-- Progress, counted in requirements (not credits): a dual major
+                 or extra courses would make a credit total misleading.
+                 Filled by src/render/schedule.js -->
+            <p class="plan-headline" id="plan-headline"></p>
+            <div class="bar thick" id="req-bar" role="img">
+              <span class="seg-done"></span><span class="seg-prog"></span
+              ><span class="seg-plan"></span>
+            </div>
+            <p class="bar-legend" id="req-legend"></p>
+
+            <!-- Credits: for reference, plus the degree's minimum-hours rule -->
             <dl class="stats">
               <div class="stat">
-                <dt>Hours earned</dt>
+                <dt><i class="dot dot-done" aria-hidden="true"></i>Earned</dt>
                 <dd id="stat-earned">0</dd>
               </div>
               <div class="stat">
-                <dt>Hours assigned</dt>
-                <dd id="stat-assigned">0</dd>
+                <dt>
+                  <i class="dot dot-prog" aria-hidden="true"></i>In progress
+                </dt>
+                <dd id="stat-progress">0</dd>
               </div>
               <div class="stat">
-                <dt>Running total</dt>
-                <dd id="stat-total">0</dd>
+                <dt><i class="dot dot-plan" aria-hidden="true"></i>Planned</dt>
+                <dd id="stat-planned">0</dd>
               </div>
             </dl>
+            <p class="credit-min" id="credit-min"></p>
 
-            <!-- Filled by src/render/schedule.js -->
-            <div class="pool-status" id="pool-status"></div>
-            <details class="req-toggles" id="req-toggles">
-              <summary id="req-toggles-summary">
-                Requirements you're planning for
+            <!-- One stacked bar per audit section, and the tick boxes for
+                 switching requirements off. Filled by src/render/schedule.js -->
+            <details class="req-cats" id="req-cats">
+              <summary>
+                Requirement categories
+                <span class="req-cats-count" id="req-cats-count"></span>
+                <svg
+                  class="chev"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
               </summary>
-              <p class="req-toggles-hint">
+              <p class="req-cats-hint">
                 Untick a requirement you don't need to finish, such as a track
-                you aren't taking. Its courses leave the list below. Your audit
-                itself doesn't change.
+                you aren't taking. Its courses leave the list. Your audit itself
+                doesn't change.
               </p>
-              <div id="req-toggles-list"></div>
+              <div id="req-categories"></div>
             </details>
-            <div class="plan-check" id="plan-check"></div>
+
+            <!-- Warnings about the plan (empty until something is planned) -->
+            <div class="plan-check" id="plan-check" role="status"></div>
+
+            <h3 class="plan-sub">Semesters</h3>
             <div class="sched-grid" id="sched-grid"></div>
             <div class="unassigned" id="unassigned"></div>
             <!-- Templates: never shown directly; JS copies them to build the term cards -->
             <template id="term-card-tpl">
               <article class="term-card">
-                <h3>
-                  <span class="term-name"></span><span class="term-cr"></span>
-                  <button type="button" class="term-remove">−</button>
-                </h3>
+                <h4 class="term-head">
+                  <span class="term-name"></span>
+                  <span class="now-tag">Now</span>
+                  <span class="term-cr"></span>
+                </h4>
+                <!-- Only on the last semester: removes it -->
+                <button type="button" class="term-remove">
+                  <span aria-hidden="true">−</span>
+                </button>
                 <p class="term-warn"></p>
                 <ul class="term-courses"></ul>
               </article>
             </template>
 
+            <!-- One course in a semester. The button on the left locks and
+                 unlocks it: a grip while it can move, a padlock once locked. -->
             <template id="term-course-tpl">
-              <li>
-                <span class="course-code"></span><span class="course-cr"></span>
+              <li class="tc">
+                <button type="button" class="tc-lock">
+                  <svg
+                    class="ic-grip"
+                    width="8"
+                    height="14"
+                    viewBox="0 0 8 14"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <circle cx="2" cy="2" r="1.3" />
+                    <circle cx="6" cy="2" r="1.3" />
+                    <circle cx="2" cy="7" r="1.3" />
+                    <circle cx="6" cy="7" r="1.3" />
+                    <circle cx="2" cy="12" r="1.3" />
+                    <circle cx="6" cy="12" r="1.3" />
+                  </svg>
+                  <svg
+                    class="ic-lock"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="5" y="11" width="14" height="10" rx="2" />
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                  </svg>
+                </button>
+                <span class="course-code"></span>
+                <span class="course-warn" aria-hidden="true">△</span>
+                <span class="course-cr"></span>
               </li>
             </template>
           </aside>

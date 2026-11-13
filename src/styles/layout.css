@@ -348,6 +348,22 @@
   }
 }
 
+/* While a popup in the plan panel is open, lift the whole panel above the
+   dimming layer (body::before in popups.css). The panel is "sticky", which
+   gives it its own layer, so the popup's z-index alone can't get above it. */
+.plan:has(.info-popup.open) {
+  z-index: 6;
+}
+
+/* The header's help popup opens downward, below its button. Opening
+   upward (the default) put it above the top of the page. */
+.tb-btn .info-text {
+  bottom: auto;
+  top: 150%;
+  right: 0;
+  max-width: min(420px, 90vw);
+}
+
 /* The plan panel scrolls, which would cut off a popup that sticks out of
    it, so popups in the panel open downward inside it instead */
 .plan .info-text {
@@ -362,12 +378,12 @@
 .stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 14px;
+  gap: 6px;
+  margin: 0 0 10px;
 }
 
 .stat {
-  flex: 1 1 90px;
+  flex: 1 1 70px;
   display: flex;
   flex-direction: column-reverse;
   background: var(--raised);
@@ -386,11 +402,9 @@
 
 .stat dt {
   margin-top: 2px;
-  font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 /* Disclaimer: one slim line under the loader so it doesn't push the
@@ -455,10 +469,22 @@
   color: var(--ink);
 }
 
+/* "Saved 3:42 PM", with a small green dot, pushed to the right */
 .save-status {
-  margin-left: auto; /* pushes status + Reset to the right */
-  font-size: 11px;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   color: var(--muted);
+}
+
+.save-status.is-saved::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--done);
 }
 
 /* ---------- Narrow screens ---------- */
