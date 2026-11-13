@@ -24,6 +24,10 @@
   --lock: #0b274f;
   --lock-bg: #204365;
   --warn: #f5c563; /* prerequisite warnings */
+  /* Logo colors (the mark left of the title in the header) */
+  --logo-page: #c9d6e8;
+  --logo-fold: #919eaf;
+  --logo-accent: #9fd4c4; /* the bottom strip; point this at any other color */
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 }

@@ -5,15 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audit Solver Tool</title>
     <!-- Fonts are bundled with the site: see the imports in src/main.js -->
-    <!-- TODO:(favicon/ contact an artist or build) -->
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Audit Solver" />
+    <link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
     <div class="sheet">
       <header class="titleblock">
         <div class="logo">
+          <!-- Logo mark: same drawing as public/logo.svg, placed inline so its
+               colors can use CSS variables (see .logo-mark in layout.css).
+               The width/height/fill attributes are fallbacks for the moment
+               before the stylesheet loads; the CSS overrides them. -->
+          <svg class="logo-mark" width="56" height="56" viewBox="0 0 42.333 42.333" aria-hidden="true">
+            <g transform="translate(3.3073 4.6302)">
+              <path class="logo-page" fill="#c9d6e8" d="m 10.054166,15.213542 h 22.225001 a 0.79374997,0.79374997 45 0 1 0.79375,0.79375 v 6.35 a 0.79374997,0.79374997 135 0 1 -0.79375,0.79375 H 10.054166 a 0.79374997,0.79374997 45 0 1 -0.7937496,-0.79375 l 0,-6.35 a 0.79374997,0.79374997 135 0 1 0.7937496,-0.79375 z" />
+              <path class="logo-strip" fill="#9fd4c4" d="M 3.4395833,25.135417 H 25.664584 a 0.79374997,0.79374997 45 0 1 0.79375,0.79375 v 6.35 a 0.79374997,0.79374997 135 0 1 -0.79375,0.79375 H 3.4395833 a 0.79374997,0.79374997 45 0 1 -0.79375,-0.79375 v -6.35 a 0.79374997,0.79374997 135 0 1 0.79375,-0.79375 z" />
+              <g transform="translate(0 -4.85035)">
+                <path class="logo-page" fill="#c9d6e8" d="M 9.2604167,5.6440999 V 17.285767 a 0.79374997,0.79374997 45 0 0 0.7937503,0.79375 h 22.225 a 0.79374997,0.79374997 135 0 0 0.79375,-0.79375 V 12.78785 L 24.782983,4.8503499 H 10.054167 a 0.79374997,0.79374997 135 0 0 -0.7937503,0.79375 z" />
+                <path class="logo-fold" fill="#919eaf" d="m 24.783021,11.9941 0,-7.14375 8.289896,7.9375 h -7.496146 a 0.79374997,0.79374997 45 0 1 -0.79375,-0.79375 z" />
+              </g>
+            </g>
+          </svg>
           <!-- Animated title: defined in src/ui/titleAnimation.js.
                Color comes from CSS `color` (see .title-anim in layout.css). -->
-          <sliced-word class="title-anim" aria-label="Audit Solver" duration="4000" settle=".2" turned=".07"></sliced-word>
+          <sliced-word class="title-anim" aria-label="Audit Solver" duration="4000" settle=".15" turned=".07"></sliced-word>
         </div>
         <div class="tb-left">
           <!-- Filled by src/render/header.js -->

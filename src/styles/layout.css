@@ -23,7 +23,44 @@
   display: flex;
   justify-content: center;
   align-items: center; /* don't stretch the title to the box's height */
+  gap: 12px; /* space between the logo mark and the title */
   min-width: 0; /* let the box shrink on a narrow screen */
+}
+
+/* Logo mark left of the title. Colors come from the --logo-* variables in base.css. */
+.logo-mark {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+.logo-page {
+  fill: var(--logo-page);
+}
+.logo-fold {
+  fill: var(--logo-fold);
+}
+.logo-strip {
+  fill: var(--logo-accent);
+  /* Slides in from the left while the title unscrambles (same 4 s as the
+     title's duration="4000"), then stays at its offset resting spot. */
+  animation: logo-strip-in 1s cubic-bezier(0.12, 1.62, 0.34, 1) 1s both;
+}
+@keyframes logo-strip-in {
+  0% {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-strip {
+    animation: none;
+  }
 }
 
 /* Animated "Audit Solver" title (src/ui/titleAnimation.js).
