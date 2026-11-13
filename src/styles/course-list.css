@@ -1,7 +1,7 @@
 .cat-head {
   max-width: 1380px;
   height: auto;
-  background-color: var(--accent-bg);
+  background-color: var(--accent-soft);
   padding: 10px;
   margin: auto;
 }
@@ -24,9 +24,9 @@
   font-family: var(--mono);
   font-size: 12px;
   padding: 6px 12px;
-  border: 1px solid var(--ink-faint);
-  background: var(--button);
-  color: var(--ink-dim);
+  border: 1px solid var(--line2);
+  background: var(--raised);
+  color: var(--muted);
   cursor: pointer;
   transition: all 0.12s;
 }
@@ -37,7 +37,7 @@
 }
 
 .chip.active {
-  background: var(--panel);
+  background: var(--surface);
   border-color: var(--accent);
   color: var(--ink);
   font-weight: 600;
@@ -56,15 +56,15 @@
   font-size: 13px;
   padding: 7px 12px;
   border-radius: 5px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
+  border: 1px solid var(--line2);
+  background: var(--surface);
   color: var(--ink);
   min-width: 250px;
   margin-left: auto;
 }
 
 #search::placeholder {
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
 .cat-head {
@@ -73,7 +73,7 @@
   text-transform: uppercase;
   letter-spacing: 0.7px;
   color: var(--ink);
-  background: var(--panel-alt);
+  background: var(--raised);
   padding: 7px 12px;
   border: 1px solid var(--line);
   border-bottom: none;
@@ -91,25 +91,25 @@
   grid-template-columns: 100px 1fr 300px;
   gap: 14px;
   align-items: center;
-  background: var(--course);
+  background: var(--raised);
   border: 1px solid var(--line);
   border-top: none;
   padding: 10px 12px;
 }
 
 .row.locked {
-  background: var(--lock-bg);
+  background: var(--raised);
 }
 
 .row.locked .r-code {
-  color: var(--lock);
+  color: var(--muted);
 }
 
 .row:last-of-type {
   border-radius: 0 0 0px 0px;
 }
 .row.pool {
-  background: var(--panel-alt);
+  background: var(--raised);
 }
 .r-code {
   font-family: var(--mono);
@@ -121,7 +121,7 @@
   display: block;
   font-family: var(--mono);
   font-size: 10.5px;
-  color: var(--ink-faint);
+  color: var(--muted);
   margin-top: 2px;
 }
 .r-title {
@@ -131,7 +131,7 @@
 }
 .r-sub {
   display: block;
-  color: var(--ink-faint);
+  color: var(--muted);
   font-size: 11.5px;
   margin-top: 1px;
   line-height: 1.4;
@@ -139,7 +139,7 @@
 .r-term {
   display: inline-block;
   font-family: var(--mono);
-  background: var(--highlight);
+  background: var(--raised);
   color: var(--ink);
   font-size: 10px;
   padding: 2px 6px;
@@ -148,7 +148,7 @@
 
 .r-prereq {
   display: block;
-  color: var(--ink-dim);
+  color: var(--muted);
   font-size: 11.5px;
   margin-top: 4px;
   line-height: 1.4;
@@ -163,9 +163,9 @@
   font-family: var(--mono);
   font-size: 10.5px;
   padding: 5px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-faint);
+  border: 1px solid var(--line2);
+  background: var(--surface);
+  color: var(--muted);
   cursor: pointer;
   transition: all 0.1s;
   user-select: none;
@@ -176,9 +176,9 @@
   color: var(--ink);
 }
 .pill.on {
-  background: var(--button);
-  border-color: var(--button-border);
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--onfill);
   font-weight: 600;
 }
 
@@ -186,9 +186,9 @@
   font-family: var(--mono);
   font-size: 10.5px;
   padding: 5px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-faint);
+  border: 1px solid var(--line2);
+  background: var(--surface);
+  color: var(--muted);
   cursor: pointer;
   /* Wide enough for "Locked 🔒", so the button doesn't change size (and
      nudge the pills) when it switches from "Lock 🔓" */
@@ -198,9 +198,9 @@
 }
 
 .lock-btn.on {
-  background: var(--lock);
+  background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--onfill);
   font-weight: 600;
 }
 .lock-btn:disabled {
@@ -231,18 +231,18 @@
 .list-empty {
   margin: 14px 0 0;
   padding: 12px 14px;
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed var(--line2);
   border-radius: 6px;
   font-size: 12.5px;
-  color: var(--ink-dim);
+  color: var(--muted);
 }
 
 /* ---------- Add a course that isn't listed (#add-course) ---------- */
 .add-course {
   margin: 0 0 12px;
   padding: 10px 14px;
-  border: 1px dashed var(--ink-faint);
-  background: var(--panel-alt);
+  border: 1px dashed var(--line2);
+  background: var(--raised);
   font-size: 12.5px;
 }
 
@@ -255,7 +255,7 @@
 
 .add-course-hint {
   margin: 8px 0;
-  color: var(--ink-dim);
+  color: var(--muted);
   max-width: 70ch;
 }
 
@@ -274,7 +274,7 @@
   gap: 4px;
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--ink-dim);
+  color: var(--muted);
 }
 
 .add-course-form input,
@@ -283,8 +283,8 @@
   font-family: var(--sans);
   font-size: 13px;
   padding: 6px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
+  border: 1px solid var(--line2);
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -306,13 +306,13 @@
 }
 
 .add-course-form button:hover {
-  background: var(--button);
+  background: var(--raised);
 }
 
 .add-course-msg {
   margin: 8px 0 0;
   min-height: 1.4em; /* keeps the box from jumping when a message shows */
-  color: var(--ink-dim);
+  color: var(--muted);
 }
 
 .add-course-msg.error {
@@ -325,9 +325,9 @@
   font-family: var(--mono);
   font-size: 10.5px;
   padding: 5px 8px;
-  border: 1px dashed var(--ink-faint);
+  border: 1px dashed var(--line2);
   background: none;
-  color: var(--ink-dim);
+  color: var(--muted);
   cursor: pointer;
 }
 
@@ -345,7 +345,7 @@
 .r-warn {
   display: block;
   margin-top: 4px;
-  color: var(--warn);
+  color: var(--check);
   font-size: 11.5px;
   line-height: 1.4;
 }
@@ -359,7 +359,7 @@
 .r-unlocks {
   display: block;
   margin-top: 4px;
-  color: var(--ink-dim);
+  color: var(--muted);
   font-size: 11.5px;
   line-height: 1.4;
 }

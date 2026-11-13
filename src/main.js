@@ -96,7 +96,7 @@ let panelShowsSample = null;
 
 // Header, footer, and the get-started panel (only shown with the demo)
 function refreshHeader() {
-  renderHeader(getAudit(), { isSample: isSampleLoaded(), now: new Date() });
+  renderHeader(getAudit(), { isSample: isSampleLoaded() });
   const panel = document.getElementById("get-started");
   panel.querySelector("h2").textContent = isSampleLoaded()
     ? "Load your degree audit"

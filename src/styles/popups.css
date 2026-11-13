@@ -19,9 +19,9 @@
   max-width: 500px;
   z-index: 10;
   padding: 8px 12px;
-  border: 1px solid var(--ink-faint);
-  background: var(--panel);
-  color: var(--ink-dim);
+  border: 1px solid var(--line2);
+  background: var(--surface);
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 12px;
   line-height: 1.5;
@@ -45,7 +45,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: var(--panel);
+  background: var(--surface);
   z-index: 5;
   opacity: 0;
   pointer-events: none;
