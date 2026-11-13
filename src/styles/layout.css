@@ -22,8 +22,21 @@
 .logo {
   display: flex;
   justify-content: center;
-  align-items: center; /* don't stretch the image to the box's height */
+  align-items: center; /* don't stretch the title to the box's height */
   min-width: 0; /* let the box shrink on a narrow screen */
+}
+
+/* Animated "Audit Solver" title (src/ui/titleAnimation.js).
+   Height follows the width automatically; color follows `color`. */
+.title-anim {
+  width: 340px;
+  max-width: 100%;
+  color: var(--ink);
+}
+
+/* Keep the student info right next to the title; push tb-right to the edge */
+.tb-left {
+  margin-right: auto;
 }
 
 .tb-left p {

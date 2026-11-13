@@ -46,6 +46,7 @@ import "./styles/schedule.css";
 import "./styles/course-list.css";
 
 // ---------- Modules ----------
+import "./ui/titleAnimation.js";
 import {
   getAudit,
   isSampleLoaded,
