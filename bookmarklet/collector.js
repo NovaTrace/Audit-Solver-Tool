@@ -1,14 +1,12 @@
-// =====================================================================
-// bookmarklet/collector.js — the bookmarklet's entry point. Runs on the
-// student's audit page when they click the bookmark:
+// bookmarklet/collector.js — bookmarklet entry point. Runs on the audit page.
 //
 //   check the page -> show the overlay -> read the audit -> fetch course
-//   details -> check the result with parseAudit() -> offer Send/Download
+//   details -> validate with parseAudit() -> offer Send / Download / Copy
 //
-// bookmarklet/vite.config.js bundles this and everything it imports into
-// one file, src/generated/collector.js. The app's "Grab my audit" link is
-// that file's code (see src/ui/bookmarkletPanel.js).
-// =====================================================================
+// Bundled with its imports into src/generated/collector.js by
+// bookmarklet/vite.config.js. src/ui/bookmarkletPanel.js turns that file
+// into the "Grab my audit" link.
+// Tests: bookmarklet.test.js.
 
 import { showOverlay } from "./overlay.js";
 import { sendToApp, downloadJson, copyJson } from "./send.js";
@@ -23,13 +21,12 @@ import {
 } from "./scrape/courseDetails.js";
 import { parseAudit, SCHEMA } from "../src/logic/parser.js";
 
-// Filled in by bookmarkletPanel.js with a fingerprint of this code. The
-// planner compares it with the code it hands out now, to spot old bookmarks.
+// Replaced by bookmarkletPanel.js with a fingerprint of this code, which the
+// planner uses to detect an outdated bookmark.
 const COLLECTOR_VERSION = "__COLLECTOR_VERSION__";
 
-// Replaced with the planner's real address when the student drags the
-// link from the planner (bookmarkletPanel.js), so the bookmark always
-// sends back to the copy of the site it came from.
+// Replaced by bookmarkletPanel.js with the planner's address, so the
+// bookmark sends audits back to the site it came from.
 const APP_URL = "__APP_URL__";
 
 run();
@@ -46,13 +43,13 @@ async function run() {
   const ui = showOverlay();
   try {
     ui.status("Reading your audit…");
-    // The scrapers read the page's elements, so collapsed sections count too
+    // The scrapers read elements, so collapsed sections are included.
     const student = scrapeStudent(document);
     const requirements = scrapeRequirements(document);
     const courses = linkCourses(scrapeCourses(document), requirements);
 
     const list = Object.values(courses);
-    // Only courses still to plan: skipping completed ones saves most requests
+    // Only courses still to plan; skipping completed ones saves most requests.
     const failed = await addCourseDetails(list.filter(needsDetails), {
       onProgress: (done, total) =>
         ui.status(`Loading course details: ${done} of ${total}`),
@@ -70,7 +67,7 @@ async function run() {
       requirements,
       courses,
     };
-    parseAudit(audit); // throws if we built something the planner would reject
+    parseAudit(audit); // throws if the planner would reject it
 
     const summary =
       `Found ${list.length} courses for ${student.name}.` +
@@ -85,7 +82,7 @@ async function run() {
           run: (say) =>
             sendToApp(audit, APP_URL).then(
               () => say("Sent! Switch to the Audit Solver tab."),
-              (e) => say(e.message, true), // true = show it as an error (red)
+              (e) => say(e.message, true), // true = shown as an error
             ),
         },
         {
@@ -104,11 +101,11 @@ async function run() {
             ),
         },
       ],
-      failed, // the codes behind "Details missing", under "See more"
+      failed, // codes behind "Details missing", under "See more"
     );
   } catch (e) {
     console.error("Audit Solver:", e);
-    // Known situations the student can fix get their own message as-is
+    // Known problems the student can fix keep their own message.
     const known =
       e instanceof SessionExpiredError || e instanceof SlowDownError;
     ui.error(known ? e.message : `Something went wrong: ${e.message}`);

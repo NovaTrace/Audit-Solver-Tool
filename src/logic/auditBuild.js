@@ -1,43 +1,34 @@
-// =====================================================================
-// logic/auditBuild.js — turning what was READ from an audit into our
-// audit JSON (the "requirements", "courses" and student totals).
+// src/logic/auditBuild.js — builds audit JSON from values read off an audit.
 //
-// An audit can be read two ways, and both hand the same plain values here:
-//   bookmarklet/scrape/*.js   reads the audit web page (its elements)
+// Two readers pass the same plain values here, so both imports apply the
+// same rules:
+//   bookmarklet/scrape/*.js   reads the audit web page
 //   logic/pdfAudit.js         reads the text of an audit PDF
-// Keeping the DECISIONS in this one file (is a course completed? is this
-// requirement a single course, a pool or a rule?) means both imports
-// agree, and a fix made here fixes both.
 //
-// The plain values (see the Audit JSON Data Guide for what they become):
+// Input shapes:
 //   sub-requirement  { status, titleLines, select, applied, needHours,
 //                      needCourses, earnedHours, inProgressHours, gpa,
 //                      attemptedHours }
 //   course row       { term, code, credits, grade, flags, lines }
 //
-// Pure logic: no `document`. Tested through bookmarklet.test.js and
-// pdfAudit.test.js.
-// =====================================================================
+// Output: see the Audit JSON Data Guide.
+// Pure logic, no DOM. Tests: bookmarklet.test.js, pdfAudit.test.js.
 
 import { normalizeCode, idFromCode, codesIn } from "./courseText.js";
 
-// ---------------------------------------------------------------------
-// Requirements
-// ---------------------------------------------------------------------
+// ---------- Requirements ----------
 
-// A title line that starts with a course code: "CS 4500 Operating Systems I"
+// Title line starting with a course code: "CS 4500 Operating Systems I".
 const COURSE_TITLE = /^[A-Z]{2,4} \d{4}\b/;
 
-// Rules about the degree as a whole rather than about particular courses:
-// "MINIMUM HOURS", "ELECTRICAL ENGINEERING GPA", "Minor Residency"
+// Whole-degree rules, not tied to particular courses:
+// "MINIMUM HOURS", "ELECTRICAL ENGINEERING GPA", "Minor Residency".
 const INFO_ONLY = /\bGPA\b|\bRESIDENCY\b|^MINIMUM HOURS\b/i;
 
 /**
- * The audit's requirement blocks -> the `requirements` array.
- * `blocks` is [{ section, subs }]: a block's heading ("Computer
- * Engineering - Core") and the sub-requirements read from it. Our format
- * flattens the two levels: every sub-requirement becomes one requirement,
- * with the block's heading as its `section`.
+ * Requirement blocks -> the `requirements` array.
+ * `blocks` is [{ section, subs }]. Each sub-requirement becomes one
+ * requirement, with the block's heading as its `section`.
  */
 export function buildRequirements(blocks) {
   const requirements = [];
@@ -54,15 +45,15 @@ export function buildRequirements(blocks) {
   return requirements;
 }
 
-// One sub-requirement -> a requirement, or null if it's information only
+// One sub-requirement -> a requirement, or null if it is information only.
 function buildRequirement(sub, section) {
   const { status, titleLines, select, applied } = sub;
 
-  // Headings like "PROGRAM INFORMATION": nothing to complete
+  // Headings such as "PROGRAM INFORMATION": nothing to complete.
   if (status === null && !select.length && !applied.length) return null;
 
-  // Title: "CS 4500 Operating Systems I", or the first line of the heading.
-  // Either/or titles list each choice on its own line between "OR" lines.
+  // Title: the course line(s), or the first heading line. Either/or titles
+  // list each choice on its own line between "OR" lines.
   const courseLines = titleLines.filter((l) => COURSE_TITLE.test(l));
   const isCourse = COURSE_TITLE.test(titleLines[0] ?? "");
   const title = isCourse
@@ -76,12 +67,10 @@ function buildRequirement(sub, section) {
   const titleCodes = isCourse ? courseLines.flatMap((l) => codesIn(l)) : [];
   const options = [...new Set([...titleCodes, ...select])].map(normalizeCode);
 
-  // A requirement with no course list that isn't waiting on anything is
-  // kept only if courses count toward it: "TECHNICAL ELECTIVES" loses its
-  // SELECT FROM list once registered courses cover it, and dropping it
-  // would leave those courses linked to nothing. Whole-degree rules
-  // (minimum hours, GPA, residency) list courses too, but nobody plans
-  // around them, so they're kept only while they still need something.
+  // A requirement with no course list and nothing outstanding is kept only if
+  // courses are applied to it; otherwise those courses would link to nothing.
+  // (e.g. "TECHNICAL ELECTIVES" loses its SELECT FROM list once covered.)
+  // Whole-degree rules are kept only while they still need something.
   const isListless = !isCourse && !options.length && status !== "needs";
   const isInfoOnly = INFO_ONLY.test(title) || INFO_ONLY.test(section);
   if (isListless && (!applied.length || isInfoOnly)) return null;
@@ -102,8 +91,7 @@ function buildRequirement(sub, section) {
   };
 }
 
-// The same course can be listed twice (e.g. a repeat); keep one entry per
-// course, with its hours added up
+// One entry per course, hours summed (a repeat is listed twice).
 function mergeApplied(rows) {
   const byCode = new Map();
   for (const row of rows) {
@@ -126,12 +114,10 @@ function uniqueId(name, used) {
   return id;
 }
 
-// ---------------------------------------------------------------------
-// Courses
-// ---------------------------------------------------------------------
+// ---------- Courses ----------
 
 /**
- * Course-history rows -> the `courses` object: one entry per course, with
+ * Course-history rows -> the `courses` object, one entry per course with
  * every attempt. `rows` lists each attempt once, oldest first.
  */
 export function coursesFromRows(rows) {
@@ -151,8 +137,8 @@ export function coursesFromRows(rows) {
       flags: row.flags,
       transfer: /^T[A-F]/.test(row.grade),
     });
-    // Credits until the course details say otherwise: the most recent
-    // attempt that carried credit (a W carries 0)
+    // Credits come from the latest attempt that carried any (a W carries 0),
+    // until course details replace them.
     if (row.credits > 0) course.credits = row.credits;
     course.title ??= row.lines.find((l) => !l.startsWith("CO-")) ?? null;
     course.transferNote ??= row.lines.find((l) => l.startsWith("CO-")) ?? null;
@@ -161,9 +147,8 @@ export function coursesFromRows(rows) {
 }
 
 /**
- * Point courses and requirements at each other (requirementIds), add the
- * courses that only appear as options, and set every course's status.
- * Changes `courses` in place.
+ * Sets requirementIds on each course, adds courses that appear only as
+ * options, and sets every course's status. Changes `courses` in place.
  */
 export function linkCourses(courses, requirements) {
   for (const req of requirements) {
@@ -182,9 +167,8 @@ export function linkCourses(courses, requirements) {
   return courses;
 }
 
-// Completed if any attempt passed; registered if it has a "***" attempt;
-// needed if an unfinished requirement asks for exactly this course;
-// otherwise one option among several.
+// completed: an attempt passed; registered: has a "***" attempt;
+// needed: an unfinished requirement lists only this course; else option.
 function statusOf(course, requirements) {
   const neededAlone = requirements.some(
     (r) =>
@@ -192,8 +176,8 @@ function statusOf(course, requirements) {
       r.options.length === 1 &&
       r.options[0] === course.code,
   );
-  // A pass only counts if the audit accepted it: a D where the requirement
-  // wants a C- or better leaves that requirement unfinished
+  // A pass counts only if the audit accepted it (a D where C- is required
+  // leaves the requirement unfinished).
   if (course.attempts.some(passed) && !neededAlone) return "completed";
   if (course.attempts.some((a) => a.grade === "***")) return "registered";
   return neededAlone ? "needed" : "option";
@@ -204,7 +188,7 @@ function passed(attempt) {
   return /^T?([A-D][+-]?|S|P)$/.test(attempt.grade);
 }
 
-// The course entry for a code, created on first use
+// The course entry for a code, created on first use.
 function courseFor(courses, code) {
   const c = normalizeCode(code);
   return (courses[idFromCode(c)] ??= {
@@ -218,15 +202,12 @@ function courseFor(courses, code) {
   });
 }
 
-// ---------------------------------------------------------------------
-// Student totals
-// ---------------------------------------------------------------------
+// ---------- Student totals ----------
 
 /**
- * The degree's hours and overall GPA, found among every sub-requirement
- * on the audit (`subs`). Found by what they say, not by their headings,
- * which vary by school.
- * -> { hoursRequired, hoursEarned, hoursInProgress, gpa, attemptedHours }
+ * Degree hours and overall GPA, found by content among all sub-requirements,
+ * since headings vary by school.
+ * Returns { hoursRequired, hoursEarned, hoursInProgress, gpa, attemptedHours }.
  */
 export function studentTotals(subs) {
   const minimum = degreeHours(subs);
@@ -240,9 +221,8 @@ export function studentTotals(subs) {
   };
 }
 
-// The degree's total-hours rule: the sub-requirement whose title says "a
-// minimum of N" with the largest N (128 for the degree beats 30 for
-// residency). -> { sub, hours } or undefined
+// Total-hours rule: the sub-requirement whose title says "a minimum of N"
+// with the largest N. Returns { sub, hours } or undefined.
 function degreeHours(subs) {
   let best;
   for (const sub of subs) {
@@ -253,8 +233,8 @@ function degreeHours(subs) {
   return best;
 }
 
-// The overall GPA: a sub-requirement with a GPA table. If there are
-// several (e.g. a major GPA too), prefer the overall one.
+// Overall GPA: a sub-requirement with a GPA table; the overall one is
+// preferred when there are several.
 function overallGpa(subs) {
   const withGpa = subs.filter((s) => s.hasGpa);
   return (

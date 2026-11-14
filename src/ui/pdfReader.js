@@ -1,25 +1,18 @@
-// ui/pdfReader.js — pulling the text out of a PDF file, with pdf.js
-// (Mozilla's PDF reader, the same one Firefox uses to show PDFs).
+// src/ui/pdfReader.js — extracts text pieces from a PDF with pdf.js.
 //
-// This file only gets the text pieces off each page. Making lines out of
-// them and reading the audit is logic/pdfAudit.js, which has no pdf.js in
-// it and so can be tested.
-//
-// pdf.js is large, so importer.js loads this file only when a PDF is
-// chosen (`await import(...)`); students who never import a PDF never
-// download it. The PDF is read here in the browser and sent nowhere.
+// Only reads the pieces; logic/pdfAudit.js turns them into an audit.
+// Loaded on demand by ui/importer.js, so pdf.js is downloaded only when a
+// PDF is chosen. The PDF is read in the browser and sent nowhere.
 
 import * as pdfjs from "pdfjs-dist";
-// pdf.js does its heavy work in a second script (a "worker") so the page
-// doesn't freeze. `?url` asks Vite for that script's address.
+// pdf.js parses in a worker script; `?url` gives that script's address.
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 /**
- * A PDF file -> its text pieces, one list per page:
- * [[{ str, x, y, width }, ...], ...]. `str` is the words; x and y are
- * where the piece starts on the page (y counts up from the bottom).
+ * PDF file -> text pieces, one list per page: [[{ str, x, y, width }]].
+ * x and y are the piece's start; y counts up from the bottom.
  */
 export async function readPdfPages(file) {
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() })

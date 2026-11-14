@@ -1,10 +1,13 @@
-// bookmarklet/scrape/dom.js — small helpers for reading the audit page.
+// bookmarklet/scrape/dom.js — helpers for reading the audit page.
 //
-// The scrapers read the page's elements (not its visible text), so
-// collapsed sections are read too: collapsing only hides them with CSS.
+// The scrapers read elements, not visible text, so sections collapsed with
+// CSS are read too.
+// Used by: scrape/courses.js, scrape/requirements.js, scrape/student.js.
 
-/** The audit's main copy. The page holds two: a phone layout
- *  (#responsiveAudit) and a desktop one (#selectedAudit); read one. */
+/**
+ * The audit's main copy. The page holds a phone layout (#responsiveAudit)
+ * and a desktop one (#selectedAudit); only one is read.
+ */
 export function auditRoot(doc) {
   return (
     doc.querySelector("#selectedAudit #auditRequirements") ??
@@ -13,18 +16,18 @@ export function auditRoot(doc) {
   );
 }
 
-/** An element's text with whitespace collapsed ("" for none). */
+/** Element text with whitespace collapsed; "" for none. */
 export function text(el) {
   return el?.textContent.replace(/\s+/g, " ").trim() ?? "";
 }
 
-/** The first number in an element's text, or null. */
+/** First number in an element's text, or null. */
 export function num(el) {
   const m = text(el).match(/-?\d+(\.\d+)?/);
   return m ? Number(m[0]) : null;
 }
 
-/** An element's text split into lines at its <br> tags. */
+/** Element text split into lines at <br> tags. */
 export function lines(el) {
   if (!el) return [];
   const out = [""];
@@ -35,8 +38,10 @@ export function lines(el) {
   return out.map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
 }
 
-/** A sub-requirement's status, from its title's class
- *  (srTitle_substatusOK / IP / NO / NONE). null = information only. */
+/**
+ * Sub-requirement status from its title's class (srTitle_substatusOK / IP /
+ * NO / NONE). null means information only.
+ */
 export function subStatus(sub) {
   const cls = sub.querySelector(".subreqTitle")?.className ?? "";
   if (/substatusOK/.test(cls)) return "complete";
@@ -45,7 +50,7 @@ export function subStatus(sub) {
   return null;
 }
 
-/** Each requirement block once (by its rname attribute). */
+/** Each requirement block once, by its rname attribute. */
 export function requirementBlocks(root) {
   const seen = new Set();
   return [...root.querySelectorAll(".requirement")].filter((req) => {
@@ -56,7 +61,7 @@ export function requirementBlocks(root) {
   });
 }
 
-/** One taken-course row -> { term, code, credits, grade, flags, lines }. */
+/** Taken-course row -> { term, code, credits, grade, flags, lines }. */
 export function readTakenRow(row) {
   return {
     term: text(row.querySelector(".term")),
@@ -68,7 +73,7 @@ export function readTakenRow(row) {
   };
 }
 
-/** The course codes in a block's SELECT FROM lists. */
+/** Course codes in a block's SELECT FROM lists. */
 export function selectFromCodes(el) {
   return [...el.querySelectorAll(".selectcourses .course[number]")].map(
     (c) =>
@@ -77,9 +82,8 @@ export function selectFromCodes(el) {
 }
 
 /**
- * Everything read from one .subrequirement, as plain values: the shape
- * src/logic/auditBuild.js works from (the PDF import builds the same one).
- * A total that isn't on the page is null.
+ * One .subrequirement as plain values, in the shape src/logic/auditBuild.js
+ * takes. Totals missing from the page are null.
  */
 export function readSubrequirement(sub) {
   const gpaTable = sub.querySelector(".gpaDetail");

@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#1d232c" />
-    <!-- Put the saved palette on <html> before anything is drawn, so a
-         light-theme user doesn't see a dark flash. Same rules as
-         resolvePalette() in src/ui/settings.js. -->
+    <!-- Applies the saved palette to <html> before first paint, so a
+         light-theme
+         user sees no dark flash. Same rules as resolvePalette() in
+         src/ui/settings.js. -->
     <script>
       try {
         var saved = JSON.parse(localStorage.getItem("audit-solver-settings"));
@@ -24,7 +25,7 @@
       }
     </script>
     <title>Audit Solver Tool</title>
-    <!-- Fonts are bundled with the site: see the imports in src/main.js -->
+    <!-- Fonts are bundled: see the imports in src/main.js. -->
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
@@ -33,12 +34,12 @@
     <link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
-    <!-- First thing a keyboard user reaches: jumps past the header -->
+    <!-- First focusable element: skips past the header. -->
     <a class="skip-link" href="#req-title">Skip to the course list</a>
 
-    <!-- Feedback bar across the top, shown on every visit. When testing is
-         done, delete this <div> and the .dev-banner styles in
-         src/styles/base.css. -->
+    <!-- Feedback bar. Temporary: delete this <div> and the .dev-banner styles
+         in
+         src/styles/base.css when testing ends. -->
     <div class="dev-banner" role="region" aria-label="Feedback">
       <p>
         <b>Audit Solver is still in development.</b> Tell us what works and what
@@ -53,13 +54,14 @@
     </div>
     <div class="sheet">
       <header class="titleblock">
-        <!-- The page's main heading: the logo mark and the animated title,
-             whose svg is named "Audit Solver" for screen readers -->
+        <!-- The page's <h1>: logo mark and animated title. The title's svg is
+             labelled "Audit Solver" for screen readers. -->
         <h1 class="logo">
-          <!-- Logo mark: same drawing as public/logo.svg, placed inline so its
-               colors can use CSS variables (see .logo-mark in layout.css).
-               The width/height/fill attributes are fallbacks for the moment
-               before the stylesheet loads; the CSS overrides them. -->
+          <!-- Logo mark: same drawing as public/logo.svg, inline so its colors
+               can use
+               CSS variables (.logo-mark in layout.css). The width, height and
+               fill
+               attributes are fallbacks until the stylesheet loads. -->
           <svg
             class="logo-mark"
             width="56"
@@ -92,8 +94,9 @@
               </g>
             </g>
           </svg>
-          <!-- Animated title: defined in src/ui/titleAnimation.js.
-               Color comes from CSS `color` (see .title-anim in layout.css). -->
+          <!-- Animated title (src/ui/titleAnimation.js). Color follows CSS
+               `color`
+               (.title-anim in layout.css). -->
           <sliced-word
             class="title-anim"
             aria-label="Audit Solver"
@@ -103,7 +106,7 @@
           ></sliced-word>
         </h1>
         <div class="tb-left">
-          <!-- Filled by src/render/header.js: name, then degree and programs -->
+          <!-- Filled by src/render/header.js: name; majors and minors. -->
           <p class="tb-name" id="student-name"></p>
           <p class="tb-programs" id="student-programs"></p>
         </div>
@@ -150,7 +153,7 @@
           <button type="button" class="btn btn-secondary" id="export-btn">
             Export plan
           </button>
-          <!-- Opens the Settings dialog (palette, course details) -->
+          <!-- Opens the Settings dialog. -->
           <button
             type="button"
             class="icon-btn"
@@ -178,27 +181,42 @@
         </div>
       </header>
 
-      <!-- Settings dialog: opened by the gear button, wired in
-           src/ui/settings.js. Changes apply at once and are saved in this
-           browser; Escape or a click outside closes it. -->
+      <!-- Settings dialog, wired in src/ui/settings.js. Changes apply
+           immediately
+           and are saved in the browser. -->
       <dialog class="settings" id="settings" aria-labelledby="settings-title">
         <form method="dialog" id="settings-form">
           <div class="settings-head">
             <h2 id="settings-title">Settings</h2>
+            <button
+              type="button"
+              class="icon-btn settings-close"
+              id="settings-close"
+              aria-label="Close settings"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
           </div>
 
           <fieldset>
             <legend>Colors</legend>
-            <!-- One choice per palette: filled by src/ui/settings.js -->
+            <!-- Palette choices: filled by src/ui/settings.js. -->
             <div class="pal-choices" id="palette-choices"></div>
           </fieldset>
 
           <fieldset>
             <legend>Course details in the list</legend>
-            <label class="set-row">
-              <input type="checkbox" name="showCounts" />
-              What each course counts toward
-            </label>
             <label class="set-row">
               <input type="checkbox" name="showOffered" />
               When it's offered (Fall, Spring…)
@@ -228,6 +246,14 @@
             </div>
           </fieldset>
 
+          <fieldset>
+            <legend>Plan warnings</legend>
+            <label class="set-row">
+              <input type="checkbox" name="warnOverload" />
+              Semesters over 18 credits
+            </label>
+          </fieldset>
+
           <p class="settings-note">
             Saved in this browser. Clearing your plan data doesn't reset them.
           </p>
@@ -235,8 +261,9 @@
       </dialog>
 
       <main>
-        <!-- Open on the first visit, collapsed once an audit is loaded
-             (main.js decides, and changes the heading text) -->
+        <!-- Open for the demo, collapsed once an audit is loaded. main.js sets
+             the
+             state and the heading text. -->
         <details class="get-started" id="get-started">
           <summary>
             <h2>Load your degree audit</h2>
@@ -276,30 +303,22 @@
             this browser.
           </p>
         </details>
-        <aside class="note" aria-label="Note about this website">
-          <h2>
-            <span aria-hidden="true">⚑</span> A quick note about our website
-          </h2>
-          <p>
-            Disclaimer: The current iteration of this website may not yet
-            support particular edge cases including but not limited to: multiple
-            speciality tracks, multiple majors/minors, etc.
-          </p>
-        </aside>
-        <!-- Two columns: the course list on the left, and "Your plan" on the
-             right, which stays in view while the list scrolls (layout.css).
-             On narrow screens the plan drops below the list. -->
+        <!-- Two columns: course list, then "Your plan", which stays in view
+             while
+             the list scrolls (layout.css). When narrow, the plan moves below
+             the list. -->
         <div class="cols">
           <section class="list-col" aria-labelledby="req-title">
             <div class="col-head">
               <h2 class="col-title" id="req-title" tabindex="-1">
                 Requirements
               </h2>
-              <!-- Only shown when the plan sits below the list (narrow screens) -->
+              <!-- Shown only when the plan is below the list. -->
               <a class="jump-plan" href="#plan">Jump to your plan ↓</a>
             </div>
             <div class="controls">
-              <!-- Category and "Show" dropdowns: filled by src/render/courseList.js -->
+              <!-- Category and Show dropdowns: filled by
+                   src/render/courseList.js. -->
               <label class="field-label">
                 <span class="vh">Category</span>
                 <select class="field" id="category"></select>
@@ -309,7 +328,7 @@
                 <select class="field" id="show"></select>
               </label>
 
-              <!-- SEARCH BAR AND CLASS INFO POPUP-->
+              <!-- Search box and its help popup. -->
               <div class="search-container">
                 <div
                   class="info-popup info-popup--right"
@@ -325,12 +344,10 @@
                   </button>
                   <div class="info-text">
                     <ul>
+                      <li>Pick a semester from a course's dropdown.</li>
+                      <li>The lock keeps it there and silences warnings.</li>
                       <li>
-                        Pick a semester from a course's dropdown. Greyed-out
-                        terms aren't offered.
-                      </li>
-                      <li>
-                        The padlock keeps it there and hides its warnings.
+                        Missing courses or requirements can be added manually.
                       </li>
                     </ul>
                   </div>
@@ -345,7 +362,7 @@
               </div>
             </div>
 
-            <!-- Add a course the audit doesn't list (wired in src/main.js) -->
+            <!-- Add a course the audit doesn't list. Wired in src/main.js. -->
             <details class="add-course" id="add-course">
               <summary>
                 <span class="add-plus" aria-hidden="true">+</span>
@@ -353,8 +370,9 @@
               </summary>
               <p class="add-course-hint">
                 For requirements like "any MATH course numbered 3100 or higher",
-                where the audit doesn't name the choices. Check the catalog for
-                what counts: this page can't.
+                where the audit doesn't name the choices. A course already in
+                the list can be counted toward one more requirement the same
+                way. Check the catalog for what counts: this page can't.
               </p>
               <form class="add-course-form" id="add-course-form">
                 <label>
@@ -385,7 +403,7 @@
                 </label>
                 <label>
                   Counts toward
-                  <!-- Options filled by src/render/courseList.js -->
+                  <!-- Options filled by src/render/courseList.js. -->
                   <select id="add-req"></select>
                 </label>
                 <button type="submit">Add course</button>
@@ -396,10 +414,11 @@
             <!-- Filled by src/render/courseList.js -->
             <section id="list" aria-label="Courses"></section>
 
-            <!-- Template: one course row (never shown directly; JS copies it) -->
+            <!-- Template for one course row. Copied by
+                 src/render/courseList.js. -->
             <template id="course-row-tpl">
               <div class="row">
-                <!-- Status: icon + word (JS shows the matching icon) -->
+                <!-- Status: icon and word. The matching icon gets .on. -->
                 <div class="r-status">
                   <svg
                     class="ic ic-prog"
@@ -466,7 +485,6 @@
                   <div>
                     <span class="r-code"></span> <span class="r-title"></span>
                   </div>
-                  <span class="r-sub"></span>
                   <span class="r-meta"></span>
                   <span class="r-unlocks"></span>
                   <span class="r-locked"
@@ -522,12 +540,8 @@
                 </button>
                 <div class="info-text">
                   <ul>
-                    <li>
-                      Drag courses between semesters.
-                    </li>
-                    <li>
-                      Click a grip to lock and unlock courses.
-                    </li>
+                    <li>Drag courses between semesters.</li>
+                    <li>Click a grip to lock and unlock courses.</li>
                     <li>
                       <b>+</b> adds a semester; <b>−</b> removes the last one.
                     </li>
@@ -542,37 +556,22 @@
               </button>
             </div>
 
-            <!-- Progress, counted in requirements (not credits): a dual major
-                 or extra courses would make a credit total misleading.
-                 Filled by src/render/schedule.js -->
-            <p class="plan-headline" id="plan-headline"></p>
+            <!-- Progress, counted in requirements. Filled by
+                 src/render/schedule.js. -->
+            <div class="plan-top">
+              <p class="plan-headline" id="plan-headline"></p>
+              <!-- Credits against the degree's minimum hours. -->
+              <p class="credit-min" id="credit-min"></p>
+            </div>
             <div class="bar thick" id="req-bar" role="img">
               <span class="seg-done"></span><span class="seg-prog"></span
               ><span class="seg-plan"></span>
             </div>
             <p class="bar-legend" id="req-legend"></p>
 
-            <!-- Credits: for reference, plus the degree's minimum-hours rule -->
-            <dl class="stats">
-              <div class="stat">
-                <dt><i class="dot dot-done" aria-hidden="true"></i>Earned</dt>
-                <dd id="stat-earned">0</dd>
-              </div>
-              <div class="stat">
-                <dt>
-                  <i class="dot dot-prog" aria-hidden="true"></i>In progress
-                </dt>
-                <dd id="stat-progress">0</dd>
-              </div>
-              <div class="stat">
-                <dt><i class="dot dot-plan" aria-hidden="true"></i>Planned</dt>
-                <dd id="stat-planned">0</dd>
-              </div>
-            </dl>
-            <p class="credit-min" id="credit-min"></p>
-
-            <!-- One stacked bar per audit section, and the tick boxes for
-                 switching requirements off. Filled by src/render/schedule.js -->
+            <!-- A bar per audit section, and tick boxes that switch
+                 requirements off.
+                 Filled by src/render/schedule.js. -->
             <details class="req-cats" id="req-cats">
               <summary>
                 Requirement categories
@@ -600,19 +599,25 @@
               <div id="req-categories"></div>
             </details>
 
-            <!-- Warnings about the plan (empty until something is planned) -->
-            <div class="plan-check" id="plan-check" role="status"></div>
+            <!-- Plan warnings; empty until something is planned. -->
+            <div class="plan-check" id="plan-check"></div>
 
             <h3 class="plan-sub">Semesters</h3>
-            <div class="sched-grid" id="sched-grid"></div>
+            <!-- Size container: lets the grid choose three or two semesters per
+                 row
+                 (schedule.css). -->
+            <div class="sched-wrap">
+              <div class="sched-grid" id="sched-grid"></div>
+            </div>
             <div class="unassigned" id="unassigned"></div>
-            <!-- Templates: never shown directly; JS copies them to build the term cards -->
+            <!-- Templates for the semester cards. Copied by
+                 src/render/schedule.js. -->
             <template id="term-card-tpl">
               <article class="term-card">
                 <div class="term-head">
                   <h4 class="term-name"></h4>
                   <span class="term-cr"></span>
-                  <!-- Only on the last semester: removes it -->
+                  <!-- Last semester only: removes it. -->
                   <button type="button" class="term-remove">
                     <span aria-hidden="true">−</span>
                   </button>
@@ -622,8 +627,9 @@
               </article>
             </template>
 
-            <!-- One course in a semester. The button on the left locks and
-                 unlocks it: a grip while it can move, a padlock once locked. -->
+            <!-- One course in a semester. The left button locks and unlocks it:
+                 a grip
+                 while movable, a padlock once locked. -->
             <template id="term-course-tpl">
               <li class="tc">
                 <button type="button" class="tc-lock">
@@ -667,8 +673,11 @@
       </main>
 
       <footer>
-        <!-- Filled by src/render/header.js -->
-        <p id="source-note"></p>
+        <p class="disclaimer">
+          <b>Disclaimer:</b> The current iteration of this website may not yet
+          support particular edge cases including but not limited to: multiple
+          speciality tracks, multiple majors/minors, etc.
+        </p>
         <button type="button" id="clear-data-btn" class="clear-data-btn">
           Clear data
         </button>

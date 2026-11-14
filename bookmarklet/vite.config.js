@@ -1,14 +1,14 @@
-// Builds the bookmarklet: bundles bookmarklet/collector.js and everything
-// it imports into ONE minified file, src/generated/collector.js, written as
-// an IIFE (a function that runs itself) so it can become a "javascript:" URL.
+// bookmarklet/vite.config.js — builds the bookmarklet.
 //
+// Bundles collector.js and its imports into one minified IIFE,
+// src/generated/collector.js, usable as a "javascript:" URL.
 //   npm run build:bookmarklet   build once (runs before dev and build)
-//   npm run dev:bookmarklet     rebuild on every save while working on it
+//   npm run dev:bookmarklet     rebuild on save
 
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  publicDir: false, // don't copy public/ into the output
+  publicDir: false, // public/ is not copied
   build: {
     lib: {
       entry: "bookmarklet/collector.js",

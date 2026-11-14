@@ -1,3 +1,7 @@
+/* src/styles/course-list.css — the course list: toolbar, section cards,
+   course rows, and the add-a-course form.
+   Markup: src/render/courseList.js. */
+
 /* ---------- Toolbar: category, Show, search ---------- */
 .controls {
   display: flex;
@@ -7,7 +11,7 @@
   margin: 0 0 16px;
 }
 
-/* Dropdowns and the search box share one look */
+/* Dropdowns and the search box share one style. */
 .field {
   min-height: 40px;
   padding: 0 12px;
@@ -79,7 +83,7 @@
   overflow: hidden;
 }
 
-/* ---------- Completed courses, folded at the top of a card ---------- */
+/* ---------- Completed courses (fold at the top of a card) ---------- */
 .fold summary {
   display: flex;
   align-items: center;
@@ -89,11 +93,11 @@
   background: color-mix(in srgb, var(--done) 9%, var(--surface));
   font-size: 14px;
   cursor: pointer;
-  list-style: none; /* hide the browser's own triangle (Firefox) */
+  list-style: none; /* hide the default marker (Firefox) */
 }
 
 .fold summary::-webkit-details-marker {
-  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+  display: none; /* hide the default marker (Chrome, Safari) */
 }
 
 .fold-check {
@@ -161,8 +165,8 @@
   text-align: right;
 }
 
-/* ---------- A course still to plan ----------
-   status | code, title and details | credits | semester dropdown + lock */
+/* ---------- Course row ----------
+   status | code, title, details | credits | semester dropdown + lock */
 .row {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr) 48px 230px;
@@ -180,7 +184,7 @@
   background: color-mix(in srgb, var(--check) 9%, transparent);
 }
 
-/* Status: icon + word. Only the matching icon shows (.on). */
+/* Status: icon + word. Only the icon with .on shows. */
 .r-status {
   display: flex;
   align-items: center;
@@ -227,7 +231,6 @@
   color: var(--ink);
 }
 
-.r-sub,
 .r-meta,
 .r-unlocks,
 .r-locked {
@@ -244,7 +247,7 @@
   gap: 5px;
 }
 
-/* Warnings under a course: one line each */
+/* Warnings under a course, one line each. */
 .r-warn {
   display: block;
   margin-top: 4px;
@@ -275,12 +278,18 @@
   min-width: 0;
 }
 
+/* A term the course isn't scheduled in: greyed like a disabled option, but
+   selectable. GrayText is the system's disabled color. */
+.term-select option.not-offered {
+  color: GrayText;
+}
+
 .r-now {
   font-size: 13px;
   color: var(--prog);
 }
 
-/* Padlock button beside the dropdown */
+/* Padlock button beside the dropdown. */
 .lock-btn {
   width: 40px;
   height: 40px;
@@ -310,7 +319,7 @@
   cursor: default;
 }
 
-/* Narrow: status and credits on one line, details, then the dropdown */
+/* Narrow: status and credits on one line, then details, then the dropdown. */
 @media (max-width: 760px) {
   .row {
     grid-template-columns: 1fr auto;
@@ -345,7 +354,7 @@
     flex: 1 1 100%;
   }
 
-  /* The two dropdowns share the first row evenly */
+  /* The two dropdowns share the first row. */
   .field-label {
     flex: 1 1 140px;
     min-width: 0;
@@ -356,7 +365,7 @@
   }
 }
 
-/* Shown in #list when nothing matches the dropdowns + search */
+/* Shown in #list when nothing matches. */
 .list-empty {
   margin: 0;
   padding: 12px 14px;
@@ -366,7 +375,7 @@
   color: var(--muted);
 }
 
-/* ---------- Add a course that isn't listed (#add-course) ---------- */
+/* ---------- Add a course (#add-course) ---------- */
 .add-course {
   margin: 0 0 16px;
   border: 1px dashed var(--line2);
@@ -389,11 +398,11 @@
   font-size: 14px;
   color: var(--ink);
   cursor: pointer;
-  list-style: none; /* hide the browser's own triangle (Firefox) */
+  list-style: none; /* hide the default marker (Firefox) */
 }
 
 .add-course summary::-webkit-details-marker {
-  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+  display: none; /* hide the default marker (Chrome, Safari) */
 }
 
 .add-plus {
@@ -419,8 +428,8 @@
   max-width: 70ch;
 }
 
-/* The fields sit in a row and wrap on a narrow screen. Each label is a
-   small column: its words above its box. */
+/* Fields in a row, wrapping when narrow. Each label stacks its text above its
+   input. */
 .add-course-form {
   display: flex;
   flex-wrap: wrap;
@@ -475,7 +484,7 @@
 
 .add-course-msg {
   margin: 8px 0 12px;
-  min-height: 1.4em; /* keeps the box from jumping when a message shows */
+  min-height: 1.4em; /* reserves space for the message */
   color: var(--muted);
 }
 
@@ -484,7 +493,7 @@
   font-weight: 600;
 }
 
-/* Remove button on a course the student added (after its Lock button) */
+/* Remove / Unlink button, after the lock button. */
 .remove-course-btn {
   min-height: 40px;
   padding: 0 12px;

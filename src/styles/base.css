@@ -1,40 +1,43 @@
+/* src/styles/base.css — color palettes, fonts, page frame, footer and
+   accessibility helpers. Loaded first; the other stylesheets use its
+   tokens. */
+
 * {
   box-sizing: border-box;
 }
 
 :root {
-  /* Fonts (unchanged) */
+  /* Fonts */
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 
-  /* Logo colors (the mark left of the title in the header) */
+  /* Logo colors (the mark beside the title) */
   --logo-page: #c9d6e8;
   --logo-fold: #919eaf;
-  --logo-accent: #9fd4c4; /* the bottom strip; point this at any other color */
+  --logo-accent: #9fd4c4; /* bottom strip */
 }
 
 /* ---------- Color palettes ----------
-   Every color on the page comes from these tokens. A palette is one block
-   that sets all of them; <html data-pal="..."> picks which block applies
-   (src/ui/settings.js sets it, from the Settings dialog). Five palettes:
-   Graphite (default dark), Mist (light), Denim, Dusk and Harbor. In every
-   palette the text tokens (--ink, --muted, --accent, --done ... --danger)
-   pass 4.5:1 contrast on --page, --surface and --raised.
+   Every color comes from these tokens. Each palette is one block that sets
+   them all; <html data-pal="..."> selects the block (set by
+   src/ui/settings.js). Palettes: Graphite (default dark), Mist (light),
+   Denim, Dusk, Harbor. Text tokens pass 4.5:1 contrast on --page, --surface
+   and --raised in every palette.
 
-     --page      the page behind everything
-     --surface   panels and cards
-     --raised    things sitting on a panel (course rows, tiles, chips)
-     --line      faint dividers and the background grid
-     --line2     borders on boxes and controls
-     --ink       main text
-     --muted     secondary text
-     --accent    primary buttons, links, focus ring, highlights
-     --onfill    text on an --accent fill
-     --done / --prog / --plan / --check   status colors
-     --danger    destructive actions (Clear data)                       */
+   --page      page background
+   --surface   panels and cards
+   --raised    items on a panel (course rows, chips)
+   --line      faint dividers, background grid
+   --line2     borders on boxes and controls
+   --ink       main text
+   --muted     secondary text
+   --accent    primary buttons, links, focus ring
+   --onfill    text on an --accent fill
+   --done / --prog / --plan / --check   status colors
+   --danger    destructive actions (Clear data) */
 :root,
 [data-pal="graphite"] {
-  color-scheme: dark; /* dropdowns and scrollbars drawn dark */
+  color-scheme: dark; /* native dropdowns and scrollbars drawn dark */
   --page: #1d232c;
   --surface: #272e39;
   --raised: #313947;
@@ -46,13 +49,12 @@
   --onfill: #1d232c;
   --done: #a7d3b5;
   --prog: #c4b5e8;
-  --plan: #8fc3ea; /* sky blue: easier to tell from "done" green */
+  --plan: #8fc3ea; /* sky blue: distinct from the "done" green */
   --check: #f1c18d;
   --danger: #f2a7a0;
 }
 
-/* Mist: the light theme. Status colors are deepened to stay
-   readable on light backgrounds; the logo gets darker pieces. */
+/* Mist: the light theme. Status colors are darkened for light backgrounds. */
 [data-pal="mist"] {
   color-scheme: light;
   --page: #e6eef8;
@@ -69,7 +71,7 @@
   --plan: #1f5f8f;
   --check: #9a520c;
   --danger: #b3261e;
-  --logo-page: var(--accent); /* the logo's page pieces take the accent */
+  --logo-page: var(--accent); /* the logo's page pieces use the accent */
   --logo-fold: color-mix(in srgb, var(--accent) 45%, #ffffff);
   --logo-accent: #3f9c84;
 }
@@ -128,13 +130,13 @@
   --danger: #f4a6a6;
 }
 
-/* Tints worked out from the palette, so each palette only sets the above */
+/* Tints derived from the palette tokens. */
 :root {
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
   --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
-/* Tick boxes, radio buttons and range sliders in the palette's accent */
+/* Tick boxes, radio buttons and sliders use the accent. */
 :root {
   accent-color: var(--accent);
 }
@@ -146,8 +148,8 @@ body {
   font-family: var(--sans);
 }
 
-/* Only two weights of each font are shipped: 400 (regular) and 600 (bold).
-   Browsers make headings and <b> 700 by default, so point them at 600. */
+/* Only weights 400 and 600 are shipped. Headings and <b> default to 700,
+   so they are set to 600. */
 h1,
 h2,
 h3,
@@ -159,7 +161,7 @@ strong {
 .sheet {
   max-width: 1380px;
   margin: 0 auto;
-  padding: 10px 16px 60px; /* 16px side gutter so nothing touches the screen edge */
+  padding: 10px 16px 60px; /* 16px side gutter */
 }
 
 footer {
@@ -169,7 +171,7 @@ footer {
   font-size: 12.5px;
   color: var(--muted);
   line-height: 1.8;
-  display: flex; /* source note left, Clear data right */
+  display: flex; /* disclaimer left, Clear data right */
   justify-content: space-between;
   align-items: center;
   gap: 16px;
@@ -180,7 +182,17 @@ footer p {
   margin: 0;
 }
 
-/* The one button that deletes data: red so it stands apart */
+/* Limited to a readable width. */
+.disclaimer {
+  max-width: 70ch;
+  line-height: 1.5;
+}
+
+.disclaimer b {
+  color: var(--ink);
+}
+
+/* The only button that deletes data. */
 .clear-data-btn {
   font: 600 13px var(--sans);
   min-height: 36px;
@@ -198,8 +210,7 @@ footer p {
 }
 
 /* ---------- Feedback bar (top of the page) ----------
-   Delete this block along with the bar's <div> in index.html once
-   testing is done. */
+   Temporary: delete with the bar's <div> in index.html when testing ends. */
 .dev-banner {
   padding: 8px 16px;
   background: var(--accent-soft);
@@ -220,18 +231,18 @@ footer p {
 
 /* ---------- Accessibility ---------- */
 
-/* A visible ring on whatever the keyboard is on, in every palette */
+/* Visible focus ring for keyboard users, in every palette. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* The heading the skip link lands on doesn't need a ring */
+/* The skip link's target heading needs no ring. */
 #req-title:focus {
   outline: none;
 }
 
-/* "Skip to the course list": hidden until it has keyboard focus */
+/* "Skip to the course list": hidden until focused. */
 .skip-link {
   position: absolute;
   top: 8px;
@@ -249,7 +260,7 @@ footer p {
   transform: none;
 }
 
-/* Visually hidden, still read by screen readers */
+/* Visually hidden; still read by screen readers. */
 .vh {
   position: absolute;
   width: 1px;
@@ -259,8 +270,8 @@ footer p {
   white-space: nowrap;
 }
 
-/* Less movement for people who ask their system for it: the title and
-   logo animations already check this; this catches every transition */
+/* Reduced motion: the title and logo animations check this themselves;
+   this covers every other transition. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

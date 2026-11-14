@@ -1,25 +1,21 @@
-// Draws the "Your plan" panel in index.html, apart from its heading row:
-//   #plan-headline  "14 requirements still need a semester"
-//   #req-bar        every requirement: done / in progress / planned
+// src/render/schedule.js — draws the "Your plan" panel below its heading row.
+//
+//   #plan-headline  "14 requirements needed"
+//   #req-bar        requirements done / in progress / planned
 //   #req-legend     the same counts in words
-//   #stat-*         credits earned, in progress and planned (for reference)
-//   #credit-min     "Credits: 162 of 128 minimum"
-//   #req-cats       "Requirement categories": a bar per audit section, a
-//                   tick box per unmet requirement to switch it off, and
-//                   the requirements no course can meet
-//   #plan-check     the plan's warnings, course by course
-//   #sched-grid     one card per semester, then a narrow '+' column after
-//                   the last one; only the last semester has a '−'
-//   #unassigned     required courses that still need a term
-// They're drawn together because they all change whenever a pick changes.
+//   #credit-min     "71 of 120 credits"
+//   #req-cats       a bar per audit section, a tick box per unmet
+//                   requirement, and requirements no course can meet
+//   #plan-check     plan warnings
+//   #sched-grid     one card per semester, then the '+' tile
+//   #unassigned     required courses with no term
 //
-// Progress is counted in requirements, not credits: with two majors, a
-// minor or extra courses, credits pile up that no requirement needs, so
-// a credit total says "done" long before the degree is.
-//
-// This file only DISPLAYS results. All math comes from logic/credits.js.
-// Text is always set with textContent (never innerHTML), so course data from
-// an imported file can never be run as HTML.
+// Progress is counted in requirements, not credits: extra majors, minors and
+// courses add credits no requirement needs.
+// Display only: values come from logic/credits.js and logic/planChecks.js;
+// events are handled in main.js.
+// Used by: main.js.
+// Text is set with textContent only.
 
 import {
   coursesInTerm,
@@ -29,6 +25,7 @@ import {
   creditSummary,
   categoryProgress,
   requirementTotals,
+  isInProgress,
   otherRequirements,
 } from "../logic/credits.js";
 import {
@@ -37,34 +34,36 @@ import {
   termWarning,
 } from "../logic/planChecks.js";
 import { creditText } from "../logic/courses.js";
-import {
-  termAfter,
-  termLabel,
-  isPastTerm,
-  MAX_TERMS,
-} from "../logic/courseText.js";
+import { termAfter, termLabel, MAX_TERMS } from "../logic/courseText.js";
 
-/** Redraws the whole plan panel (below its heading row) from the audit. */
-export function renderSchedule(audit) {
+/**
+ * Redraws the plan panel. `settings.warnOverload` controls the
+ * "Over 18 credits" warning.
+ */
+export function renderSchedule(audit, settings) {
+  // Credit-load warning for a semester; "" when switched off.
+  const loadWarning = (termKey) =>
+    settings.warnOverload ? termWarning(audit, termKey) : "";
+
   renderProgress(audit);
   renderCredits(audit);
   renderCategories(audit);
-  renderPlanCheck(audit);
-  renderTermCards(audit);
+  renderPlanCheck(audit, loadWarning);
+  renderTermCards(audit, loadWarning);
   renderUnassigned(audit);
 }
 
-// ---------- Progress: headline, bar and legend (in requirements) ----------
+// ---------- Progress: headline, bar, legend ----------
 function renderProgress(audit) {
   const t = requirementTotals(audit);
 
   const headline = document.getElementById("plan-headline");
   if (t.total === 0) {
-    headline.textContent = "No requirements to plan for";
+    headline.textContent = "No requirements";
   } else if (t.needed === 0) {
-    headline.textContent = "Every requirement has a semester";
+    headline.textContent = "All requirements planned";
   } else {
-    headline.textContent = `${t.needed} ${plural(t.needed, "requirement")} still need${t.needed === 1 ? "s" : ""} a semester`;
+    headline.textContent = `${t.needed} ${plural(t.needed, "requirement")} needed`;
   }
   headline.classList.toggle("is-complete", t.total > 0 && t.needed === 0);
 
@@ -98,38 +97,33 @@ function renderProgress(audit) {
   );
 }
 
-// ---------- Credits: tiles and the minimum-hours line ----------
+// ---------- Credits ----------
 function renderCredits(audit) {
   const { earned, inProgress, planned, required } = creditSummary(audit);
-  setText("stat-earned", earned);
-  setText("stat-progress", inProgress);
-  setText("stat-planned", planned);
 
-  // Degrees still have a minimum number of hours, so that's checked too:
-  // "Credits: 162 of 128 minimum ✓" or "... 28 more needed"
+  // "71 of 120 credits": earned, in progress and planned against the degree's
+  // minimum. Green once the minimum is reached.
   const line = document.getElementById("credit-min");
   const counted = earned + inProgress + planned;
   if (required == null) {
-    line.textContent = `Credits: ${counted} earned, in progress or planned`;
+    line.textContent = `${counted} credits`;
     line.className = "credit-min";
     return;
   }
-  const short = required - counted;
-  line.textContent =
-    `Credits: ${counted} of ${required} minimum` +
-    (short > 0 ? ` (${short} more needed)` : " ✓");
-  line.className = short > 0 ? "credit-min is-short" : "credit-min is-met";
+  line.textContent = `${counted} of ${required} credits`;
+  line.className = counted >= required ? "credit-min is-met" : "credit-min";
+  line.title = "Earned, in progress and planned, of the degree's minimum";
 }
 
 // ---------- Requirement categories ----------
-// A block per audit section: a tick box for the whole section (when it
-// has anything unmet), its name, "3 of 5" and a stacked bar; then a tick
-// box per unmet requirement with its progress. Ticked = planning for it.
+// Per audit section: a section tick box (if anything is unmet), its name,
+// "3 of 5" and a stacked bar; then a tick box per unmet requirement with
+// its progress. Ticked means planned for.
 function renderCategories(audit) {
   const others = otherRequirements(audit);
   const otherIds = new Set(others.map((r) => r.id));
-  // Sections holding only requirements no course can meet are left to the
-  // "Other requirements" block at the end
+  // Sections holding only requirements no course can meet go in "Other
+  // requirements".
   const groups = categoryProgress(audit).filter(
     (g) => g.total > 0 || g.off > 0 || g.done > 0,
   );
@@ -140,7 +134,7 @@ function renderCategories(audit) {
     requirementProgress(audit).map((p) => [p.id, progressNote(p)]),
   );
 
-  // Summary line: "2 of 9 complete · 1 switched off"
+  // Summary: "2 of 9 complete · 1 switched off"
   const complete = groups.filter((g) => g.total > 0 && g.done === g.total);
   const off = unmet.filter((r) => r.ignored).length;
   setText(
@@ -169,7 +163,7 @@ function renderCategories(audit) {
 
     block.append(head, stackedBar(g));
 
-    // One line per unmet requirement: [box] NAVIGATE    0/1 courses
+    // Per unmet requirement: [box] NAVIGATE    0/1 courses
     if (mine.length) {
       const list = document.createElement("ul");
       list.className = "cat-reqs";
@@ -179,7 +173,7 @@ function renderCategories(audit) {
         const box = document.createElement("input");
         box.type = "checkbox";
         box.checked = !req.ignored;
-        box.dataset.id = req.id; // read by the change listener in main.js
+        box.dataset.id = req.id; // read by main.js
         label.append(box, " " + req.title);
         item.append(label);
         const note = req.ignored ? "switched off" : choiceNotes.get(req.id);
@@ -206,9 +200,8 @@ function renderCategories(audit) {
   document.getElementById("req-categories").replaceChildren(...blocks);
 }
 
-// "Other requirements": unfinished ones no course can meet, such as
-// applying for graduation. Listed so they aren't forgotten, but left out
-// of every count, since planning courses can't change them.
+// "Other requirements": unfinished requirements no course can meet. Listed,
+// but excluded from every count.
 function otherBlock(others) {
   const block = document.createElement("div");
   block.className = "cat cat-other";
@@ -238,20 +231,19 @@ function otherBlock(others) {
   return block;
 }
 
-// A section's tick box: switches everything under it at once.
-// Ticked = all on; a dash = some on, some off.
+// Section tick box. Ticked: all on. Indeterminate: some off.
 function sectionBox(section, unmet) {
   const off = unmet.filter((r) => r.ignored).length;
   const box = document.createElement("input");
   box.type = "checkbox";
   box.checked = off === 0;
-  box.indeterminate = off > 0 && off < unmet.length; // the dash
-  box.dataset.section = section; // read by the change listener in main.js
+  box.indeterminate = off > 0 && off < unmet.length;
+  box.dataset.section = section; // read by main.js
   box.setAttribute("aria-label", `Plan for all of ${section}`);
   return box;
 }
 
-// A thin bar split into done / in progress / planned, out of the total
+// Bar split into done / in progress / planned, out of the total.
 function stackedBar(g) {
   const bar = document.createElement("div");
   bar.className = "bar";
@@ -275,8 +267,8 @@ function stackedBar(g) {
   return bar;
 }
 
-// "0/1 courses", "3/6 hrs", or "3/6 hrs, 0/1 courses". A rule ("any MATH
-// course 3100 or higher") lists no courses, so it says how to plan for it.
+// "0/1 courses", "3/6 hrs", or both. A rule lists no courses, so the note
+// says to add them.
 function progressNote(req) {
   const parts = [];
   if (req.needHours != null) {
@@ -290,11 +282,10 @@ function progressNote(req) {
 }
 
 // ---------- Warnings ----------
-// Every warning about the plan, one line each: "MATH 1350 (Fall 2027):
-// Usually offered Spring, not Fall". A count goes first, so the size of
-// the problem shows even when the list is long. Empty while nothing is
-// planned; one quiet "no problems" line once something is.
-function renderPlanCheck(audit) {
+// A dropdown: a count, then one line per warning, e.g. "MATH 1350 (Fall
+// 2027): Usually offered Spring, not Fall". Empty while nothing is planned;
+// "No problems found" when the plan is clean.
+function renderPlanCheck(audit, loadWarning) {
   const box = document.getElementById("plan-check");
   const planned = audit.plan.terms.flatMap((t) => coursesInTerm(audit, t.key));
   if (planned.length === 0) {
@@ -303,8 +294,8 @@ function renderPlanCheck(audit) {
     return;
   }
 
-  // Locked and registered courses keep their warnings to themselves
-  // (shownWarnings); the box just says how many it isn't showing
+  // Warnings on locked and registered courses are hidden (shownWarnings);
+  // only their count is shown.
   const lines = [];
   let hidden = 0;
   for (const course of planned) {
@@ -321,9 +312,14 @@ function renderPlanCheck(audit) {
     hidden === 0
       ? ""
       : `${hidden} more on locked or registered courses ${hidden === 1 ? "isn't" : "aren't"} shown.`;
+  // Credit-load lines get a "Hide" button, which switches the warning off.
+  const loadLines = new Set();
   for (const term of audit.plan.terms) {
-    const warning = termWarning(audit, term.key);
-    if (warning) lines.push(`${term.label}: ${warning}`);
+    const warning = loadWarning(term.key);
+    if (!warning) continue;
+    const text = `${term.label}: ${warning}`;
+    lines.push(text);
+    loadLines.add(text);
   }
 
   if (lines.length === 0) {
@@ -334,45 +330,89 @@ function renderPlanCheck(audit) {
     return;
   }
 
+  // The box is rebuilt on every change; keep the dropdown's open state.
+  const wasOpen = box.querySelector("details")?.open ?? false;
   box.className = "plan-check has-problems";
+  const details = document.createElement("details");
+  details.open = wasOpen;
+
+  const summary = document.createElement("summary");
   const count = document.createElement("span");
   count.className = "pc-count";
   count.textContent = lines.length;
-  const body = document.createElement("div");
   const title = document.createElement("b");
-  title.textContent = `${lines.length} thing${lines.length === 1 ? "" : "s"} to check`;
+  title.textContent = `${plural(lines.length, "thing")} to check`;
+  summary.append(count, title, chevron());
+
   const list = document.createElement("ul");
   list.append(
     ...lines.map((text) => {
       const item = document.createElement("li");
       item.textContent = text;
+      if (loadLines.has(text)) item.append(" ", hideLoadButton());
       return item;
     }),
   );
-  body.append(title, list);
+  details.append(summary, list);
   if (hiddenNote) {
     const note = document.createElement("small");
     note.className = "pc-hidden";
     note.textContent = hiddenNote;
-    body.append(note);
+    details.append(note);
   }
-  box.replaceChildren(count, body);
+  box.replaceChildren(details);
 }
 
-// ---------- Small helpers ----------
+// ---------- Helpers ----------
 const plural = (n, word) => (n === 1 ? word : `${word}s`);
 const percent = (n, whole) => `${Math.min(100, (n / whole) * 100)}%`;
+
+// "Hide" button for a credit-load warning. Click handled in main.js.
+function hideLoadButton() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pc-hide";
+  button.textContent = "Hide";
+  button.title =
+    "Stop warning about heavy semesters (turn back on in Settings)";
+  button.setAttribute("aria-label", "Hide credit-load warnings");
+  return button;
+}
+
+// Down arrow for a dropdown heading (.chev in schedule.css).
+function chevron() {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  const attributes = {
+    class: "chev",
+    width: 14,
+    height: 14,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": 2.6,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true",
+  };
+  for (const [name, value] of Object.entries(attributes)) {
+    svg.setAttribute(name, value);
+  }
+  const path = document.createElementNS(NS, "path");
+  path.setAttribute("d", "m6 9 6 6 6-6");
+  svg.append(path);
+  return svg;
+}
 
 function setText(id, text) {
   document.getElementById(id).textContent = text;
 }
 
 // ---------- Semesters ----------
-// One card per semester, in a 2-column grid. Only the LAST semester can be
-// removed (its '−' sits in its heading), and a new one is only ever added
-// after it: one narrow '+' column at the end. (state.js still accepts any term, so older saved plans with a
-// gap in the middle keep working.)
-function renderTermCards(audit) {
+// One card per semester, three per row (Fall, Spring, Summer), so each row is
+// an academic year; seasonClass() sets the column. Only the last semester
+// has a '−'; the '+' tile follows it.
+function renderTermCards(audit, loadWarning) {
   const grid = document.getElementById("sched-grid");
   const cardTemplate = document.getElementById("term-card-tpl");
   const courseTemplate = document.getElementById("term-course-tpl");
@@ -382,28 +422,29 @@ function renderTermCards(audit) {
     const items = coursesInTerm(audit, term.key);
     const isLast = i === terms.length - 1;
 
-    // Fresh copy of the card markup from <template id="term-card-tpl">
+    // Copy of <template id="term-card-tpl">.
     const fragment = cardTemplate.content.cloneNode(true);
     const card = fragment.querySelector(".term-card");
     card.dataset.term = term.key;
+    card.classList.add(seasonClass(term.key));
     card.querySelector(".term-name").textContent = term.label;
     card.querySelector(".term-cr").textContent = `${sumCredits(items)} cr`;
 
-    // Too many credits? Say so under the heading
+    // Credit-load warning under the heading.
     const load = card.querySelector(".term-warn");
-    const loadWarning = termWarning(audit, term.key);
-    if (loadWarning) {
-      load.textContent = loadWarning;
+    const tooMuch = loadWarning(term.key);
+    if (tooMuch) {
+      load.textContent = tooMuch;
     } else {
       load.remove();
     }
 
-    // The '−' button, on the last semester only. It can't be used on the
-    // only semester left, or on one holding a locked course.
+    // '−' on the last semester only. Disabled for the only semester, or one
+    // holding a locked course.
     const remove = card.querySelector(".term-remove");
     if (isLast) {
       card.classList.add("is-last");
-      remove.dataset.term = term.key; // read by the click listener in main.js
+      remove.dataset.term = term.key; // read by main.js
       remove.setAttribute("aria-label", `Remove ${term.label}`);
       const isOnlyTerm = terms.length <= 1;
       const hasLocked = items.some((course) => course.locked);
@@ -434,31 +475,38 @@ function renderTermCards(audit) {
   grid.replaceChildren(...cards, addBlock(termAfter(terms.at(-1).key), terms));
 }
 
-// One course inside a semester card: [grip or padlock] CODE  △  3
+// "FA27" -> "season-fa", the card's grid column (.season-* in schedule.css).
+const seasonClass = (termKey) => `season-${termKey.slice(0, 2).toLowerCase()}`;
+
+// One course in a semester card: [grip or padlock] CODE  △  3
 function courseRow(template, audit, course) {
   const fragment = template.content.cloneNode(true);
   const item = fragment.querySelector("li");
-  const isRegistered = course.status === "registered";
-  const locked = course.locked || isRegistered;
+  // Being taken this term: fixed in its semester regardless of its lock.
+  const takingNow = isInProgress(course);
+  const locked = course.locked || takingNow;
   const term = termLabel(course.plannedTerm);
 
   item.classList.toggle("is-locked", locked);
-  item.classList.toggle("is-registered", isRegistered);
-  // Only unlocked courses can be dragged to another semester (ui/dragDrop.js)
+  item.classList.toggle("is-in-progress", takingNow);
+  // Only unlocked courses can be dragged (ui/dragDrop.js).
   item.classList.toggle("is-movable", !locked);
   item.dataset.id = course.id;
   fragment.querySelector(".course-code").textContent = course.code;
-  fragment.querySelector(".course-cr").textContent = creditText(course);
+  // Number only; the card heading carries "cr".
+  fragment.querySelector(".course-cr").textContent = creditText(course).replace(
+    " cr",
+    "",
+  );
 
-  // The left button locks and unlocks. A registered course is already
-  // fixed in its term, so its padlock can't be opened.
+  // Lock button. Disabled for a course being taken now.
   const lock = fragment.querySelector(".tc-lock");
-  lock.dataset.id = course.id; // read by the click listener in main.js
+  lock.dataset.id = course.id; // read by main.js
   lock.setAttribute("aria-pressed", locked);
-  if (isRegistered) {
+  if (takingNow) {
     lock.disabled = true;
-    lock.setAttribute("aria-label", `${course.code}: registered in ${term}`);
-    lock.title = "Registered: it stays in this semester";
+    lock.setAttribute("aria-label", `${course.code}: taking it in ${term}`);
+    lock.title = "You're taking it now: it stays in this semester";
   } else {
     const verb = locked ? "Unlock" : "Lock";
     lock.setAttribute("aria-label", `${verb} ${course.code} in ${term}`);
@@ -467,8 +515,7 @@ function courseRow(template, audit, course) {
       : "Click to lock it in this semester";
   }
 
-  // Planned before its prerequisites, or in a term it isn't offered: a
-  // warning mark, with the reason on hover
+  // Warning mark, with the reasons in the tooltip.
   const warnings = shownWarnings(audit, course); // none once locked
   item.classList.toggle("has-warning", warnings.length > 0);
   if (warnings.length) {
@@ -479,15 +526,14 @@ function courseRow(template, audit, course) {
   return fragment;
 }
 
-// The narrow '+' column after the last semester: "+ Summer 2028"
+// '+' tile in the cell after the last semester: "+ Summer 2028".
 function addBlock(key, terms) {
   const label = termLabel(key);
   const isFull = terms.length >= MAX_TERMS;
   const add = document.createElement("button");
   add.type = "button";
-  add.className = "term-add";
-  add.dataset.term = key; // read by the click listener in main.js
-  add.disabled = isFull || isPastTerm(key);
+  add.className = `term-add ${seasonClass(key)}`;
+  add.disabled = isFull;
 
   const plus = document.createElement("span");
   plus.className = "term-add-plus";

@@ -1,11 +1,10 @@
-// bookmarklet/scrape/student.js — the audit's header and overall totals.
+// bookmarklet/scrape/student.js — reads the audit's header and overall totals.
 //
-//   name / degree     the two headings at the top (.h5, then h1.h5)
-//   header fields     "Prepared On <br> 11/05/2026 01:32 PM" style blocks
-//   totals            the sub-requirements for the degree's minimum hours
-//                     ("A minimum of 128 … hours") and the overall GPA:
-//                     picked out by src/logic/auditBuild.js, which the PDF
-//                     import shares
+//   name, degree    the two headings at the top (.h5, then h1.h5)
+//   header fields   "Prepared On <br> 11/05/2026 01:32 PM" blocks
+//   totals          degree hours and overall GPA, selected by
+//                   src/logic/auditBuild.js (shared with the PDF import)
+// Used by: collector.js.
 
 import {
   auditRoot,
@@ -16,7 +15,7 @@ import {
 } from "./dom.js";
 import { studentTotals } from "../../src/logic/auditBuild.js";
 
-/** The audit page -> the `student` object (see the Audit JSON Data Guide). */
+/** Audit page -> the `student` object (Audit JSON Data Guide). */
 export function scrapeStudent(doc) {
   const degree = doc.querySelector("h1.h5");
   const field = headerFields(doc);
@@ -49,7 +48,7 @@ export function scrapeStudent(doc) {
   };
 }
 
-// The header's "Label <br> value" blocks -> { "Prepared On": "11/05/...", ... }
+// Header "Label <br> value" blocks -> { "Prepared On": "11/05/...", ... }.
 function headerFields(doc) {
   const fields = {};
   for (const b of doc.querySelectorAll(".col-auto > b")) {

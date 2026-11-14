@@ -1,13 +1,12 @@
-// Tests for logic/prereqs.js: warning when a course is planned before
-// what it needs. Testing only, not a site element.
+// Tests for src/logic/prereqs.js: prerequisite and corequisite checks.
 
 import { describe, it, expect } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { parseAudit } from "../logic/parser.js";
 import { prereqProblems, prereqWarning, unlocks } from "../logic/prereqs.js";
 import { makeRegistered } from "./helpers.js";
 
-// The sample, with CS 4500 given simple needs for these tests:
+// The test audit, with CS 4500 given simple requirements:
 //   prereqs: (CS 3300 or ECE 3020) AND MATH 3400      coreq: ECE 3210
 // CS 3300, ECE 3020 and ECE 3210 are unplaced; MATH 3400 is completed.
 function audit() {
@@ -76,7 +75,7 @@ describe("prereqProblems", () => {
     expect(problems(a)).toEqual([]);
 
     a.courses.cs4500.plannedTerm = "FA27";
-    a.courses.cs4500.status = "registered"; // the university let them in
+    a.courses.cs4500.status = "registered"; // registered: already admitted
     expect(problems(a)).toEqual([]);
 
     a.courses.cs4500.status = "needed";
@@ -91,7 +90,7 @@ describe("unlocks", () => {
     const a = audit(); // CS 4500 needs CS 3300 or ECE 3020, and ECE 3210
     expect(unlocks(a, a.courses.cs3300)).toEqual(["CS 4500"]);
     expect(unlocks(a, a.courses.ece3210)).toEqual(["CS 4500"]); // a coreq
-    // The sample's own details: ECE 3020 needs ECE 2050
+    // From the test audit's own details: ECE 3020 needs ECE 2050.
     expect(unlocks(a, a.courses.ece2050)).toEqual(["ECE 3020"]);
     expect(unlocks(a, a.courses.cs4500)).toEqual([]);
   });

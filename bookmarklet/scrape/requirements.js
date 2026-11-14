@@ -1,13 +1,12 @@
-// bookmarklet/scrape/requirements.js — the audit's requirements.
+// bookmarklet/scrape/requirements.js — reads the audit's requirements.
 //
-// The page nests them two levels deep; our format flattens them:
+// The page nests two levels; our format flattens them:
 //   .requirement     "Computer Engineering - Core"   -> `section`
-//   .subrequirement  "CS 4500 Operating Systems I"  -> one requirement
+//   .subrequirement  "CS 4500 Operating Systems I"   -> one requirement
 //
-// This file only READS the page (dom.js's readSubrequirement gives each
-// sub-requirement's title lines, status, totals, applied courses and
-// SELECT FROM options). Turning those into requirements is done by
-// src/logic/auditBuild.js, which the PDF import shares.
+// Reads the page only (readSubrequirement in dom.js); src/logic/auditBuild.js
+// builds the requirements, shared with the PDF import.
+// Used by: collector.js.
 
 import {
   auditRoot,
@@ -17,10 +16,10 @@ import {
 } from "./dom.js";
 import { buildRequirements } from "../../src/logic/auditBuild.js";
 
-// Blocks that aren't requirements to plan for
+// Blocks that are not requirements.
 const SKIP = new Set(["CRSHIST", "LEGEND", "WORKN/A"]);
 
-/** The audit page -> the `requirements` array. */
+/** Audit page -> the `requirements` array. */
 export function scrapeRequirements(doc) {
   const blocks = requirementBlocks(auditRoot(doc))
     .filter((block) => !SKIP.has(block.getAttribute("rname")))

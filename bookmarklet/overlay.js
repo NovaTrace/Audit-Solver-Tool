@@ -1,9 +1,8 @@
-// bookmarklet/overlay.js — the small panel the bookmarklet shows on the
-// audit page: progress, errors, and the Send / Download / Copy buttons.
+// bookmarklet/overlay.js — the panel the bookmarklet shows on the audit page:
+// progress, errors, and the Send / Download / Copy buttons.
 //
-// It lives inside a Shadow DOM, a private corner of the page whose styles
-// can't leak in or out, so the audit site's CSS can't break it and ours
-// can't break the audit page.
+// Rendered in a Shadow DOM, so styles don't leak between it and the audit page.
+// Used by: collector.js.
 
 const STYLE = `
   .box { position: fixed; top: 16px; right: 16px; z-index: 2147483647;
@@ -30,7 +29,7 @@ const STYLE = `
     overflow-y: auto; font: 12px ui-monospace, monospace; }
 `;
 
-/** Show the panel. Returns { status, ready, error, close }. */
+/** Shows the panel. Returns { status, ready, error, close }. */
 export function showOverlay() {
   const host = document.createElement("div");
   host.id = "audit-solver-overlay";
@@ -53,7 +52,7 @@ export function showOverlay() {
   const close = () => host.remove();
   root.querySelector(".close").addEventListener("click", close);
 
-  // Our own text only ever goes in through textContent
+  // Text is set with textContent only.
   const say = (text, isError = false) => {
     msg.textContent = text;
     msg.classList.toggle("error", isError);
@@ -64,9 +63,9 @@ export function showOverlay() {
     error: (text) => say(text, true),
     close,
     /**
-     * Show the finished buttons. Each action is { label, run, main? }.
-     * `run` is handed say(text, isError): isError true shows the text red.
-     * `list` (optional) goes behind a "See more" toggle under the message.
+     * Shows the finished buttons. Each action is { label, run, main? }; `run`
+     * receives say(text, isError). `list` (optional) goes under a "See more"
+     * toggle.
      */
     ready(text, actions, list = []) {
       say(text);

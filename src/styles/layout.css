@@ -1,6 +1,9 @@
-/* ---------- Header: one row ----------
+/* src/styles/layout.css — header, get-started panel, the two-column
+   layout, the plan panel's frame, and the Settings dialog. */
+
+/* ---------- Header ----------
    logo + title | student | catalog year, audit date | Import, Export, help.
-   Wraps onto more rows on narrow screens. */
+   Wraps onto more rows when narrow. */
 .titleblock {
   display: flex;
   flex-wrap: wrap;
@@ -11,7 +14,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-/* ---------- Title block Pannel ---------- */
+/* ---------- Title block ---------- */
 .tb-left h1 {
   font-family: var(--mono);
   font-size: 26px;
@@ -22,16 +25,16 @@
 }
 
 .logo {
-  margin: 0; /* it's the page's <h1>: no heading spacing or size */
+  margin: 0; /* the page's <h1>: no heading margin */
   font-size: inherit;
   display: flex;
   justify-content: center;
-  align-items: center; /* don't stretch the title to the box's height */
-  gap: 12px; /* space between the logo mark and the title */
-  min-width: 0; /* let the box shrink on a narrow screen */
+  align-items: center; /* no stretching to the box's height */
+  gap: 12px; /* between the logo mark and the title */
+  min-width: 0; /* lets the box shrink when narrow */
 }
 
-/* Logo mark left of the title. Colors come from the --logo-* variables in base.css. */
+/* Logo mark. Colors: the --logo-* variables in base.css. */
 .logo-mark {
   width: 56px;
   height: 56px;
@@ -45,8 +48,8 @@
 }
 .logo-strip {
   fill: var(--logo-accent);
-  /* Slides in from the left while the title unscrambles (same 4 s as the
-     title's duration="4000"), then stays at its offset resting spot. */
+  /* Slides in while the title assembles (4 s, matching the title's
+     duration="4000"), then stays at its offset. */
   animation: logo-strip-in 1.5s cubic-bezier(0.15, 1.65, 0.3, 1) 1s both;
 }
 @keyframes logo-strip-in {
@@ -67,15 +70,15 @@
   }
 }
 
-/* Animated "Audit Solver" title (src/ui/titleAnimation.js).
-   Height follows the width automatically; color follows `color`. */
+/* Animated title (src/ui/titleAnimation.js). Height follows width; color
+   follows `color`. */
 .title-anim {
   width: 260px;
   max-width: 100%;
   color: var(--ink);
 }
 
-/* Student: name, then degree and programs. Takes the spare width. */
+/* Student: name, then majors and minors. Takes the spare width. */
 .tb-left {
   flex: 1 1 260px;
   min-width: 0;
@@ -98,7 +101,7 @@
   color: var(--muted);
 }
 
-/* Catalog year and audit date: small label over the value */
+/* Catalog year and audit date: label above value. */
 .tb-facts {
   display: flex;
   gap: 24px;
@@ -118,7 +121,7 @@
   color: var(--ink);
 }
 
-/* Import audit (primary), Export plan, and the help popup */
+/* Import, Export, help popup, Settings. */
 .tb-btn {
   display: flex;
   align-items: center;
@@ -153,9 +156,9 @@
   border-color: var(--accent);
 }
 
-/* ---------- Get started panel (loader) ----------
-   A <details>: <summary> is the always-visible heading row with Show/Hide;
-   the three steps sit in one row underneath. */
+/* ---------- Get-started panel ----------
+   A <details>: the summary is the heading row with Show / Hide; the three
+   steps sit in one row below. */
 .get-started {
   margin: 0 0 18px;
   padding: 14px 18px;
@@ -169,11 +172,11 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  list-style: none; /* hide the browser's own triangle (Firefox) */
+  list-style: none; /* hide the default marker (Firefox) */
 }
 
 .get-started summary::-webkit-details-marker {
-  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+  display: none; /* hide the default marker (Chrome, Safari) */
 }
 
 .get-started h2 {
@@ -182,7 +185,7 @@
   color: var(--ink);
 }
 
-/* "Hide ^" when open, "Show v" when closed, pushed to the right */
+/* "Hide ^" when open, "Show v" when closed. */
 .gs-toggle {
   margin-left: auto;
   display: flex;
@@ -214,7 +217,7 @@
   color: var(--ink);
 }
 
-/* Collapsed: a slimmer bar */
+/* Collapsed: a slimmer bar. */
 .get-started:not([open]) {
   padding: 10px 18px;
 }
@@ -238,7 +241,7 @@
   font-size: 14px;
 }
 
-/* Numbered circles in the accent color */
+/* Numbered circles in the accent color. */
 .gs-steps li::before {
   content: counter(step);
   flex: 0 0 24px;
@@ -268,7 +271,7 @@
   cursor: pointer;
 }
 
-/* The bookmarklet link: a dashed "drag me" box */
+/* Bookmarklet link: a dashed "drag me" box. */
 .bookmarklet {
   display: inline-flex;
   align-items: center;
@@ -287,20 +290,19 @@
   background: var(--accent-soft);
 }
 
-/* ---------- Two columns: course list | your plan ----------
-   The list takes twice the width of the plan (2:1). The two boxes sit side
-   by side while there's room for both minimums (560px + 360px); below that
-   the plan wraps under the list at full width. */
+/* ---------- Two columns: course list | plan ----------
+   Side by side while both minimums fit (560px + 360px); otherwise the plan
+   wraps below the list at full width. */
 .cols {
   display: flex;
   flex-wrap: wrap;
   gap: 28px;
-  align-items: flex-start; /* each column only as tall as its content */
+  align-items: flex-start; /* each column as tall as its content */
 }
 
 .list-col {
   flex: 2 1 560px;
-  min-width: 0; /* lets long course text wrap instead of widening the column */
+  min-width: 0; /* long course text wraps instead of widening the column */
 }
 
 .col-head {
@@ -318,7 +320,9 @@
 }
 
 .plan {
-  flex: 1 1 360px;
+  /* Takes the larger share of spare width, up to its max-width, so three
+     semester cards fit side by side on a laptop. */
+  flex: 3 1 360px;
   min-width: 0;
   padding: 18px;
   border-radius: 8px;
@@ -326,9 +330,9 @@
   border: 1px solid var(--line);
 }
 
-/* Side by side: the plan stays in view while the list scrolls. If it's
-   taller than the window, it scrolls on its own. */
-/* "Jump to your plan" link: only useful when the plan is below the list */
+/* Side by side: the plan stays in view while the list scrolls, and scrolls
+   on its own if taller than the window. */
+/* "Jump to your plan" link: shown only when the plan is below the list. */
 .jump-plan {
   font-size: 14px;
   font-weight: 600;
@@ -343,19 +347,18 @@
   .plan {
     position: sticky;
     top: 16px;
-    max-width: 460px;
+    max-width: 520px;
     max-height: calc(100vh - 32px);
     overflow-y: auto;
-    overflow-x: hidden; /* never scroll sideways, e.g. while a popup is open */
+    overflow-x: hidden; /* no sideways scroll, e.g. while a popup is open */
     scrollbar-width: thin;
   }
 }
 
-/* (The plan panel is lifted above the dimming while its own popup is open
-   by .is-spotlit in popups.css.) */
+/* (.is-spotlit in popups.css lifts the plan panel above the dimming while
+   its popup is open.) */
 
-/* The header's help popup opens downward, below its button. Opening
-   upward (the default) put it above the top of the page. */
+/* The header's help popup opens downward; upward would leave the page. */
 .tb-btn .info-text {
   bottom: auto;
   top: 150%;
@@ -363,73 +366,13 @@
   max-width: min(420px, 90vw);
 }
 
-/* The plan panel scrolls, which would cut off a popup that sticks out of
-   it, so popups in the panel open downward inside it instead */
+/* The plan panel clips overflow, so its popups open downward inside it. */
 .plan .info-text {
   bottom: auto;
   top: 150%;
   left: 0;
   right: auto;
   max-width: min(320px, 80vw);
-}
-
-/* ---------- Stat tiles (in the plan panel) ---------- */
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 10px;
-}
-
-.stat {
-  flex: 1 1 70px;
-  display: flex;
-  flex-direction: column-reverse;
-  background: var(--raised);
-  border: 1px solid var(--line2);
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.stat dd {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.stat dt {
-  margin-top: 2px;
-  font-size: 11.5px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* Disclaimer: one slim line under the loader so it doesn't push the
-   list and plan down the page */
-.note {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
-  margin: 0 0 18px;
-  padding: 8px 14px;
-  border: 1px dashed var(--line2);
-  border-radius: 8px;
-}
-
-.note h2 {
-  margin: 0;
-  font: 600 13px var(--sans);
-  color: var(--ink);
-}
-
-.note p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
 }
 
 .reset-btn {
@@ -449,7 +392,7 @@
   border-radius: 10px;
 }
 
-/* "Your plan" heading row: title, help, save status, Reset plan */
+/* "Your plan" heading row: title, help, save status, Reset plan. */
 .section-header {
   display: flex;
   align-items: center;
@@ -466,7 +409,7 @@
   color: var(--ink);
 }
 
-/* "Saved 3:42 PM", with a small green dot, pushed to the right */
+/* "Saved 3:42 PM" with a small dot, pushed right. */
 .save-status {
   margin-left: auto;
   display: inline-flex;
@@ -486,14 +429,14 @@
 
 /* ---------- Narrow screens ---------- */
 @media (max-width: 760px) {
-  /* The header stacks, so the divider beside the student info goes */
+  /* The header stacks, so the divider beside the student info is removed. */
   .tb-left {
     padding-left: 0;
     border-left: none;
   }
 }
 
-/* ---------- Settings (gear button + dialog) ---------- */
+/* ---------- Settings (gear button, dialog) ---------- */
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -526,8 +469,8 @@
   background: rgba(0, 0, 0, 0.45);
 }
 
-/* Opening: grows out of the Settings button (ui/settings.js sets where
-   it grows from). Turned off for reduced motion by base.css. */
+/* Opening: grows out of the Settings button (origin set by
+   src/ui/settings.js). Disabled for reduced motion in base.css. */
 .settings.is-growing {
   animation: settings-grow 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -549,7 +492,7 @@
   }
 }
 
-/* Closing: the same thing in reverse, shrinking back into the button */
+/* Closing: the same animation reversed. */
 .settings.is-closing {
   animation: settings-shrink 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
@@ -582,6 +525,13 @@
   margin-bottom: 8px;
 }
 
+/* Close button, top right. */
+.settings-close {
+  width: 32px;
+  height: 32px;
+  border-color: transparent;
+}
+
 .settings h2 {
   margin: 0;
   font: 600 20px var(--sans);
@@ -600,17 +550,20 @@
   font-size: 14px;
 }
 
-/* Palette choices: radio, three color dots, name + note */
+/* Palette choices: radio, three color dots, name and note. */
+/* Two columns. */
 .pal-choices {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
 .pal-choice {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 8px;
   border: 1px solid var(--line2);
   border-radius: 6px;
   cursor: pointer;
@@ -627,13 +580,17 @@
   line-height: 1.3;
 }
 
-.pal-choice small {
-  color: var(--muted);
-  font-size: 12px;
+.pal-choice b {
+  font-size: 13.5px;
 }
 
-/* The dots take the colors of the palette named in data-pal (the
-   palette blocks in base.css match any element, not only <html>) */
+.pal-choice small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* Dots take the colors of the palette in data-pal (the palette blocks in
+   base.css match any element). */
 .pal-swatch {
   display: flex;
   flex-shrink: 0;

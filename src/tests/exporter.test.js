@@ -1,8 +1,8 @@
-// Tests for ui/exporter.js: the exported file, and that it round-trips
-// back through parseAudit().
+// Tests for src/ui/exporter.js: the exported file, and its round trip through
+// parseAudit().
 
 import { describe, it, expect } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { parseAudit } from "../logic/parser.js";
 import { exportFile } from "../ui/exporter.js";
 
@@ -29,7 +29,7 @@ describe("exportFile", () => {
     planned.courses.cs4500.locked = true;
     const file = JSON.parse(exportFile(planned).text);
 
-    // Import it over a state with a different pick for the same course
+    // Import over a state with a different pick for the same course.
     const current = audit();
     current.courses.cs4500.plannedTerm = "SP27";
     const restored = parseAudit(file, current);

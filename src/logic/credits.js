@@ -1,74 +1,79 @@
-// Pure calculation helpers for the schedule and stats.
-// They all read the audit object from state.js and never change it.
-// No `document` here, so these can be tested with Vitest (see credits.test.js).
+// src/logic/credits.js — credit totals and requirement progress.
+//
+// Reads the audit object; never changes it.
+// Used by: render/schedule.js, render/courseList.js, logic/courses.js,
+// logic/planChecks.js, main.js.
+// Pure functions, no DOM. Tests: credits.test.js.
 
-import { idFromCode } from "./courseText.js";
+import {
+  idFromCode,
+  termIndex,
+  termForDate,
+  isTermKey,
+  registeredTerm,
+} from "./courseText.js";
 
-/** A course's credit hours for adding up (unknown counts as 0). */
+/** A course's credit hours; unknown counts as 0. */
 export function creditsOf(course) {
   return course.credits ?? 0;
 }
 
-/** Total credit hours for a list of courses. */
+/** Total credit hours of a list of courses. */
 export function sumCredits(courseList) {
   return courseList.reduce((sum, c) => sum + creditsOf(c), 0);
 }
 
-/** Courses planned in the given term, sorted by code. */
+/**
+ * True for a course being taken now: registered for the current term, or an
+ * earlier one on an old audit.
+ * Goes by the registered term, not the plan. A course registered for a later
+ * term counts as planned and can still be moved.
+ */
+export function isInProgress(course, now = new Date()) {
+  if (course.status !== "registered") return false;
+  const term = registeredTerm(course);
+  if (!isTermKey(term)) return true; // registered term unknown
+  return termIndex(term) <= termIndex(termForDate(now));
+}
+
+/** Courses planned in a term, sorted by code. */
 export function coursesInTerm(audit, termKey) {
   return Object.values(audit.courses)
     .filter((c) => c.plannedTerm === termKey)
     .sort((a, b) => a.code.localeCompare(b.code));
 }
 
-/** Credit hours planned across all of the plan's terms. */
-export function totalPlannedCredits(audit) {
-  const termKeys = new Set(audit.plan.terms.map((t) => t.key));
-  return sumCredits(
-    Object.values(audit.courses).filter((c) => termKeys.has(c.plannedTerm)),
-  );
-}
-
 /**
- * True for a requirement the student is still planning for: the audit
- * says it isn't finished, and the student hasn't switched it off.
+ * True for a requirement still being planned for: unfinished and not switched
+ * off.
  */
 export function isOpen(req) {
   return req.status !== "complete" && !req.ignored;
 }
 
-// A requirement where the student picks which course to take: a pool, a
-// rule, or an either/or course requirement ("ECE 4480 OR CS 4200"). A
-// course requirement with ONE option isn't a choice: that course has status
-// "needed" and is listed by unplacedRequired instead.
+// True for a requirement where the student picks the course: a pool, a rule,
+// or an either/or course requirement. A single-option course requirement is
+// not a choice; unplacedRequired() lists those.
 function isChoice(req) {
   if (req.type === "pool") return true;
-  if (req.type === "rule") return req.needHours > 0; // not e.g. a GPA rule
+  if (req.type === "rule") return req.needHours > 0; // excludes e.g. GPA rules
   return req.type === "course" && req.options.length > 1;
 }
 
 /**
- * Progress on every requirement that still needs hours or courses and
- * lets the student choose (pools, rules and either/or courses).
- * Requirements the audit marks "in-progress" are left out: the audit
- * assumes registered courses will be passed, so those are already covered.
- * Returns one object per requirement:
- *   { id, type, title, needHours, needCourses, plannedHours, plannedCourses,
- *     done, ignored }
- * A switched-off requirement stays in the list (`ignored: true`), so its
- * badge can still be shown and switched back on.
- *
- * "Planned" counts the requirement's options the student has put in a term
- * that the audit hasn't already applied. A rule ("any MATH course 3100 or
- * higher") has no options from the audit; the courses the student adds by
- * hand for it become its options, so they count the same way.
+ * Progress on each unfinished requirement the student chooses courses for.
+ * Returns [{ id, type, title, needHours, needCourses, plannedHours,
+ * plannedCourses, done, ignored }].
+ * - "Planned" counts options placed in a term that the audit hasn't applied.
+ * - Requirements the audit marks "in-progress" are excluded.
+ * - Switched-off requirements are included with `ignored: true`.
  */
 export function requirementProgress(audit) {
   return audit.requirements
     .filter((r) => r.status === "needs")
     .filter(isChoice)
     .map((r) => {
-      // An either/or needs one of its courses, even if the audit gave no count
+      // An either/or needs one course even when the audit gives no count.
       const needCourses =
         r.type === "course" ? (r.needCourses ?? 1) : r.needCourses;
       const applied = new Set(r.applied.map((a) => a.code));
@@ -94,9 +99,8 @@ export function requirementProgress(audit) {
 }
 
 /**
- * Specific required courses (status "needed") that have no term yet. A
- * course only counts while a requirement that lists it is still open: if
- * the student switched all of those off, it isn't required any more.
+ * Required courses (status "needed") with no term, where at least one
+ * requirement listing them is still open.
  */
 export function unplacedRequired(audit) {
   const open = new Set(audit.requirements.filter(isOpen).map((r) => r.id));
@@ -107,17 +111,13 @@ export function unplacedRequired(audit) {
 }
 
 /**
- * Credit totals for the plan panel's headline and progress bar:
- *   { earned, inProgress, planned, required, left }
- * - earned:     hours the audit says are done
- * - inProgress: hours registered this term (the audit's figure, or the
- *               registered courses added up if that's larger)
- * - planned:    hours placed in a semester that aren't registered yet
- * - required:   hours the degree needs, or null if the audit doesn't say
- * - left:       required hours not yet earned, in progress or planned
- *               (never below 0), or null when `required` is unknown
+ * Credit totals for the plan panel: { earned, inProgress, planned, required }.
+ * - earned:     hours the audit counts as done
+ * - inProgress: hours being taken this term (isInProgress)
+ * - planned:    hours placed in a later semester, registered or not
+ * - required:   the degree's minimum hours, or null
  */
-export function creditSummary(audit) {
+export function creditSummary(audit, now = new Date()) {
   const { student } = audit;
   const termKeys = new Set(audit.plan.terms.map((t) => t.key));
   const inPlan = Object.values(audit.courses).filter((c) =>
@@ -125,36 +125,35 @@ export function creditSummary(audit) {
   );
   const registered = inPlan.filter((c) => c.status === "registered");
 
+  const current = inPlan.filter((c) => isInProgress(c, now));
+
   const earned = student.hoursEarned ?? 0;
-  const inProgress = Math.max(
-    student.hoursInProgress ?? 0,
-    sumCredits(registered),
+  // The audit's in-progress figure covers every registered course. Any excess
+  // over the registered courses in the plan still counts.
+  const unlisted = Math.max(
+    0,
+    (student.hoursInProgress ?? 0) - sumCredits(registered),
   );
-  const planned = sumCredits(inPlan.filter((c) => c.status !== "registered"));
+  const inProgress = sumCredits(current) + unlisted;
+  const planned = sumCredits(inPlan.filter((c) => !isInProgress(c, now)));
   const required = student.hoursRequired ?? null;
-  const left =
-    required == null
-      ? null
-      : Math.max(0, required - earned - inProgress - planned);
-  return { earned, inProgress, planned, required, left };
+  return { earned, inProgress, planned, required };
 }
 
 /**
- * Progress per audit section, counted in requirements, for the
- * "Requirement categories" bars. One object per section, in audit order:
- *   { section, total, done, inProgress, planned, needed, off, other }
- * Each requirement lands in exactly one count:
- * - done:       the audit says it's complete
- * - off:        the student switched it off
- * - other:      no course can satisfy it (e.g. "Apply for graduation", a
- *               GPA rule), so it can't be planned here
- * - inProgress: the audit says in progress, or registered courses cover it
- * - planned:    courses placed in semesters cover it
- * - needed:     none of the above yet
- * `total` leaves out `off` and `other`: it's what planning can move.
+ * Requirement counts per audit section, in audit order:
+ * [{ section, total, done, inProgress, planned, needed, off, other }].
+ * Each requirement falls in exactly one count:
+ * - done:       complete on the audit
+ * - off:        switched off by the student
+ * - other:      no course can satisfy it (e.g. a GPA rule)
+ * - inProgress: covered by courses being taken this term
+ * - planned:    covered by courses in later semesters
+ * - needed:     none of the above
+ * `total` excludes `off` and `other`.
  */
-export function categoryProgress(audit) {
-  const states = requirementStates(audit);
+export function categoryProgress(audit, now = new Date()) {
+  const states = requirementStates(audit, now);
   const sections = [...new Set(audit.requirements.map((r) => r.section))];
 
   return sections.map((section) => {
@@ -173,55 +172,57 @@ export function categoryProgress(audit) {
   });
 }
 
-/**
- * The same counts as categoryProgress, added up over every section: the
- * plan panel's headline ("14 requirements still need a semester") and
- * main bar. A course that counts toward requirements in both majors is
- * counted wherever the audit applies it, never as extra credits.
- */
-export function requirementTotals(audit) {
+/** categoryProgress() summed over every section. */
+export function requirementTotals(audit, now = new Date()) {
   const sum = { total: 0, done: 0, inProgress: 0, planned: 0, needed: 0 };
   sum.off = 0;
   sum.other = 0;
-  for (const group of categoryProgress(audit)) {
+  for (const group of categoryProgress(audit, now)) {
     for (const key of Object.keys(sum)) sum[key] += group[key];
   }
   return sum;
 }
 
-/**
- * Requirements no course can satisfy ("Apply for graduation", a GPA
- * rule), unfinished and not switched off. Listed apart, since the only
- * thing to do about them is check with an advisor.
- */
+/** Unfinished requirements no course can satisfy, not switched off. */
 export function otherRequirements(audit) {
   const states = requirementStates(audit);
   return audit.requirements.filter((r) => states.get(r.id) === "other");
 }
 
-// Every requirement's count (see categoryProgress), by requirement id
-function requirementStates(audit) {
+// Map of requirement id -> count name (see categoryProgress).
+function requirementStates(audit, now = new Date()) {
   const choices = new Map(requirementProgress(audit).map((p) => [p.id, p]));
   return new Map(
-    audit.requirements.map((r) => [r.id, requirementState(audit, r, choices)]),
+    audit.requirements.map((r) => [
+      r.id,
+      requirementState(audit, r, choices, now),
+    ]),
   );
 }
 
-// Which count one requirement goes in (see categoryProgress)
-function requirementState(audit, req, choices) {
+// The count one requirement falls in (see categoryProgress).
+function requirementState(audit, req, choices, now) {
   if (req.status === "complete") return "done";
   if (req.ignored) return "off";
-  if (req.status === "in-progress") return "inProgress";
+  if (req.status === "in-progress") {
+    // The audit marks a requirement in progress once any registered course
+    // covers it, including one that starts in a later term. That case is
+    // planned.
+    const waiting = req.applied
+      .map((a) => audit.courses[idFromCode(a.code)])
+      .some((c) => c?.status === "registered" && !isInProgress(c, now));
+    return waiting ? "planned" : "inProgress";
+  }
 
-  // A choice (pool, rule, either/or): covered once enough is planned
+  // Choice (pool, rule, either/or): covered once enough is planned.
   const choice = choices.get(req.id);
   if (choice) {
     const somethingPlanned = choice.plannedCourses > 0;
     return choice.done && somethingPlanned ? "planned" : "needed";
   }
 
-  // Specific courses: covered once every one has a term (or is done).
-  // No courses at all means no course can satisfy it.
+  // Specific courses: covered once each has a term or is completed.
+  // No courses at all: nothing can satisfy it.
   const courses = req.options
     .map((code) => audit.courses[idFromCode(code)])
     .filter(Boolean);
@@ -231,7 +232,7 @@ function requirementState(audit, req, choices) {
   );
   if (!covered) return "needed";
   const allTaking = courses.every(
-    (c) => c.status === "registered" || c.status === "completed",
+    (c) => isInProgress(c, now) || c.status === "completed",
   );
   return allTaking ? "inProgress" : "planned";
 }

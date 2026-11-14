@@ -1,6 +1,20 @@
+/* src/styles/schedule.css — contents of the "Your plan" panel: progress,
+   requirement categories, warnings, semester cards, dragging.
+   Markup: src/render/schedule.js. */
+
 /* ---------- Progress: headline, bar, legend ---------- */
-.plan-headline {
+/* "14 requirements needed ........ 71 of 120 credits" */
+.plan-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
   margin: 0 0 10px;
+}
+
+.plan-headline {
+  margin: 0;
   font: 600 19px var(--sans);
   line-height: 1.25;
   color: var(--ink);
@@ -25,18 +39,20 @@
   box-shadow: inset 0 0 0 1.5px var(--line2);
 }
 
-/* "Credits: 162 of 128 minimum ✓" */
+/* "71 of 120 credits" */
 .credit-min {
-  margin: 0 0 14px;
-  font-size: 12.5px;
+  margin: 0;
+  font-size: 13px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .credit-min.is-met {
   color: var(--done);
 }
 
-/* A stacked bar: done / in progress / planned, the rest left empty */
+/* Stacked bar: done / in progress / planned; the rest is empty. */
 .bar {
   display: flex;
   height: 8px;
@@ -63,7 +79,7 @@
   background: var(--plan);
 }
 
-/* Small colored dot before a tile's label, matching its bar color */
+/* Colored dot before a legend label, matching its bar color. */
 .dot {
   display: inline-block;
   width: 8px;
@@ -87,7 +103,7 @@
 
 /* ---------- Requirement categories (#req-cats) ---------- */
 .req-cats {
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   border: 1px solid var(--line2);
   border-radius: 6px;
 }
@@ -96,15 +112,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  font: 600 14px var(--sans);
+  min-height: 30px;
+  padding: 0 10px;
+  font: 600 13px var(--sans);
   cursor: pointer;
-  list-style: none; /* hide the browser's own triangle (Firefox) */
+  list-style: none; /* hide the default marker (Firefox) */
 }
 
 .req-cats summary::-webkit-details-marker {
-  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+  display: none; /* hide the default marker (Chrome, Safari) */
 }
 
 .req-cats-count {
@@ -186,7 +202,7 @@ label.cat-name {
 
 /* ---------- Warnings (#plan-check) ---------- */
 .plan-check:empty {
-  display: none; /* nothing planned yet: no box at all */
+  display: none; /* nothing planned: no box */
 }
 
 .plan-check {
@@ -198,11 +214,8 @@ label.cat-name {
   color: var(--muted);
 }
 
+/* Dropdown: count and "things to check", then the list when open. */
 .plan-check.has-problems {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--check) 55%, transparent);
   border-radius: 6px;
   background: color-mix(in srgb, var(--check) 10%, transparent);
@@ -210,8 +223,8 @@ label.cat-name {
 
 .pc-count {
   flex-shrink: 0;
-  min-width: 22px;
-  height: 22px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 6px;
   border-radius: 999px;
   display: grid;
@@ -222,13 +235,48 @@ label.cat-name {
   font-size: 12.5px;
 }
 
+.plan-check summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  cursor: pointer;
+  list-style: none; /* hide the default marker (Firefox) */
+}
+
+.plan-check summary::-webkit-details-marker {
+  display: none; /* hide the default marker (Chrome, Safari) */
+}
+
+/* "Hide" at the end of a credit-load warning. */
+.pc-hide {
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: 600 12px var(--sans);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.plan-check .chev {
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.plan-check details[open] .chev {
+  transform: rotate(180deg);
+}
+
 .plan-check ul {
-  margin: 4px 0 0;
+  margin: 0 12px 10px;
   padding-left: 16px;
   color: var(--muted);
 }
 
-/* "Semesters" heading above the term cards */
+/* "Semesters" heading above the cards. */
 .plan-sub {
   margin: 0 0 8px;
   font: 600 15px var(--sans);
@@ -236,19 +284,51 @@ label.cat-name {
 }
 
 /* ---------- Semester cards (#sched-grid) ---------- */
-/* Two columns inside the plan panel, then the '+ Add' tile in the next
-   free cell after the last semester */
+/* Three columns: Fall, Spring, Summer, one academic year per row. A card's
+   season class sets its column, so years stay aligned when the plan starts
+   in Spring. The '+' tile takes the cell after the last semester. */
 .sched-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   margin-bottom: 14px;
+}
+
+.season-fa {
+  grid-column: 1;
+}
+
+.season-sp {
+  grid-column: 2;
+}
+
+.season-su {
+  grid-column: 3;
+}
+
+/* The wrapper is a size container, so the grid adapts to its own width (the
+   panel is narrow on a phone and on a small laptop). */
+.sched-wrap {
+  container-type: inline-size;
+}
+
+/* Too narrow for three: two equal columns, in time order. */
+@container (max-width: 440px) {
+  .sched-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .season-fa,
+  .season-sp,
+  .season-su {
+    grid-column: auto;
+  }
 }
 
 .term-card {
   min-width: 0;
   min-height: 92px;
-  padding: 8px 8px 6px;
+  padding: 8px 6px 6px;
   border-radius: 6px;
   background: var(--raised);
 }
@@ -277,7 +357,7 @@ label.cat-name {
   font-variant-numeric: tabular-nums;
 }
 
-/* '−' on the last semester: a small round button at the end of its heading */
+/* '−' on the last semester. */
 .term-remove {
   flex-shrink: 0;
   width: 24px;
@@ -302,9 +382,8 @@ label.cat-name {
   cursor: not-allowed;
 }
 
-/* '+ Summer 2028': a half-width column in the cell after the last semester */
+/* '+ Summer 2028': fills the cell after the last semester. */
 .term-add {
-  width: 50%;
   min-height: 92px;
   display: flex;
   flex-direction: column;
@@ -347,10 +426,10 @@ label.cat-name {
   padding: 0;
 }
 
-/* One row: [grip/padlock] CODE △ ...... 3 */
+/* Row: [grip/padlock] CODE △ ...... 3 */
 .tc {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 4px;
   min-height: 30px;
@@ -362,7 +441,7 @@ label.cat-name {
   font-size: 12.5px;
 }
 
-.tc.is-registered {
+.tc.is-in-progress {
   border-left-color: var(--prog);
 }
 
@@ -389,8 +468,8 @@ label.cat-name {
   font-variant-numeric: tabular-nums;
 }
 
-/* The lock button: a grip while the course can move, a padlock once
-   locked. Both are in the markup; the row's class picks which shows. */
+/* Lock button: a grip while the course can move, a padlock once locked.
+   Both icons are in the markup; the row's class selects one. */
 .tc-lock {
   align-self: stretch;
   display: grid;
@@ -423,9 +502,8 @@ label.cat-name {
   color: var(--accent);
 }
 
-/* ---------- Dragging a course between semesters (ui/dragDrop.js) ---------- */
-/* Movable rows: a grab cursor, and no text selection or iPhone long-press
-   menu getting in the way of a press-and-hold */
+/* ---------- Dragging a course (src/ui/dragDrop.js) ---------- */
+/* Movable rows: grab cursor; no text selection or long-press menu. */
 .tc.is-movable {
   cursor: grab;
   user-select: none;
@@ -433,12 +511,12 @@ label.cat-name {
   -webkit-touch-callout: none;
 }
 
-/* The row being dragged stays in place, faded */
+/* The dragged row stays in place, faded. */
 .tc.is-dragging {
   opacity: 0.35;
 }
 
-/* The copy that follows the pointer */
+/* Copy that follows the pointer. */
 .tc-ghost {
   position: fixed;
   z-index: 50;
@@ -455,15 +533,15 @@ body.is-dragging-course * {
   cursor: grabbing !important;
 }
 
-/* The semester under the pointer */
+/* Semester under the pointer. */
 .term-card.is-drop-target {
   outline: 2px dashed var(--accent);
   outline-offset: -2px;
   background: color-mix(in srgb, var(--accent) 8%, var(--raised));
 }
 
-/* ...and when the course wouldn't fit there (not offered, prerequisites):
-   amber, with the reason at the bottom of the card */
+/* …when the course gets a warning there: amber, with the reason at the
+   bottom of the card. */
 .term-card.is-drop-warn {
   outline-color: var(--check);
   background: color-mix(in srgb, var(--check) 8%, var(--raised));
@@ -484,7 +562,7 @@ body.is-dragging-course * {
   font-size: 12px;
 }
 
-/* ---------- Not-yet-placed message (#unassigned) ---------- */
+/* ---------- Unplaced required courses (#unassigned) ---------- */
 .unassigned {
   border-radius: 6px;
   background: var(--raised);
@@ -498,7 +576,7 @@ body.is-dragging-course * {
   color: var(--ink);
 }
 
-/* Credit-load warning under a semester card's heading */
+/* Credit-load warning under a card's heading. */
 .term-warn {
   margin: 0 0 4px;
   font-size: 11.5px;
@@ -508,6 +586,6 @@ body.is-dragging-course * {
 /* "1 more on locked or registered courses isn't shown." */
 .pc-hidden {
   display: block;
-  margin-top: 6px;
+  margin: 0 12px 10px;
   color: var(--muted);
 }

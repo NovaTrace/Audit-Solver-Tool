@@ -1,18 +1,17 @@
-// Draws the course list's dropdowns (#category, #show) and the list itself
-// (#list): one card per audit section, holding a folded bar of completed
-// courses and one row per course left to plan, built from
-// <template id="course-row-tpl"> in index.html.
+// src/render/courseList.js — draws the course list and its dropdowns.
 //
-// It also fills the "Counts toward" choices of the add-a-course form.
+//   #category, #show   filter dropdowns
+//   #list              one card per audit section: a fold of completed
+//                      courses, then a row per course left to plan
+//                      (<template id="course-row-tpl"> in index.html)
+//   #add-req           the add-a-course form's requirement choices
 //
-// This file only DISPLAYS. Changes to the dropdowns, and clicks on lock and
-// remove buttons, are handled by listeners in main.js, which owns the
-// state and saving. All text is set with textContent, so imported course
-// data can never be run as HTML.
+// Display only: events are handled in main.js.
+// Used by: main.js.
+// Text is set with textContent only.
 
 import {
   creditText,
-  countsTowardText,
   offeredText,
   prereqText,
   prereqCodesText,
@@ -24,9 +23,9 @@ import {
 import { termLabel } from "../logic/courseText.js";
 import { unlocks } from "../logic/prereqs.js";
 import { shownWarnings } from "../logic/planChecks.js";
-import { categoryProgress } from "../logic/credits.js";
+import { categoryProgress, isInProgress } from "../logic/credits.js";
 
-/** The category dropdown: "All categories", then one per section. */
+/** Category dropdown: "All categories", then one option per section. */
 export function renderCategoryOptions(sections, active) {
   const select = document.getElementById("category");
   const options = ["all", ...sections].map((section) => {
@@ -39,7 +38,7 @@ export function renderCategoryOptions(sections, active) {
   select.value = active;
 }
 
-/** The "Show" dropdown: filled once, from SHOW_OPTIONS. */
+/** "Show" dropdown, filled once from SHOW_OPTIONS. */
 export function renderShowOptions(active) {
   const select = document.getElementById("show");
   if (select.options.length === 0) {
@@ -56,10 +55,9 @@ export function renderShowOptions(active) {
 }
 
 /**
- * Fills the add-a-course form's "Counts toward" list: "nothing", then
- * every requirement that isn't finished. Rules come first, since a rule
- * ("any MATH course 3100 or higher") is what the form is mostly for.
- * The student's current choice is kept across redraws.
+ * Fills the add-a-course form's "Counts toward" list: "nothing", then every
+ * unfinished requirement, rules first. The current choice is kept across
+ * redraws.
  */
 export function renderRequirementChoices(audit) {
   const select = document.getElementById("add-req");
@@ -80,8 +78,8 @@ export function renderRequirementChoices(audit) {
   });
   select.replaceChildren(none, ...choices);
 
-  // Keep what was chosen if it's still there; on the first draw, start on
-  // the first rule
+  // Keep the current choice if still present; first draw selects the first
+  // rule.
   const values = [...select.options].map((o) => o.value);
   if (select.dataset.drawn && values.includes(chosen)) {
     select.value = chosen;
@@ -92,10 +90,10 @@ export function renderRequirementChoices(audit) {
 }
 
 /**
- * Redraws the course list. `groups` is what to show, already narrowed to
- * the chosen category, search text and "Show" choice:
- * [{ section, courses, completed }, ...] from logic/courses.js. `query`
- * and `show` only pick the wording when nothing matches.
+ * Redraws the course list.
+ * `groups`: [{ section, courses, completed }], already filtered
+ * (logic/courses.js).
+ * `query` and `show` only select the empty-list message.
  */
 export function renderCourseList({ audit, groups, query, show, settings }) {
   const list = document.getElementById("list");
@@ -115,7 +113,7 @@ export function renderCourseList({ audit, groups, query, show, settings }) {
     return;
   }
 
-  // "2 of 5 requirements done" beside each section's heading
+  // "2 of 5 requirements done" beside each section heading.
   const progress = new Map(categoryProgress(audit).map((g) => [g.section, g]));
 
   const cards = groups.map(({ section, courses, completed = [] }) => {
@@ -148,8 +146,8 @@ export function renderCourseList({ audit, groups, query, show, settings }) {
   list.replaceChildren(...cards);
 }
 
-// A folded bar of the section's completed courses: "✓ 3 completed courses"
-// opens to one line each: code, title, grade and term, credits
+// Fold of a section's completed courses: "✓ 3 completed courses", opening
+// to code, title, grade and term, credits.
 function completedFold(completed) {
   const fold = document.createElement("details");
   fold.className = "fold";
@@ -189,22 +187,22 @@ function completedFold(completed) {
   return fold;
 }
 
-// Status shown at the start of a row: [icon, word, class]
+// Row status as [icon, word].
 function statusOf(course, warnings) {
-  if (course.status === "registered") return ["prog", "In progress"];
+  // Current term only; a course registered for a later term shows as planned.
+  if (isInProgress(course)) return ["prog", "In progress"];
   if (warnings.length) return ["check", "Check"];
   if (course.plannedTerm) return ["plan", "Planned"];
   if (course.status === "option") return ["need", "Option"];
   return ["need", "Needed"];
 }
 
-// Fills one copy of the row template for a single course. `settings`
-// (from the Settings dialog) decides which detail lines appear.
+// Fills one copy of the row template. `settings` selects the detail lines
+// shown.
 function buildRow(template, audit, course, settings) {
   const fragment = template.content.cloneNode(true);
   const row = fragment.querySelector(".row");
-  const isRegistered = course.status === "registered";
-  // A locked or registered course shows no warnings (see shownWarnings)
+  // none for locked or registered courses
   const warnings = shownWarnings(audit, course);
 
   const [kind, word] = statusOf(course, warnings);
@@ -215,19 +213,12 @@ function buildRow(template, audit, course, settings) {
   row.querySelector(`.ic-${kind}`)?.classList.add("on");
   row.querySelector(".r-status-word").textContent = word;
 
-  // Middle: code + title, then the details
+  // Code and title, then details.
   row.querySelector(".r-code").textContent = course.code;
-  // A course added by hand has no details to load, so it says so instead
+  // Hand-added courses have no details to load.
   row.querySelector(".r-title").textContent =
     course.title ?? (course.custom ? "Added by you" : "Details not loaded");
-  const sub = row.querySelector(".r-sub");
-  const counts = settings.showCounts ? countsTowardText(audit, course) : "";
-  if (counts) {
-    sub.textContent = counts;
-  } else {
-    sub.remove(); // nothing to say (or switched off): drop the empty span
-  }
-  // "Fall, Spring · Prereqs: ...", each part only if switched on
+  // "Fall, Spring · Prereqs: ...", each part per settings.
   const meta = [];
   if (settings.showOffered) meta.push(offeredText(course));
   if (settings.prereqs === "full") meta.push(prereqText(course));
@@ -238,7 +229,7 @@ function buildRow(template, audit, course, settings) {
   } else {
     metaLine.remove();
   }
-  // Which courses need this one first: a reason to take it early
+  // Courses that require this one.
   const neededFor = settings.showNeededFor ? unlocks(audit, course) : [];
   const unlocksLine = row.querySelector(".r-unlocks");
   if (neededFor.length) {
@@ -253,7 +244,7 @@ function buildRow(template, audit, course, settings) {
   } else {
     lockedLine.remove();
   }
-  // Planned too early, or in a term it isn't offered? One line per warning
+  // One line per warning.
   const warn = row.querySelector(".r-warn");
   if (warnings.length) {
     warn.replaceChildren(
@@ -269,11 +260,12 @@ function buildRow(template, audit, course, settings) {
 
   row.querySelector(".r-cr").textContent = creditText(course);
 
-  // Last column: the semester dropdown and lock button, or "Taking it now"
+  // Last column: semester dropdown and lock button. A course being taken
+  // this term shows "Taking it now" instead and can't be moved.
   const when = row.querySelector(".r-when");
   const select = when.querySelector(".term-select");
   const lockBtn = when.querySelector(".lock-btn");
-  if (isRegistered) {
+  if (isInProgress(course)) {
     const now = document.createElement("span");
     now.className = "r-now";
     now.textContent = `Taking it now (${termLabel(course.plannedTerm)})`;
@@ -282,9 +274,9 @@ function buildRow(template, audit, course, settings) {
   }
 
   fillTermSelect(select, audit, course);
-  select.dataset.id = course.id; // read by the change listener in main.js
+  select.dataset.id = course.id; // read by main.js
   select.setAttribute("aria-label", `Semester for ${course.code}`);
-  select.disabled = course.locked; // locked courses can't move
+  select.disabled = course.locked; // locked
   if (course.locked) select.title = "Unlock it to move it";
 
   lockBtn.dataset.id = course.id;
@@ -301,28 +293,41 @@ function buildRow(template, audit, course, settings) {
       ? "Locked in its semester. Click to unlock"
       : "Lock it in this semester";
 
-  // Courses the student added by hand get a remove button after the lock
+  // Hand-added courses get a Remove button.
   if (course.custom) {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "remove-course-btn";
-    remove.dataset.id = course.id; // read by the click listener in main.js
+    remove.dataset.id = course.id; // read by main.js
     remove.textContent = "Remove";
     remove.setAttribute("aria-label", `Remove ${course.code}`);
-    remove.disabled = course.locked; // like a semester: unlock it first
+    remove.disabled = course.locked; // unlock first
     remove.title = course.locked
       ? "Unlock it first"
       : "Remove this course you added";
     when.append(remove);
+  } else if (course.linkedTo.length) {
+    // Audit course linked to another requirement by the student: Unlink undoes
+    // it.
+    const unlink = document.createElement("button");
+    unlink.type = "button";
+    unlink.className = "remove-course-btn";
+    unlink.dataset.id = course.id; // read by main.js
+    unlink.textContent = "Unlink";
+    unlink.setAttribute(
+      "aria-label",
+      `Stop counting ${course.code} toward the requirement you added`,
+    );
+    unlink.title = "Stop counting it toward the requirement you added";
+    when.append(unlink);
   }
 
   return fragment;
 }
 
-// The semester dropdown's choices: "Choose a semester" (or "Remove from
-// plan" once it has one), then each semester in the plan. A semester the
-// course isn't scheduled in says so and can't be picked, unless the
-// course is already there.
+// Semester dropdown options: "Choose a semester" (or "Remove from plan"),
+// then each semester in the plan. A term the course isn't scheduled in is
+// labelled and greyed out but can still be picked.
 function fillTermSelect(select, audit, course) {
   const first = document.createElement("option");
   first.value = "";
@@ -335,7 +340,8 @@ function fillTermSelect(select, audit, course) {
     const notOffered = notOfferedIn(course, term.key);
     option.value = term.key;
     option.textContent = term.label + (notOffered ? " (not offered)" : "");
-    option.disabled = notOffered && !isHere;
+    // Greyed out, not disabled: the schedule can be wrong or unpublished.
+    option.classList.toggle("not-offered", notOffered && !isHere);
     return option;
   });
   select.replaceChildren(first, ...options);

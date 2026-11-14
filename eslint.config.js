@@ -3,7 +3,7 @@ import globals from "globals";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-  // Built files: not checked
+  // Build output
   { ignores: ["dist/", "src/generated/"] },
   {
     files: ["**/*.{js,mjs,cjs}"],

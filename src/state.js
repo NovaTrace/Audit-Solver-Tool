@@ -1,25 +1,16 @@
-// =====================================================================
-// state.js — the one audit object the app runs on, and saving it in
-// the browser
+// src/state.js — holds the current audit, changes it, and saves it.
 //
-//   logic/parser.js        = checks and completes audit data (parseAudit)
-//   data/sample-audit.json = demo data shown until a real audit is loaded
-//   state.js               = holds the current audit, changes it, saves it
-//
-// The audit object is the shape described in the Audit JSON Data Guide.
-// The student's picks live on each course: `plannedTerm` and `locked`.
-//
-// No `document` in this file: it only holds and changes data, so it can be
-// tested with Vitest (see State.test.js). main.js updates the page.
-// =====================================================================
+// The audit object is defined in the Audit JSON Data Guide. Picks are stored
+// on each course as `plannedTerm` and `locked`.
+// Read with getAudit(); change only through the functions here, which
+// return true when something changed.
+// Used by: main.js.
+// No DOM. Tests: State.test.js.
 
 import { parseAudit, AuditError } from "./logic/parser.js";
 import {
   termAfter,
   termLabel,
-  termIndex,
-  isTermKey as isRealTerm, // "is this text a term at all?" ("FA26": yes)
-  isPastTerm,
   isCourseCode,
   normalizeCode,
   idFromCode,
@@ -29,60 +20,56 @@ import sample from "./data/sample-audit.json";
 
 const STORAGE_KEY = "audit-solver-state";
 
-export { MAX_TERMS }; // the most semester columns a plan can have
+export { MAX_TERMS }; // maximum semester columns
 
-// The current audit. Other files READ it through getAudit(). To CHANGE it,
-// use the functions below, so the rules (e.g. "locked courses can't move")
-// live in one place.
+// The current audit.
 let audit = null;
 
-// True while the demo audit is showing. The demo is never saved, and its
-// picks are never merged into a real import.
+// True while the demo audit is loaded. The demo is never saved or merged into
+// an import.
 let sampleLoaded = false;
 
-/** The current audit object (read it; change it only through this file). */
+/** The current audit object. Read-only for callers. */
 export function getAudit() {
   return audit;
 }
 
-/** True while the built-in demo audit is showing instead of a real one. */
+/** True while the demo audit is loaded. */
 export function isSampleLoaded() {
   return sampleLoaded;
 }
 
 // ---------- Loading an audit ----------
 
-/** Replace the current audit with one that already went through parseAudit(). */
+/** Replaces the current audit with one already passed through parseAudit(). */
 export function loadAudit(parsed) {
   audit = parsed;
   sampleLoaded = false;
 }
 
 /**
- * Check and load new audit data (from the bookmarklet, a PDF or a JSON
- * file). A fresh scrape keeps the student's current picks; see parseAudit.
- * Throws AuditError if the data is bad; the current audit stays as it was.
+ * Validates and loads new audit data. A fresh scrape keeps the current picks
+ * (see parseAudit). Throws AuditError for invalid data; the current audit is
+ * left unchanged.
  */
 export function importAudit(data) {
   const previous = sampleLoaded ? null : audit; // never merge demo picks
   loadAudit(parseAudit(data, previous));
 }
 
-/** Load the built-in demo audit (used at startup). */
+/** Loads the demo audit. */
 export function loadSample() {
   loadAudit(parseAudit(sample));
   sampleLoaded = true;
 }
 
 /**
- * Put the plan back to how it starts: every pick cleared and the semester
- * columns back to the default ones, so added or removed semesters are
- * undone too. Registered courses go back into their registered term,
- * locked (parseAudit does that).
+ * Resets the plan: clears every pick and restores the default semester
+ * columns. Registered courses return to their registered term (parseAudit).
  */
 export function resetPlan() {
   if (sampleLoaded) {
-    loadSample(); // the demo's starting plan is the sample file itself
+    loadSample(); // the demo's starting plan is the sample file
     return;
   }
   const copy = structuredClone(audit);
@@ -90,16 +77,12 @@ export function resetPlan() {
     delete course.plannedTerm;
     delete course.locked;
   }
-  // With no columns, parseAudit makes the default ones again: from the
-  // current term (or the first registered one), at least 6 terms
+  // With no columns, parseAudit generates the defaults.
   delete copy.plan.terms;
   loadAudit(parseAudit(copy));
 }
 
-/**
- * Forget everything: delete this browser's save and go back to the demo
- * audit. Used by the "Clear data" button.
- */
+/** Deletes the saved audit and loads the demo. Used by "Clear data". */
 export function clearAllData() {
   clearSaved();
   loadSample();
@@ -108,28 +91,13 @@ export function clearAllData() {
 // ---------- Changing the plan ----------
 
 /**
- * Place the course in that term, or unplace it if it's already there.
- * (The page now uses setTerm below; this stays for the tests that build
- * plans with it.) Returns true if something changed.
- */
-export function toggleTerm(id, term) {
-  const course = findCourse(id);
-  if (!course || !isTermKey(term)) return false;
-  if (course.locked) return false; // locked courses can't move
-  if (course.status === "completed") return false; // already taken
-  course.plannedTerm = course.plannedTerm === term ? null : term;
-  return true;
-}
-
-/**
- * A course's semester dropdown changed: put it in `term`, or take it out
- * of the plan when `term` is "" ("Remove from plan").
- * Returns true if something changed.
+ * Places a course in `term`, or removes it from the plan when `term` is "".
+ * Refused for locked or completed courses and unknown terms.
  */
 export function setTerm(id, term) {
   const course = findCourse(id);
   if (!course) return false;
-  if (course.locked) return false; // locked courses can't move
+  if (course.locked) return false; // locked
   if (course.status === "completed") return false; // already taken
   const next = term === "" ? null : term;
   if (next !== null && !isTermKey(next)) return false;
@@ -138,10 +106,7 @@ export function setTerm(id, term) {
   return true;
 }
 
-/**
- * The lock button was clicked: lock or unlock the course.
- * Returns true if something changed.
- */
+/** Locks or unlocks a course. A course with no term can't be locked. */
 export function toggleLock(id) {
   const course = findCourse(id);
   if (!course) return false;
@@ -149,25 +114,26 @@ export function toggleLock(id) {
     course.locked = false; // unlock
     return true;
   }
-  if (!course.plannedTerm) return false; // can't lock a course with no term
+  if (!course.plannedTerm) return false; // no term to lock it in
   course.locked = true;
   return true;
 }
 
-// ---------- Courses the student adds by hand ----------
+// ---------- Courses added by the student ----------
 
 /**
- * Add a course the audit doesn't list, for requirements like "any MATH
- * course numbered 3100 or higher" where the audit names no choices.
+ * Adds a course the audit doesn't list.
  *
  *   code           "MATH 3110" (any spacing or case)
  *   title          optional
- *   credits        a number above 0, at most 12
- *   requirementId  the requirement it counts toward, or "" for none
+ *   credits        above 0, at most 12
+ *   requirementId  requirement it counts toward, or ""
  *
- * Returns { ok: true, code } or { ok: false, message } with words to show
- * the student. The course is marked `custom: true`, so it can be removed
- * again and is kept when a new audit is imported.
+ * Returns { ok: true, code } or { ok: false, message }.
+ * The course is marked `custom: true`: removable, and kept across imports.
+ * If the course is already on the audit and a requirement is given, it is
+ * linked to that requirement instead (linkExisting) and the result includes
+ * `linkedTo`.
  */
 export function addCustomCourse({
   code,
@@ -181,13 +147,7 @@ export function addCustomCourse({
   const normalized = normalizeCode(code);
   const id = idFromCode(normalized);
   const existing = findCourse(id);
-  if (existing) {
-    const where =
-      existing.status === "completed"
-        ? "already completed on your audit"
-        : "already in the course list";
-    return { ok: false, message: `${normalized} is ${where}.` };
-  }
+  if (existing) return linkExisting(existing, requirementId);
   const hours = Number(credits);
   if (!Number.isFinite(hours) || hours <= 0 || hours > 12) {
     return { ok: false, message: "Credits must be a number from 0.5 to 12." };
@@ -204,22 +164,66 @@ export function addCustomCourse({
     credits: hours,
     minCredits: hours,
     maxCredits: hours,
-    status: "option", // a choice, like the options the audit lists itself
+    status: "option", // a choice, like the audit's own options
     requirementIds: req ? [req.id] : [],
     custom: true,
   };
-  // Listing it as one of the requirement's options is what makes it count
-  // toward that requirement's progress
+  // Listing it as an option is what counts it toward the requirement.
   if (req) req.options.push(normalized);
-  // parseAudit gives the new course every other field (attempts, prereqs…)
+  // parseAudit fills in the remaining course fields.
   audit = parseAudit(audit);
   return { ok: true, code: normalized };
 }
 
+// Links a course already on the audit to one more requirement.
+// `linkedTo` records the student's own links so they can be undone and
+// kept across imports.
+function linkExisting(course, requirementId) {
+  const { code } = course;
+  if (course.status === "completed") {
+    return {
+      ok: false,
+      message: `${code} is already completed on your audit.`,
+    };
+  }
+  const req = audit.requirements.find((r) => r.id === requirementId);
+  if (!req) {
+    return {
+      ok: false,
+      message: `${code} is already in the course list. To count it toward another requirement, choose that requirement under "Counts toward".`,
+    };
+  }
+  if (course.requirementIds.includes(req.id)) {
+    return {
+      ok: false,
+      message: `${code} already counts toward ${req.title}.`,
+    };
+  }
+  req.options.push(code);
+  course.requirementIds.push(req.id);
+  course.linkedTo.push(req.id);
+  return { ok: true, code, linkedTo: req.title };
+}
+
 /**
- * Remove a course the student added by hand. Returns true if it was
- * removed. Refused (false) for a course from the audit, an unknown id, or
- * a locked course (unlock it first, as with removing a semester).
+ * Removes every link the student made for a course. The audit's own links stay.
+ */
+export function unlinkCourse(id) {
+  const course = findCourse(id);
+  if (!course || course.linkedTo.length === 0) return false;
+  const mine = new Set(course.linkedTo);
+  for (const req of audit.requirements) {
+    if (!mine.has(req.id)) continue;
+    req.options = req.options.filter((code) => code !== course.code);
+  }
+  course.requirementIds = course.requirementIds.filter((r) => !mine.has(r));
+  course.linkedTo = [];
+  return true;
+}
+
+/**
+ * Removes a hand-added course. Refused for audit courses, unknown ids and
+ * locked courses.
  */
 export function removeCustomCourse(id) {
   const course = findCourse(id);
@@ -231,14 +235,11 @@ export function removeCustomCourse(id) {
   return true;
 }
 
-// ---------- Switching requirements on and off ----------
+// ---------- Requirements on and off ----------
 
 /**
- * A requirement's badge or tick box was clicked: switch it off, or back
- * on. Off means "I don't need to finish this one" (a track the student
- * isn't taking, a minor they're dropping): its courses leave the course
- * list and it stops counting as something to plan. The audit's own facts
- * (status, hours) are not changed. Returns true if something changed.
+ * Switches a requirement off or back on. Off: its courses leave the course
+ * list and it is no longer counted. The audit's status and hours are unchanged.
  */
 export function toggleRequirement(id) {
   const req = audit.requirements.find((r) => r.id === id);
@@ -247,12 +248,7 @@ export function toggleRequirement(id) {
   return true;
 }
 
-/**
- * A section's tick box was clicked: switch every unmet requirement in the
- * section off (`off` true) or back on, in one go. This is what makes a
- * track of many single courses one click instead of many.
- * Returns true if anything changed.
- */
+/** Switches every unmet requirement in a section off (`off` true) or on. */
 export function setSectionOff(section, off) {
   const reqs = audit.requirements.filter(
     (r) => r.section === section && r.status === "needs",
@@ -262,38 +258,23 @@ export function setSectionOff(section, off) {
   return changed;
 }
 
-// ---------- Changing the semester columns ----------
+// ---------- Semester columns ----------
 
 /**
- * A '+' block was clicked: add a semester column. `key` is the term to
- * add ("SP27"): one before the first column (back to the current term,
- * no further), one missing in the middle, or one after the last. With no key, it's the term after the last column.
- * Returns true if a column was added.
- *
- * Refused (false) when the plan is at MAX_TERMS, `key` isn't a real term,
- * that term is already a column, or it is already over (a semester that
- * has finished can't be planned).
+ * Adds a column for the term after the last one. Returns false at MAX_TERMS.
  */
-export function addTerm(key = termAfter(audit.plan.terms.at(-1).key)) {
+export function addTerm() {
   const terms = audit.plan.terms;
   if (terms.length >= MAX_TERMS) return false;
-  if (!isRealTerm(key) || isTermKey(key)) return false;
-  if (isPastTerm(key)) return false;
+  const key = termAfter(terms.at(-1).key);
   terms.push({ key, label: termLabel(key) });
-  // Keep the columns in time order, wherever the new one belongs
-  terms.sort((a, b) => termIndex(a.key) - termIndex(b.key));
   return true;
 }
 
 /**
- * A column's '−' was clicked: remove that column. Courses planned in it
- * go back to unplaced. Returns true if the column was removed.
- *
- * Refused (false) when:
- * - `key` isn't one of the columns;
- * - it's the only column left (the plan needs somewhere to put courses);
- * - a locked course is in it. Locking means "this one stays here", so the
- *   student unlocks it first rather than losing it by accident.
+ * Removes a column; courses planned in it become unplaced.
+ * Refused when `key` isn't a column, it is the only column, or it holds a
+ * locked course.
  */
 export function removeTerm(key) {
   const terms = audit.plan.terms;
@@ -307,13 +288,11 @@ export function removeTerm(key) {
   return true;
 }
 
-// ---------- Saving in this browser (localStorage) ----------
+// ---------- Saving (localStorage) ----------
 
 /**
- * Replace the current audit with this browser's saved one.
- * The save goes through parseAudit() like any other import, so old,
- * edited or broken saves are checked and repaired, or skipped.
- * Returns true if a saved audit was loaded.
+ * Loads the saved audit through parseAudit(), so old or edited saves are
+ * validated and repaired, or skipped. Returns true if one was loaded.
  */
 export function loadState() {
   let saved;
@@ -331,9 +310,7 @@ export function loadState() {
 }
 
 /**
- * Save the whole current audit. Returns true if it worked.
- * The demo audit is never saved, so playing with it can't overwrite a
- * student's real save.
+ * Saves the current audit. Returns true on success. The demo is never saved.
  */
 export function saveState() {
   if (sampleLoaded) return false;
@@ -342,13 +319,13 @@ export function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(audit));
     return true;
   } catch (e) {
-    // e.g. storage is full, or blocked in a private window
+    // storage full, or blocked (private window)
     console.warn("Could not save planner state:", e);
     return false;
   }
 }
 
-/** Delete this browser's saved audit (used by Reset). */
+/** Deletes the saved audit. */
 export function clearSaved() {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -359,18 +336,18 @@ export function clearSaved() {
 
 // ---------- Helpers ----------
 
-// The course with this id, or null. Object.hasOwn stops ids like
-// "__proto__" or "toString" from finding built-in object properties.
+// The course with this id, or null. Object.hasOwn keeps ids such as
+// "__proto__" from matching built-in properties.
 function findCourse(id) {
   return Object.hasOwn(audit.courses, id) ? audit.courses[id] : null;
 }
 
-// True if `term` is one of the plan's semester columns right now.
+// True if `term` is one of the plan's columns.
 function isTermKey(term) {
   return audit.plan.terms.some((t) => t.key === term);
 }
 
-export { AuditError }; // so callers of importAudit can catch it
+export { AuditError }; // for callers of importAudit
 
 // ---------- Startup ----------
-loadSample(); // start from the demo audit; main.js then calls loadState()
+loadSample(); // start from the demo; main.js then calls loadState()
