@@ -3,34 +3,145 @@
 }
 
 :root {
-  --bg: #193752;
-  --panel: #194c76;
-  --panel-alt: #133a61;
-  --note: rgba(25, 76, 118, 0.4);
-  --course: rgba(46, 106, 158, 0.674);
-  --line: rgba(183, 215, 243, 0.1);
-  --line-strong: rgba(183, 215, 243);
-  --ink-header: #1d639f;
-  --ink: #fbfefd;
-  --ink-dim: #def7ef;
-  --ink-faint: #e6e6e6;
-  --ink-dark: #193752;
-  --button: #193752;
-  --button-border: #83879d;
-  --highlight: #555568;
-  --accent: rgb(236, 235, 240);
-  --accent-bg: rgba(31, 51, 125, 0.674);
-  --accent-ink: #162f55;
-  --lock: #0b274f;
-  --lock-bg: #204365;
-  --warn: #f5c563; /* prerequisite warnings */
+  /* Fonts (unchanged) */
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
+
+  /* Logo colors (the mark left of the title in the header) */
+  --logo-page: #c9d6e8;
+  --logo-fold: #919eaf;
+  --logo-accent: #9fd4c4; /* the bottom strip; point this at any other color */
+}
+
+/* ---------- Color palettes ----------
+   Every color on the page comes from these tokens. A palette is one block
+   that sets all of them; <html data-pal="..."> picks which block applies
+   (src/ui/settings.js sets it, from the Settings dialog). Five palettes:
+   Graphite (default dark), Mist (light), Denim, Dusk and Harbor. In every
+   palette the text tokens (--ink, --muted, --accent, --done ... --danger)
+   pass 4.5:1 contrast on --page, --surface and --raised.
+
+     --page      the page behind everything
+     --surface   panels and cards
+     --raised    things sitting on a panel (course rows, tiles, chips)
+     --line      faint dividers and the background grid
+     --line2     borders on boxes and controls
+     --ink       main text
+     --muted     secondary text
+     --accent    primary buttons, links, focus ring, highlights
+     --onfill    text on an --accent fill
+     --done / --prog / --plan / --check   status colors
+     --danger    destructive actions (Clear data)                       */
+:root,
+[data-pal="graphite"] {
+  color-scheme: dark; /* dropdowns and scrollbars drawn dark */
+  --page: #1d232c;
+  --surface: #272e39;
+  --raised: #313947;
+  --line: rgba(182, 192, 206, 0.16);
+  --line2: rgba(182, 192, 206, 0.34);
+  --ink: #eef2f6;
+  --muted: #b6c0ce;
+  --accent: #ccdcef;
+  --onfill: #1d232c;
+  --done: #a7d3b5;
+  --prog: #c4b5e8;
+  --plan: #8fc3ea; /* sky blue: easier to tell from "done" green */
+  --check: #f1c18d;
+  --danger: #f2a7a0;
+}
+
+/* Mist: the light theme. Status colors are deepened to stay
+   readable on light backgrounds; the logo gets darker pieces. */
+[data-pal="mist"] {
+  color-scheme: light;
+  --page: #e6eef8;
+  --surface: #f7fafd;
+  --raised: #dde8f4;
+  --line: rgba(34, 37, 38, 0.12);
+  --line2: rgba(34, 37, 38, 0.28);
+  --ink: #222526;
+  --muted: #4d565e;
+  --accent: #2f5d8a;
+  --onfill: #ffffff;
+  --done: #286b49;
+  --prog: #6a4ea6;
+  --plan: #1f5f8f;
+  --check: #9a520c;
+  --danger: #b3261e;
+  --logo-page: var(--accent); /* the logo's page pieces take the accent */
+  --logo-fold: color-mix(in srgb, var(--accent) 45%, #ffffff);
+  --logo-accent: #3f9c84;
+}
+
+[data-pal="denim"] {
+  color-scheme: dark;
+  --page: #1a2333;
+  --surface: #263347;
+  --raised: #2f3e55;
+  --line: rgba(179, 192, 212, 0.16);
+  --line2: rgba(179, 192, 212, 0.34);
+  --ink: #e8edf5;
+  --muted: #b3c0d4;
+  --accent: #e6b3c3;
+  --onfill: #1a2333;
+  --done: #a8d5ba;
+  --prog: #b9b2ec;
+  --plan: #9cc2e8;
+  --check: #f0c38e;
+  --danger: #f2a7a0;
+}
+
+[data-pal="dusk"] {
+  color-scheme: dark;
+  --page: #20263a;
+  --surface: #2d3448;
+  --raised: #363e54;
+  --line: rgba(188, 192, 214, 0.16);
+  --line2: rgba(188, 192, 214, 0.34);
+  --ink: #ece9f4;
+  --muted: #bcc0d6;
+  --accent: #ecd89a;
+  --onfill: #20263a;
+  --done: #9fd4c4;
+  --prog: #8fbfe0;
+  --plan: #c3b8f0;
+  --check: #efb4a0;
+  --danger: #f4a6a6;
+}
+
+[data-pal="harbor"] {
+  color-scheme: dark;
+  --page: #1c2a33;
+  --surface: #283a45;
+  --raised: #314753;
+  --line: rgba(173, 194, 201, 0.16);
+  --line2: rgba(173, 194, 201, 0.34);
+  --ink: #e6eff1;
+  --muted: #adc2c9;
+  --accent: #eaa597;
+  --onfill: #1c2a33;
+  --done: #b4d8a4;
+  --prog: #a7b8e8;
+  --plan: #8ec9d6;
+  --check: #e9c88f;
+  --danger: #f4a6a6;
+}
+
+/* Tints worked out from the palette, so each palette only sets the above */
+:root {
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+/* Tick boxes, radio buttons and range sliders in the palette's accent */
+:root {
+  accent-color: var(--accent);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--page);
   color: var(--ink);
   font-family: var(--sans);
 }
@@ -48,19 +159,15 @@ strong {
 .sheet {
   max-width: 1380px;
   margin: 0 auto;
-  padding: 10px 5px 60px;
-  background-image:
-    linear-gradient(var(--line) 1px, transparent 0.1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 0.1px);
-  background-size: 50px 50px;
+  padding: 10px 16px 60px; /* 16px side gutter so nothing touches the screen edge */
 }
 
 footer {
   margin-top: 32px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
-  font-size: 11.5px;
-  color: var(--ink-faint);
+  font-size: 12.5px;
+  color: var(--muted);
   line-height: 1.8;
   display: flex; /* source note left, Clear data right */
   justify-content: space-between;
@@ -75,17 +182,92 @@ footer p {
 
 /* The one button that deletes data: red so it stands apart */
 .clear-data-btn {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  padding: 5px 12px;
+  font: 600 13px var(--sans);
+  min-height: 36px;
+  padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid var(--red);
-  background: var(--panel);
-  color: var(--red);
+  border: 1px solid var(--danger);
+  background: var(--surface);
+  color: var(--danger);
   cursor: pointer;
 }
 
 .clear-data-btn:hover {
-  background: var(--red-bg);
+  background: var(--danger-soft);
   border-radius: 20px;
+}
+
+/* ---------- Feedback bar (top of the page) ----------
+   Delete this block along with the bar's <div> in index.html once
+   testing is done. */
+.dev-banner {
+  padding: 8px 16px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line2);
+  font-size: 13.5px;
+  color: var(--ink);
+  text-align: center;
+}
+
+.dev-banner p {
+  margin: 0;
+}
+
+.dev-banner a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---------- Accessibility ---------- */
+
+/* A visible ring on whatever the keyboard is on, in every palette */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The heading the skip link lands on doesn't need a ring */
+#req-title:focus {
+  outline: none;
+}
+
+/* "Skip to the course list": hidden until it has keyboard focus */
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--onfill);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Visually hidden, still read by screen readers */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Less movement for people who ask their system for it: the title and
+   logo animations already check this; this catches every transition */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { textLines, pdfToAudit } from "../logic/pdfAudit.js";
+import { buildRequirements } from "../logic/auditBuild.js";
 import { parseAudit, AuditError } from "../logic/parser.js";
 import { NOV_2026 } from "./helpers.js";
 import printedText from "./fixtures/audit-printed.pdf.txt?raw";
@@ -113,14 +114,26 @@ describe.each([
     });
   });
 
-  it("skips information blocks, finished rules, the legend and course history", () => {
+  it("keeps a rule with no course list when courses count toward it", () => {
+    // NAVIGATE is in progress and shows no SELECT FROM list any more;
+    // dropping it would leave CS 3300 looking like it counts for less
+    const navigate = requirement(audit, "NAVIGATE");
+    expect(navigate).toMatchObject({
+      section: "Compass Curriculum",
+      type: "rule",
+      options: [],
+      applied: [{ code: "CS 3300", hours: 3 }],
+    });
+    expect(audit.courses.cs3300.requirementIds).toContain(navigate.id);
+  });
+
+  it("skips information blocks, whole-degree rules, the legend and course history", () => {
     const titles = audit.requirements.map((r) => r.title).join(" | ");
     for (const skipped of [
       "MINIMUM HOURS",
       "GPA",
       "PROGRAM INFORMATION",
       "GENERAL INFORMATION",
-      "NAVIGATE", // in progress, with no courses to choose
       "Transfer credit",
       "Registered", // a legend line
     ]) {
@@ -357,5 +370,38 @@ describe("textLines", () => {
       "Introduction to Differential Equations",
       "Page two",
     ]);
+  });
+});
+
+// The shared rule both imports use, given hand-made sub-requirements
+describe("buildRequirements: rules with no course list", () => {
+  // An in-progress sub-requirement with one course counted toward it
+  const sub = (titleLines) => ({
+    status: "in-progress",
+    titleLines,
+    select: [],
+    applied: [{ code: "CS 4420", credits: 3 }],
+    needHours: null,
+    needCourses: null,
+  });
+  const titles = (section, titleLines) =>
+    buildRequirements([{ section, subs: [sub(titleLines)] }]).map(
+      (r) => r.title,
+    );
+
+  it("keeps one that courses count toward", () => {
+    expect(
+      titles("Computer Engineering - Technical Electives", [
+        "TECHNICAL ELECTIVES",
+      ]),
+    ).toEqual(["TECHNICAL ELECTIVES"]);
+  });
+
+  it("drops whole-degree rules, named in the title or the section", () => {
+    expect(
+      titles("Electrical Engineering - Core", ["ELECTRICAL ENGINEERING GPA"]),
+    ).toEqual([]);
+    expect(titles("Minor Residency", ["TOTAL HOURS"])).toEqual([]);
+    expect(titles("College of Engineering - Residency", [])).toEqual([]);
   });
 });

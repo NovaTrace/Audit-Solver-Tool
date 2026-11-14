@@ -10,6 +10,10 @@ import {
   totalPlannedCredits,
   requirementProgress,
   unplacedRequired,
+  creditSummary,
+  categoryProgress,
+  requirementTotals,
+  otherRequirements,
 } from "../logic/credits.js";
 import { makeRegistered } from "./helpers.js";
 
@@ -160,5 +164,105 @@ describe("unplacedRequired", () => {
     const a = audit();
     a.courses.cs4500.plannedTerm = "FA27";
     expect(unplacedRequired(a).map((c) => c.code)).not.toContain("CS 4500");
+  });
+});
+
+describe("credit summary (plan panel headline)", () => {
+  it("starts from the audit's hours with nothing planned", () => {
+    const s = creditSummary(audit());
+    expect(s).toEqual({
+      earned: 88,
+      inProgress: 0,
+      planned: 0,
+      required: 128,
+      left: 40,
+    });
+  });
+
+  it("takes planned hours off what's left", () => {
+    const a = audit();
+    a.courses.cs4500.plannedTerm = "FA27";
+    a.courses.ece3020.plannedTerm = "FA26";
+    const s = creditSummary(a);
+    expect(s.planned).toBe(6);
+    expect(s.left).toBe(34);
+  });
+
+  it("counts a registered course as in progress, not planned", () => {
+    const a = audit();
+    a.courses.cs4500.plannedTerm = "FA26";
+    a.courses.cs4500.status = "registered";
+    const s = creditSummary(a);
+    expect(s.inProgress).toBe(3);
+    expect(s.planned).toBe(0);
+    expect(s.left).toBe(37);
+  });
+
+  it("has no headline number when the audit doesn't give a total", () => {
+    const a = audit();
+    a.student.hoursRequired = null;
+    expect(creditSummary(a).left).toBeNull();
+  });
+});
+
+describe("category progress (requirement category bars)", () => {
+  const section = (a, name) =>
+    categoryProgress(a).find((g) => g.section === name);
+
+  it("counts complete and needed requirements per section", () => {
+    const g = section(audit(), "Computer Engineering - Core");
+    expect(g).toMatchObject({ total: 5, done: 1, planned: 0, needed: 4 });
+  });
+
+  it("moves a requirement to planned once its course has a term", () => {
+    const a = audit();
+    a.courses.cs4500.plannedTerm = "FA27";
+    const g = section(a, "Computer Engineering - Core");
+    expect(g).toMatchObject({ done: 1, planned: 1, needed: 3 });
+  });
+
+  it("leaves a switched-off requirement out of the total", () => {
+    const a = audit();
+    a.requirements.find((r) => r.id === "cpe-cs4500").ignored = true;
+    const g = section(a, "Computer Engineering - Core");
+    expect(g).toMatchObject({ total: 4, off: 1, needed: 3 });
+  });
+});
+
+describe("requirement totals (plan panel headline)", () => {
+  it("adds up every section's requirements", () => {
+    const t = requirementTotals(audit());
+    expect(t.done + t.inProgress + t.planned + t.needed).toBe(t.total);
+    expect(t.done).toBe(2); // CPE arch + CPE math are complete in the demo
+  });
+
+  it("drops a requirement from 'needed' once it's planned", () => {
+    const a = audit();
+    const before = requirementTotals(a).needed;
+    a.courses.cs4500.plannedTerm = "FA27";
+    expect(requirementTotals(a).needed).toBe(before - 1);
+    expect(requirementTotals(a).planned).toBe(1);
+  });
+
+  it("keeps requirements no course can meet out of the count", () => {
+    const a = audit();
+    a.requirements.push({
+      id: "apply-grad",
+      section: "Apply for Graduation",
+      title: "Apply for graduation",
+      type: "rule",
+      status: "needs",
+      needCourses: null,
+      needHours: null,
+      options: [],
+      applied: [],
+    });
+    const t = requirementTotals(a);
+    expect(t.other).toBe(1);
+    expect(otherRequirements(a).map((r) => r.id)).toEqual(["apply-grad"]);
+    const g = categoryProgress(a).find(
+      (x) => x.section === "Apply for Graduation",
+    );
+    expect(g).toMatchObject({ total: 0, other: 1 });
   });
 });

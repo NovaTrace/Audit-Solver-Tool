@@ -1,39 +1,58 @@
-// Draws the filter chips (#chips) and the course list (#list): a heading
-// per audit section, then one row per course built from
+// Draws the course list's dropdowns (#category, #show) and the list itself
+// (#list): one card per audit section, holding a folded bar of completed
+// courses and one row per course left to plan, built from
 // <template id="course-row-tpl"> in index.html.
 //
 // It also fills the "Counts toward" choices of the add-a-course form.
 //
-// This file only DISPLAYS. Clicks on chips, pills, lock and remove buttons
-// are handled by listeners in main.js, which owns the state and saving.
-// All text is set with textContent, so imported course data can never be
-// run as HTML.
+// This file only DISPLAYS. Changes to the dropdowns, and clicks on lock and
+// remove buttons, are handled by listeners in main.js, which owns the
+// state and saving. All text is set with textContent, so imported course
+// data can never be run as HTML.
 
 import {
   creditText,
   countsTowardText,
   offeredText,
   prereqText,
+  prereqCodesText,
   notOfferedIn,
+  finalGradeText,
+  SHOW_OPTIONS,
+  UNLINKED,
 } from "../logic/courses.js";
-import { shortTermLabel } from "../logic/courseText.js";
+import { termLabel } from "../logic/courseText.js";
 import { unlocks } from "../logic/prereqs.js";
-import { courseWarnings } from "../logic/planChecks.js";
+import { shownWarnings } from "../logic/planChecks.js";
+import { categoryProgress } from "../logic/credits.js";
 
-/** One chip for "All", then one per section. `active` is the chosen one. */
-export function renderFilterChips(sections, active) {
-  const box = document.getElementById("chips");
-  const chips = ["all", ...sections].map((section) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "chip";
-    chip.classList.toggle("active", section === active);
-    chip.setAttribute("aria-pressed", section === active);
-    chip.dataset.section = section; // read by the click listener in main.js
-    chip.textContent = section === "all" ? "All" : section;
-    return chip;
+/** The category dropdown: "All categories", then one per section. */
+export function renderCategoryOptions(sections, active) {
+  const select = document.getElementById("category");
+  const options = ["all", ...sections].map((section) => {
+    const option = document.createElement("option");
+    option.value = section;
+    option.textContent = section === "all" ? "All categories" : section;
+    return option;
   });
-  box.replaceChildren(...chips);
+  select.replaceChildren(...options);
+  select.value = active;
+}
+
+/** The "Show" dropdown: filled once, from SHOW_OPTIONS. */
+export function renderShowOptions(active) {
+  const select = document.getElementById("show");
+  if (select.options.length === 0) {
+    select.append(
+      ...SHOW_OPTIONS.map(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        return option;
+      }),
+    );
+  }
+  select.value = active;
 }
 
 /**
@@ -74,10 +93,11 @@ export function renderRequirementChoices(audit) {
 
 /**
  * Redraws the course list. `groups` is what to show, already narrowed to
- * the chosen section and search text: [{ section, courses }, ...] from
- * logic/courses.js. `query` only picks the wording when nothing matches.
+ * the chosen category, search text and "Show" choice:
+ * [{ section, courses, completed }, ...] from logic/courses.js. `query`
+ * and `show` only pick the wording when nothing matches.
  */
-export function renderCourseList({ audit, groups, query }) {
+export function renderCourseList({ audit, groups, query, show, settings }) {
   const list = document.getElementById("list");
   const rowTemplate = document.getElementById("course-row-tpl");
 
@@ -86,63 +106,155 @@ export function renderCourseList({ audit, groups, query }) {
     empty.className = "list-empty";
     empty.textContent = query
       ? "No courses match your search."
-      : "Nothing left to plan in this section.";
+      : show === "attention"
+        ? "Nothing needs attention: no warnings in your plan."
+        : show === "unplaced"
+          ? "Every course here has a semester."
+          : "Nothing left to plan in this category.";
     list.replaceChildren(empty);
     return;
   }
 
-  const nodes = [];
-  groups.forEach(({ section, courses }) => {
-    const head = document.createElement("div");
-    head.className = "cat-head";
-    head.textContent = section;
-    nodes.push(head);
+  // "2 of 5 requirements done" beside each section's heading
+  const progress = new Map(categoryProgress(audit).map((g) => [g.section, g]));
 
+  const cards = groups.map(({ section, courses, completed = [] }) => {
+    const group = document.createElement("section");
+    group.className = "grp";
+
+    const head = document.createElement("div");
+    head.className = "grp-h";
+    const title = document.createElement("h3");
+    title.textContent = section;
+    head.append(title);
+    const p = progress.get(section);
+    if (p && p.total > 0 && section !== UNLINKED) {
+      const frac = document.createElement("span");
+      frac.textContent = `${p.done} of ${p.total} requirements done`;
+      head.append(frac);
+    }
+
+    const card = document.createElement("div");
+    card.className = "card";
+    if (completed.length) card.append(completedFold(completed));
     courses.forEach((course) =>
-      nodes.push(buildRow(rowTemplate, audit, course)),
+      card.append(buildRow(rowTemplate, audit, course, settings)),
     );
+
+    group.append(head, card);
+    return group;
   });
 
-  list.replaceChildren(...nodes);
+  list.replaceChildren(...cards);
 }
 
-// Fills one copy of the row template for a single course
-function buildRow(template, audit, course) {
+// A folded bar of the section's completed courses: "✓ 3 completed courses"
+// opens to one line each: code, title, grade and term, credits
+function completedFold(completed) {
+  const fold = document.createElement("details");
+  fold.className = "fold";
+  const summary = document.createElement("summary");
+  const check = document.createElement("span");
+  check.className = "fold-check";
+  check.setAttribute("aria-hidden", "true");
+  check.textContent = "✓";
+  const words = document.createElement("b");
+  const n = completed.length;
+  words.textContent = `${n} completed course${n === 1 ? "" : "s"}`;
+  const toggle = document.createElement("span");
+  toggle.className = "fold-toggle";
+  toggle.setAttribute("aria-hidden", "true");
+  summary.append(check, words, toggle);
+
+  const list = document.createElement("ul");
+  list.className = "done-list";
+  for (const course of completed) {
+    const item = document.createElement("li");
+    const code = document.createElement("span");
+    code.className = "r-code";
+    code.textContent = course.code;
+    const title = document.createElement("span");
+    title.className = "done-title";
+    title.textContent = course.title ?? "";
+    const grade = document.createElement("span");
+    grade.className = "done-grade";
+    grade.textContent = finalGradeText(course);
+    const credits = document.createElement("span");
+    credits.className = "done-cr";
+    credits.textContent = creditText(course);
+    item.append(code, title, grade, credits);
+    list.append(item);
+  }
+  fold.append(summary, list);
+  return fold;
+}
+
+// Status shown at the start of a row: [icon, word, class]
+function statusOf(course, warnings) {
+  if (course.status === "registered") return ["prog", "In progress"];
+  if (warnings.length) return ["check", "Check"];
+  if (course.plannedTerm) return ["plan", "Planned"];
+  if (course.status === "option") return ["need", "Option"];
+  return ["need", "Needed"];
+}
+
+// Fills one copy of the row template for a single course. `settings`
+// (from the Settings dialog) decides which detail lines appear.
+function buildRow(template, audit, course, settings) {
   const fragment = template.content.cloneNode(true);
   const row = fragment.querySelector(".row");
+  const isRegistered = course.status === "registered";
+  // A locked or registered course shows no warnings (see shownWarnings)
+  const warnings = shownWarnings(audit, course);
 
-  row.classList.toggle("pool", course.status === "option");
+  const [kind, word] = statusOf(course, warnings);
+  row.classList.add(`is-${kind}`);
   row.classList.toggle("locked", course.locked);
   row.classList.toggle("custom", course.custom);
+  row.querySelector(".r-status").classList.add(`st-${kind}`);
+  row.querySelector(`.ic-${kind}`)?.classList.add("on");
+  row.querySelector(".r-status-word").textContent = word;
 
-  // Column 1: code and credits
+  // Middle: code + title, then the details
   row.querySelector(".r-code").textContent = course.code;
-  row.querySelector(".r-cr").textContent = creditText(course);
-
-  // Column 2: details
   // A course added by hand has no details to load, so it says so instead
   row.querySelector(".r-title").textContent =
     course.title ?? (course.custom ? "Added by you" : "Details not loaded");
   const sub = row.querySelector(".r-sub");
-  const counts = countsTowardText(audit, course);
+  const counts = settings.showCounts ? countsTowardText(audit, course) : "";
   if (counts) {
     sub.textContent = counts;
   } else {
-    sub.remove(); // nothing to say: drop the empty span
+    sub.remove(); // nothing to say (or switched off): drop the empty span
   }
-  row.querySelector(".r-term").textContent = offeredText(course);
-  row.querySelector(".r-prereq").textContent = prereqText(course);
+  // "Fall, Spring · Prereqs: ...", each part only if switched on
+  const meta = [];
+  if (settings.showOffered) meta.push(offeredText(course));
+  if (settings.prereqs === "full") meta.push(prereqText(course));
+  if (settings.prereqs === "codes") meta.push(prereqCodesText(course));
+  const metaLine = row.querySelector(".r-meta");
+  if (meta.length) {
+    metaLine.textContent = meta.join(" · ");
+  } else {
+    metaLine.remove();
+  }
   // Which courses need this one first: a reason to take it early
-  const neededFor = unlocks(audit, course);
+  const neededFor = settings.showNeededFor ? unlocks(audit, course) : [];
   const unlocksLine = row.querySelector(".r-unlocks");
   if (neededFor.length) {
     unlocksLine.textContent = `Needed for: ${neededFor.join(", ")}`;
   } else {
-    unlocksLine.remove(); // nothing to say: drop the empty span
+    unlocksLine.remove();
+  }
+  // "Locked in Spring 2027"
+  const lockedLine = row.querySelector(".r-locked");
+  if (course.locked && course.plannedTerm) {
+    lockedLine.append(`Locked in ${termLabel(course.plannedTerm)}`);
+  } else {
+    lockedLine.remove();
   }
   // Planned too early, or in a term it isn't offered? One line per warning
   const warn = row.querySelector(".r-warn");
-  const warnings = courseWarnings(audit, course);
   if (warnings.length) {
     warn.replaceChildren(
       ...warnings.map((text) => {
@@ -155,40 +267,39 @@ function buildRow(template, audit, course) {
     warn.remove();
   }
 
-  // Column 3: one pill per term, placed before the lock button
-  const pills = row.querySelector(".pills");
-  const lockBtn = row.querySelector(".lock-btn");
+  row.querySelector(".r-cr").textContent = creditText(course);
 
-  audit.plan.terms.forEach((term) => {
-    const isOn = course.plannedTerm === term.key;
-    const offTerm = notOfferedIn(course, term.key);
-    const pill = document.createElement("button");
-    pill.type = "button";
-    pill.className = "pill";
-    pill.classList.toggle("on", isOn);
-    pill.classList.toggle("not-offered", offTerm);
-    pill.setAttribute("aria-pressed", isOn);
-    if (offTerm) pill.title = "Not scheduled this term";
-    pill.dataset.id = course.id; // read by the click listener in main.js
-    pill.dataset.term = term.key;
-    pill.disabled = course.locked; // locked courses can't move
-    pill.textContent = shortTermLabel(term.key);
-    pills.insertBefore(pill, lockBtn);
-  });
+  // Last column: the semester dropdown and lock button, or "Taking it now"
+  const when = row.querySelector(".r-when");
+  const select = when.querySelector(".term-select");
+  const lockBtn = when.querySelector(".lock-btn");
+  if (isRegistered) {
+    const now = document.createElement("span");
+    now.className = "r-now";
+    now.textContent = `Taking it now (${termLabel(course.plannedTerm)})`;
+    when.replaceChildren(now);
+    return fragment;
+  }
+
+  fillTermSelect(select, audit, course);
+  select.dataset.id = course.id; // read by the change listener in main.js
+  select.setAttribute("aria-label", `Semester for ${course.code}`);
+  select.disabled = course.locked; // locked courses can't move
+  if (course.locked) select.title = "Unlock it to move it";
 
   lockBtn.dataset.id = course.id;
   lockBtn.classList.toggle("on", course.locked);
   lockBtn.setAttribute("aria-pressed", course.locked);
   lockBtn.disabled = !course.plannedTerm && !course.locked; // nothing to lock
-  // Hovering a greyed-out button says why it can't be clicked
-  lockBtn.title = lockBtn.disabled ? "Pick a term first" : "";
-  // Screen readers hear a steady name ("Lock CS 4500") plus pressed / not
-  // pressed from aria-pressed, and skip the padlock picture
-  lockBtn.setAttribute("aria-label", `Lock ${course.code}`);
-  const padlock = document.createElement("span");
-  padlock.setAttribute("aria-hidden", "true");
-  padlock.textContent = course.locked ? "🔒" : "🔓";
-  lockBtn.replaceChildren(course.locked ? "Locked " : "Lock ", padlock);
+  lockBtn.setAttribute(
+    "aria-label",
+    `${course.locked ? "Unlock" : "Lock"} ${course.code}`,
+  );
+  lockBtn.title = lockBtn.disabled
+    ? "Pick a semester first"
+    : course.locked
+      ? "Locked in its semester. Click to unlock"
+      : "Lock it in this semester";
 
   // Courses the student added by hand get a remove button after the lock
   if (course.custom) {
@@ -202,8 +313,31 @@ function buildRow(template, audit, course) {
     remove.title = course.locked
       ? "Unlock it first"
       : "Remove this course you added";
-    pills.append(remove);
+    when.append(remove);
   }
 
   return fragment;
+}
+
+// The semester dropdown's choices: "Choose a semester" (or "Remove from
+// plan" once it has one), then each semester in the plan. A semester the
+// course isn't scheduled in says so and can't be picked, unless the
+// course is already there.
+function fillTermSelect(select, audit, course) {
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = course.plannedTerm
+    ? "Remove from plan"
+    : "Choose a semester";
+  const options = audit.plan.terms.map((term) => {
+    const option = document.createElement("option");
+    const isHere = course.plannedTerm === term.key;
+    const notOffered = notOfferedIn(course, term.key);
+    option.value = term.key;
+    option.textContent = term.label + (notOffered ? " (not offered)" : "");
+    option.disabled = notOffered && !isHere;
+    return option;
+  });
+  select.replaceChildren(first, ...options);
+  select.value = course.plannedTerm ?? "";
 }

@@ -1,243 +1,513 @@
-/* ---------- Elective pool badges (#pool-status) ---------- */
-.pool-status {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.ps {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  padding: 6px 12px;
-  border: 1px solid var(--ink-faint);
-  background: var(--panel);
-}
-
-.ps.done {
-  border-color: var(--acccent);
-  color: var(--ink-dim);
-  background: var(--panel);
-}
-
-.ps.pending {
-  border-color: var(--ink);
+/* ---------- Progress: headline, bar, legend ---------- */
+.plan-headline {
+  margin: 0 0 10px;
+  font: 600 19px var(--sans);
+  line-height: 1.25;
   color: var(--ink);
-  background: var(--panel-alt);
 }
 
-/* ---------- Term cards (#sched-grid) ---------- */
-/* A wrapping row, not a grid, so the narrow '+' boxes can sit between
-   the cards without taking a whole card's width */
-.sched-grid {
+.plan-headline.is-complete {
+  color: var(--done);
+}
+
+/* "● 4 done  ● 2 in progress  ● 3 planned  ○ 14 to go" */
+.bar-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 2px 12px;
+  margin: -6px 0 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dot-rest {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line2);
+}
+
+/* "Credits: 162 of 128 minimum ✓" */
+.credit-min {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.credit-min.is-met {
+  color: var(--done);
+}
+
+/* A stacked bar: done / in progress / planned, the rest left empty */
+.bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--page);
+  overflow: hidden;
+}
+
+.bar.thick {
+  height: 12px;
+  margin-bottom: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.seg-done {
+  background: var(--done);
+}
+
+.seg-prog {
+  background: var(--prog);
+}
+
+.seg-plan {
+  background: var(--plan);
+}
+
+/* Small colored dot before a tile's label, matching its bar color */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.dot-done {
+  background: var(--done);
+}
+
+.dot-prog {
+  background: var(--prog);
+}
+
+.dot-plan {
+  background: var(--plan);
+}
+
+/* ---------- Requirement categories (#req-cats) ---------- */
+.req-cats {
+  margin-bottom: 14px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+}
+
+.req-cats summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  font: 600 14px var(--sans);
+  cursor: pointer;
+  list-style: none; /* hide the browser's own triangle (Firefox) */
+}
+
+.req-cats summary::-webkit-details-marker {
+  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+}
+
+.req-cats-count {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.req-cats .chev {
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.req-cats[open] .chev {
+  transform: rotate(180deg);
+}
+
+.req-cats-hint {
+  margin: 0 12px 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.cat {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.cat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.cat-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 600;
+}
+
+label.cat-name {
+  cursor: pointer;
+}
+
+.cat-frac {
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cat-reqs {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 4px;
+}
+
+.cat-reqs li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 10px;
+  padding: 2px 0;
+  font-size: 12.5px;
+}
+
+.cat-reqs label {
+  cursor: pointer;
+}
+
+.cat-note {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Warnings (#plan-check) ---------- */
+.plan-check:empty {
+  display: none; /* nothing planned yet: no box at all */
+}
+
+.plan-check {
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.plan-check.ok {
+  color: var(--muted);
+}
+
+.plan-check.has-problems {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--check) 55%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--check) 10%, transparent);
+}
+
+.pc-count {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--check);
+  color: var(--onfill);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.plan-check ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  color: var(--muted);
+}
+
+/* "Semesters" heading above the term cards */
+.plan-sub {
+  margin: 0 0 8px;
+  font: 600 15px var(--sans);
+  color: var(--ink);
+}
+
+/* ---------- Semester cards (#sched-grid) ---------- */
+/* Two columns inside the plan panel, then the '+ Add' tile in the next
+   free cell after the last semester */
+.sched-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-bottom: 14px;
 }
 
 .term-card {
-  flex: 1 1 190px; /* at least 190px wide; shares the spare room */
-  max-width: 340px; /* so a card alone on a row doesn't stretch across it */
-  background: var(--panel);
-  border: 1px solid var(--ink-faint);
-  padding: 12px 14px;
+  min-width: 0;
+  min-height: 92px;
+  padding: 8px 8px 6px;
+  border-radius: 6px;
+  background: var(--raised);
 }
 
-.term-card h3 {
+/* Heading: Fall 2026 ........ 9 cr [−] */
+.term-head {
   display: flex;
-  justify-content: space-between; /* term name left, credits right */
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px dashed var(--ink-faint);
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink);
-  font-weight: bolder;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  margin: 0 0 4px;
 }
 
-/* The term name takes the spare room, so the credits and the '−' button
-   sit together on the right */
 .term-name {
-  margin-right: auto;
+  margin: 0;
+  font: 600 13px var(--sans);
+  line-height: 1.2;
+  color: var(--ink);
 }
 
-/* '−' on each card: removes that semester */
+.term-cr {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* '−' on the last semester: a small round button at the end of its heading */
 .term-remove {
-  margin-left: 8px;
-  padding: 0 6px;
-  border: 1px solid var(--ink-faint);
-  border-radius: 4px;
-  background: none;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line2);
+  border-radius: 50%;
+  background: var(--surface);
   color: var(--ink);
-  font: inherit;
-  line-height: 1.3;
+  font: 600 14px var(--sans);
   cursor: pointer;
 }
 
 .term-remove:hover:not(:disabled) {
-  background: var(--panel-alt);
+  border-color: var(--accent);
 }
 
 .term-remove:disabled {
-  opacity: 0.35;
-  cursor: default;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-/* '+' boxes (before the first card, in gaps, after the last): each adds
-   one semester; hovering says which. Narrow and dashed, so it reads as a
-   place to add something rather than a real semester. It is as tall as
-   the cards in its row. */
+/* '+ Summer 2028': a half-width column in the cell after the last semester */
 .term-add {
-  flex: 0 0 30px; /* always 30px wide */
-  min-height: 74px;
-  padding: 0;
-  border: 1px dashed var(--ink-faint);
+  width: 50%;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border: 1.5px dashed var(--line2);
+  border-radius: 6px;
   background: none;
-  color: var(--ink-dim);
-  font-family: var(--mono);
-  font-size: 16px;
+  color: var(--ink);
+  font: 600 12.5px var(--sans);
   cursor: pointer;
 }
 
+.term-add-plus {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--raised);
+  font-size: 16px;
+  line-height: 1;
+}
+
 .term-add:hover:not(:disabled) {
-  background: var(--panel);
-  color: var(--ink);
+  border-color: var(--accent);
 }
 
 .term-add:disabled {
-  opacity: 0.35;
-  cursor: default;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
+/* ---------- Courses inside a semester ---------- */
 .term-courses {
   list-style: none;
   margin: 0;
   padding: 0;
-  min-height: 20px;
 }
 
-.term-courses li {
-  display: flex;
-  justify-content: space-between; /* course code left, credits right */
-  gap: 6px;
-  padding: 4px 0;
-  border-bottom: 1px dashed var(--line);
-  font-size: 12px;
+/* One row: [grip/padlock] CODE △ ...... 3 */
+.tc {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  margin-top: 3px;
+  padding: 0 6px 0 0;
+  border-radius: 4px;
+  border-left: 3px solid var(--plan);
+  background: var(--surface);
+  font-size: 12.5px;
 }
 
-.term-courses li:last-child {
-  border-bottom: none;
+.tc.is-registered {
+  border-left-color: var(--prog);
+}
+
+.tc.has-warning {
+  border-left-color: var(--check);
+  background: color-mix(in srgb, var(--check) 12%, var(--surface));
+}
+
+.course-code {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.course-warn {
+  color: var(--check);
+  font-size: 11px;
+}
+
+.course-cr {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The lock button: a grip while the course can move, a padlock once
+   locked. Both are in the markup; the row's class picks which shows. */
+.tc-lock {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tc-lock:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.tc-lock:disabled {
+  cursor: default;
+}
+
+.tc .ic-lock,
+.tc.is-locked .ic-grip {
+  display: none;
+}
+
+.tc.is-locked .ic-lock {
+  display: block;
+}
+
+.tc.is-locked .tc-lock:not(:disabled) {
+  color: var(--accent);
+}
+
+/* ---------- Dragging a course between semesters (ui/dragDrop.js) ---------- */
+/* Movable rows: a grab cursor, and no text selection or iPhone long-press
+   menu getting in the way of a press-and-hold */
+.tc.is-movable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* The row being dragged stays in place, faded */
+.tc.is-dragging {
+  opacity: 0.35;
+}
+
+/* The copy that follows the pointer */
+.tc-ghost {
+  position: fixed;
+  z-index: 50;
+  margin: 0;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+  cursor: grabbing;
+}
+
+body.is-dragging-course,
+body.is-dragging-course * {
+  cursor: grabbing !important;
+}
+
+/* The semester under the pointer */
+.term-card.is-drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--raised));
+}
+
+/* ...and when the course wouldn't fit there (not offered, prerequisites):
+   amber, with the reason at the bottom of the card */
+.term-card.is-drop-warn {
+  outline-color: var(--check);
+  background: color-mix(in srgb, var(--check) 8%, var(--raised));
+}
+
+.term-card.is-drop-warn::after {
+  content: attr(data-drop-warning);
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--check);
 }
 
 .term-courses .empty {
-  color: var(--ink-faint);
-  font-size: 11.5px;
-  font-style: italic;
-}
-
-/* Locked courses: green, bold, with a check mark added by CSS */
-.term-courses li.is-locked .course-code {
-  color: var(--ink-faint);
-  font-weight: 600;
-}
-
-.term-courses li.is-locked .course-code::before {
-  content: "\2713  "; /* ✓ */
+  padding: 6px 2px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 /* ---------- Not-yet-placed message (#unassigned) ---------- */
 .unassigned {
-  background: var(--panel);
-  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  background: var(--raised);
+  border: 1px dashed var(--line2);
   padding: 12px 14px;
   font-size: 12.5px;
-  color: var(--ink-dim);
+  color: var(--muted);
 }
 
 .unassigned b {
   color: var(--ink);
 }
 
-/* ---------- Switching requirements on and off ---------- */
-/* The badges are buttons: clicking one switches its requirement off */
-button.ps {
-  cursor: pointer;
-}
-
-.ps.off {
-  border-style: dotted;
-  color: var(--ink-faint);
-  background: none;
-  opacity: 0.6;
-}
-
-.req-toggles {
-  margin-bottom: 14px;
-  padding: 8px 12px;
-  border: 1px dashed var(--ink-faint);
-  font-size: 12.5px;
-}
-
-.req-toggles summary {
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 12px;
-}
-
-.req-toggles-hint {
-  margin: 8px 0;
-  color: var(--ink-dim);
-  max-width: 70ch;
-}
-
-.req-toggle-section {
-  margin: 10px 0 4px;
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--ink-dim);
-}
-
-.req-toggle {
-  display: block;
-  padding: 2px 0;
-  cursor: pointer;
-}
-
-/* ---------- Prerequisite warning on a term card's course ---------- */
-.term-courses li.has-warning .course-code::after {
-  content: " \26A0"; /* ⚠ */
-  color: var(--warn);
-}
-
-/* A section's heading in the requirements panel is a label with its own
-   tick box, which switches everything under it */
-label.req-toggle-section {
-  display: block;
-  cursor: pointer;
-}
-
-/* ---------- Plan check line (#plan-check) ---------- */
-.plan-check {
-  margin-bottom: 10px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--warn);
-}
-
-.plan-check.ok {
-  color: var(--ink-dim);
-}
-
-.plan-check:empty {
-  display: none; /* nothing planned yet: no line at all */
-}
-
 /* Credit-load warning under a semester card's heading */
 .term-warn {
-  margin: 0 0 6px;
-  font-size: 11px;
-  color: var(--warn);
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  color: var(--check);
+}
+
+/* "1 more on locked or registered courses isn't shown." */
+.pc-hidden {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
 }

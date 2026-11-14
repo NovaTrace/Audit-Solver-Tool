@@ -108,8 +108,9 @@ export function clearAllData() {
 // ---------- Changing the plan ----------
 
 /**
- * A term pill was clicked: place the course in that term, or unplace it if
- * it's already there. Returns true if something changed.
+ * Place the course in that term, or unplace it if it's already there.
+ * (The page now uses setTerm below; this stays for the tests that build
+ * plans with it.) Returns true if something changed.
  */
 export function toggleTerm(id, term) {
   const course = findCourse(id);
@@ -117,6 +118,23 @@ export function toggleTerm(id, term) {
   if (course.locked) return false; // locked courses can't move
   if (course.status === "completed") return false; // already taken
   course.plannedTerm = course.plannedTerm === term ? null : term;
+  return true;
+}
+
+/**
+ * A course's semester dropdown changed: put it in `term`, or take it out
+ * of the plan when `term` is "" ("Remove from plan").
+ * Returns true if something changed.
+ */
+export function setTerm(id, term) {
+  const course = findCourse(id);
+  if (!course) return false;
+  if (course.locked) return false; // locked courses can't move
+  if (course.status === "completed") return false; // already taken
+  const next = term === "" ? null : term;
+  if (next !== null && !isTermKey(next)) return false;
+  if (course.plannedTerm === next) return false; // already there
+  course.plannedTerm = next;
   return true;
 }
 

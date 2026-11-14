@@ -14,7 +14,7 @@
 //     setupSemesters()     the '+' and '−' on the semester cards
 //     setupRequirements()  switching requirements on and off
 //     setupPlanButtons()   Reset plan, Clear data
-//     setupCourseList()    filter chips, search, term pills, lock, remove
+//     setupCourseList()    category/Show dropdowns, search, semester dropdowns, lock, remove
 //     setupAddCourse()     the add-a-course form
 //   STARTUP            runs the setup functions, then the first draw
 //
@@ -46,13 +46,14 @@ import "./styles/schedule.css";
 import "./styles/course-list.css";
 
 // ---------- Modules ----------
+import "./ui/titleAnimation.js";
 import {
   getAudit,
   isSampleLoaded,
   loadState,
   saveState,
   resetPlan,
-  toggleTerm,
+  setTerm,
   toggleLock,
   addTerm,
   removeTerm,
@@ -64,7 +65,7 @@ import {
   AuditError,
   clearAllData,
 } from "./state.js";
-import { allSections, filterGroups } from "./logic/courses.js";
+import { listGroups, filterGroups } from "./logic/courses.js";
 import { coursesInTerm } from "./logic/credits.js";
 import { setupPopups } from "./ui/popups.js";
 import { setupImport, setupPaste, setupReceiver } from "./ui/importer.js";
@@ -73,17 +74,28 @@ import {
   BOOKMARKLET_VERSION,
 } from "./ui/bookmarkletPanel.js";
 import { setupExport } from "./ui/exporter.js";
+import { setupDragDrop } from "./ui/dragDrop.js";
+import { setupSettings } from "./ui/settings.js";
+import { courseWarnings } from "./logic/planChecks.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
 import {
   renderCourseList,
-  renderFilterChips,
+  renderCategoryOptions,
+  renderShowOptions,
   renderRequirementChoices,
 } from "./render/courseList.js";
 
-// The chosen filter chip: "all" or a section name. This is display state,
-// not plan data, so it lives here rather than in state.js and isn't saved.
+// The course list's dropdowns: the chosen category ("all" or a section
+// name) and "Show" choice ("all", "attention" or "unplaced"). This is
+// display state, not plan data, so it lives here rather than in state.js
+// and isn't saved.
 let activeSection = "all";
+let activeShow = "all";
+
+// Palette and course-detail choices from the Settings dialog
+// (ui/settings.js). Set before the first draw, at the bottom of this file.
+let settings = null;
 
 // =====================================================================
 // REDRAWING — call these after anything changes the audit
@@ -95,7 +107,7 @@ let panelShowsSample = null;
 
 // Header, footer, and the get-started panel (only shown with the demo)
 function refreshHeader() {
-  renderHeader(getAudit(), { isSample: isSampleLoaded(), now: new Date() });
+  renderHeader(getAudit(), { isSample: isSampleLoaded() });
   const panel = document.getElementById("get-started");
   panel.querySelector("h2").textContent = isSampleLoaded()
     ? "Load your degree audit"
@@ -110,30 +122,37 @@ function refreshHeader() {
   }
 }
 
-// Stats tiles + schedule section
+// The plan panel (everything below its heading row)
 function refreshSchedule() {
-  renderSchedule(getAudit()); // draws the stat tiles too
+  renderSchedule(getAudit());
 }
 
-// Chips + course list, keeping the current chip and search text
+// Dropdowns + course list, keeping the current choices and search text
 function refreshList() {
   const audit = getAudit();
-  // Worked out once, then used for both the chips and the list
-  const everything = allSections(audit);
-  // One chip per section that still has something to plan
+  // Worked out once, then used for both the category dropdown and the list
+  const everything = listGroups(audit);
   const sections = everything.map((group) => group.section);
   // A new audit may not have the section that was chosen before
   if (activeSection !== "all" && !sections.includes(activeSection)) {
     activeSection = "all";
   }
-  renderFilterChips(sections, activeSection);
+  renderCategoryOptions(sections, activeSection);
+  renderShowOptions(activeShow);
   renderRequirementChoices(audit); // the add-a-course form's list
 
   const query = document.getElementById("search").value.trim().toLowerCase();
   renderCourseList({
     audit,
-    groups: filterGroups(everything, { filterSection: activeSection, query }),
+    groups: filterGroups(everything, {
+      filterSection: activeSection,
+      query,
+      show: activeShow,
+      audit,
+    }),
     query,
+    show: activeShow,
+    settings,
   });
 }
 
@@ -163,7 +182,10 @@ function saveAndRefresh() {
 }
 
 function setSaveStatus(text) {
-  document.getElementById("save-status").textContent = text;
+  const status = document.getElementById("save-status");
+  status.textContent = text;
+  // The green dot only shows after a real save
+  status.classList.toggle("is-saved", text.startsWith("Saved"));
 }
 
 // =====================================================================
@@ -216,7 +238,8 @@ function setupHeader() {
 }
 
 // =====================================================================
-// SEMESTERS — the '+' and '−' on the semester cards (#sched-grid)
+// SEMESTERS — '+ Add', the last semester's '−', and the lock on each
+// course in the semester cards (#sched-grid)
 // Drawing lives in render/schedule.js.
 // =====================================================================
 function setupSemesters() {
@@ -224,7 +247,14 @@ function setupSemesters() {
   // rebuilt on every redraw: a listener on each button would be thrown
   // away with it.
   document.getElementById("sched-grid").addEventListener("click", (e) => {
-    // Each '+' box carries the term it adds in data-term
+    // The grip / padlock on a course: lock or unlock it in that semester
+    const lockBtn = e.target.closest(".tc-lock");
+    if (lockBtn) {
+      if (toggleLock(lockBtn.dataset.id)) saveAndRefresh();
+      return;
+    }
+
+    // The '+ Add' tile carries the term it adds in data-term
     const addBtn = e.target.closest(".term-add");
     if (addBtn) {
       if (addTerm(addBtn.dataset.term)) saveAndRefresh();
@@ -247,29 +277,39 @@ function setupSemesters() {
   });
 }
 
+// Dragging a course from one semester card to another (ui/dragDrop.js).
+// While hovering a semester, it says if the course wouldn't fit there.
+function setupDragging() {
+  setupDragDrop({
+    onMove: (id, term) => {
+      if (setTerm(id, term)) saveAndRefresh();
+    },
+    warnFor: (id, term) => {
+      const { courses } = getAudit();
+      if (!Object.hasOwn(courses, id)) return "";
+      const course = courses[id];
+      const there = { ...course, plannedTerm: term };
+      return courseWarnings(getAudit(), there).join(" · ");
+    },
+  });
+}
+
 // =====================================================================
 // REQUIREMENTS — switching one off ("I don't need to finish this") or
-// back on. Two places do it: the progress badges (#pool-status) and the
-// tick boxes in the "Requirements you're planning for" panel.
+// back on, with the tick boxes in the plan panel's "Requirement
+// categories" dropdown (drawn by render/schedule.js).
 // =====================================================================
 function setupRequirements() {
-  document.getElementById("pool-status").addEventListener("click", (e) => {
-    const badge = e.target.closest(".ps");
-    if (badge && toggleRequirement(badge.dataset.id)) saveAndRefresh();
-  });
-
   // A tick box reports "change" (not "click") when it's ticked or unticked
-  document
-    .getElementById("req-toggles-list")
-    .addEventListener("change", (e) => {
-      // A section's box switches everything under it; ticked means "on"
-      const { id, section } = e.target.dataset;
-      const changed =
-        section !== undefined
-          ? setSectionOff(section, !e.target.checked)
-          : toggleRequirement(id);
-      if (changed) saveAndRefresh();
-    });
+  document.getElementById("req-categories").addEventListener("change", (e) => {
+    // A section's box switches everything under it; ticked means "on"
+    const { id, section } = e.target.dataset;
+    const changed =
+      section !== undefined
+        ? setSectionOff(section, !e.target.checked)
+        : toggleRequirement(id);
+    if (changed) saveAndRefresh();
+  });
 }
 
 // =====================================================================
@@ -299,38 +339,43 @@ function setupPlanButtons() {
 }
 
 // =====================================================================
-// COURSE LIST — filter chips, search, and each row's buttons
-// (#chips, #search, #list). Drawing lives in render/courseList.js.
+// COURSE LIST — the category and Show dropdowns, search, and each row's
+// semester dropdown, lock and remove buttons (#category, #show, #search,
+// #list). Drawing lives in render/courseList.js.
 // =====================================================================
 function setupCourseList() {
-  // Filter chips: one listener on the chip box (the chips are rebuilt on
-  // every redraw)
-  document.getElementById("chips").addEventListener("click", (e) => {
-    const chip = e.target.closest(".chip");
-    if (!chip) return;
-    activeSection = chip.dataset.section;
+  document.getElementById("category").addEventListener("change", (e) => {
+    activeSection = e.target.value;
+    refreshList();
+  });
+  document.getElementById("show").addEventListener("change", (e) => {
+    activeShow = e.target.value;
     refreshList();
   });
 
   // Search box: redraw the list on every keystroke
   document.getElementById("search").addEventListener("input", refreshList);
 
-  // Term pills, lock buttons and remove buttons: one listener on the
-  // whole list. state.js decides whether the click is allowed.
-  document.getElementById("list").addEventListener("click", (e) => {
-    const pill = e.target.closest(".pill");
+  const list = document.getElementById("list");
+
+  // A row's semester dropdown: one listener on the whole list (the rows
+  // are rebuilt on every redraw). state.js decides if the move is allowed.
+  list.addEventListener("change", (e) => {
+    const select = e.target.closest(".term-select");
+    if (select && setTerm(select.dataset.id, select.value)) saveAndRefresh();
+  });
+
+  // Lock and remove buttons
+  list.addEventListener("click", (e) => {
     const lockBtn = e.target.closest(".lock-btn");
     const removeBtn = e.target.closest(".remove-course-btn");
 
     let changed = false;
-    if (pill) {
-      changed = toggleTerm(pill.dataset.id, pill.dataset.term);
-    } else if (lockBtn) {
+    if (lockBtn) {
       changed = toggleLock(lockBtn.dataset.id);
     } else if (removeBtn) {
       changed = removeCustomCourse(removeBtn.dataset.id);
     }
-
     if (changed) saveAndRefresh();
   });
 }
@@ -358,7 +403,7 @@ function setupAddCourse() {
       message.textContent = result.message;
       return;
     }
-    message.textContent = `Added ${result.code}. Pick its term in the list below.`;
+    message.textContent = `Added ${result.code}. Pick its semester in the list below.`;
     // Ready for the next one; credits and the requirement stay as chosen
     field("add-code").value = "";
     field("add-title").value = "";
@@ -369,8 +414,16 @@ function setupAddCourse() {
 // =====================================================================
 // STARTUP
 // =====================================================================
+// Settings first: they pick the palette and what the list shows
+settings = setupSettings({
+  onChange: (next) => {
+    settings = next;
+    refreshList();
+  },
+});
 setupHeader();
 setupSemesters();
+setupDragging();
 setupRequirements();
 setupPlanButtons();
 setupCourseList();

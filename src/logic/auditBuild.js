@@ -28,6 +28,10 @@ import { normalizeCode, idFromCode, codesIn } from "./courseText.js";
 // A title line that starts with a course code: "CS 4500 Operating Systems I"
 const COURSE_TITLE = /^[A-Z]{2,4} \d{4}\b/;
 
+// Rules about the degree as a whole rather than about particular courses:
+// "MINIMUM HOURS", "ELECTRICAL ENGINEERING GPA", "Minor Residency"
+const INFO_ONLY = /\bGPA\b|\bRESIDENCY\b|^MINIMUM HOURS\b/i;
+
 /**
  * The audit's requirement blocks -> the `requirements` array.
  * `blocks` is [{ section, subs }]: a block's heading ("Computer
@@ -72,9 +76,15 @@ function buildRequirement(sub, section) {
   const titleCodes = isCourse ? courseLines.flatMap((l) => codesIn(l)) : [];
   const options = [...new Set([...titleCodes, ...select])].map(normalizeCode);
 
-  // Rules with no course list (MINIMUM HOURS, residency, GPA, ...) only
-  // matter to planning while they still need something
-  if (!isCourse && !options.length && status !== "needs") return null;
+  // A requirement with no course list that isn't waiting on anything is
+  // kept only if courses count toward it: "TECHNICAL ELECTIVES" loses its
+  // SELECT FROM list once registered courses cover it, and dropping it
+  // would leave those courses linked to nothing. Whole-degree rules
+  // (minimum hours, GPA, residency) list courses too, but nobody plans
+  // around them, so they're kept only while they still need something.
+  const isListless = !isCourse && !options.length && status !== "needs";
+  const isInfoOnly = INFO_ONLY.test(title) || INFO_ONLY.test(section);
+  if (isListless && (!applied.length || isInfoOnly)) return null;
 
   return {
     id: null, // set by buildRequirements

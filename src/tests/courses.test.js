@@ -10,6 +10,10 @@ import {
   visibleSections,
   allSections,
   filterGroups,
+  listGroups,
+  matchesShow,
+  finalGradeText,
+  prereqCodesText,
   UNLINKED,
   creditText,
   countsTowardText,
@@ -185,5 +189,76 @@ describe("row text", () => {
     expect(notOfferedIn(a.courses.ece3020, "SP27")).toBe(true); // Fall only
     expect(notOfferedIn(a.courses.ece3020, "FA27")).toBe(false);
     expect(notOfferedIn(a.courses.ece4020, "SP27")).toBe(false); // no data
+  });
+});
+
+describe("listGroups (course list with completed courses)", () => {
+  it("puts completed courses under the sections they count toward", () => {
+    const g = listGroups(audit()).find(
+      (x) => x.section === "Computer Engineering - Mathematics",
+    );
+    expect(g.completed.map((c) => c.code)).toContain("MATH 1350");
+    expect(g.courses.every((c) => c.status !== "completed")).toBe(true);
+  });
+
+  it("drops completed courses unless showing everything", () => {
+    const a = audit();
+    const shown = filterGroups(listGroups(a), {
+      filterSection: "all",
+      query: "",
+      show: "unplaced",
+      audit: a,
+    });
+    expect(shown.every((g) => g.completed.length === 0)).toBe(true);
+  });
+
+  it("searches completed courses too", () => {
+    const a = audit();
+    const shown = filterGroups(listGroups(a), {
+      filterSection: "all",
+      query: "calculus i",
+      audit: a,
+    });
+    const found = shown.flatMap((g) => g.completed.map((c) => c.code));
+    expect(found).toContain("MATH 1350");
+  });
+});
+
+describe("matchesShow (the Show dropdown)", () => {
+  it("'unplaced' keeps only courses with no semester", () => {
+    const a = audit();
+    a.courses.cs4500.plannedTerm = "SP27";
+    expect(matchesShow(a, a.courses.cs4500, "unplaced")).toBe(false);
+    expect(matchesShow(a, a.courses.ece3020, "unplaced")).toBe(true);
+  });
+
+  it("'attention' keeps warned courses, but not locked ones", () => {
+    const a = audit();
+    a.courses.ece3020.plannedTerm = "SP27"; // Fall only
+    expect(matchesShow(a, a.courses.ece3020, "attention")).toBe(true);
+    a.courses.ece3020.locked = true;
+    expect(matchesShow(a, a.courses.ece3020, "attention")).toBe(false);
+  });
+});
+
+describe("finalGradeText", () => {
+  it("gives the grade and term of the attempt that counted", () => {
+    expect(finalGradeText(audit().courses.math3400)).toBe("B · Summer 2026");
+  });
+});
+
+describe("prereqCodesText (Settings: course numbers only)", () => {
+  it("keeps just the course numbers", () => {
+    expect(prereqCodesText(audit().courses.cs4500)).toBe(
+      "Prereqs: CS 2060 or ECE 1021; CS 2080; CS 4200 or CS 5200 or ECE 4480",
+    );
+  });
+
+  it("says when there are none, or when details weren't loaded", () => {
+    const a = audit();
+    expect(prereqCodesText(a.courses.math1350)).toBe("No prereqs");
+    expect(prereqCodesText({ ...a.courses.cs4500, prereqText: null })).toBe(
+      "Prereqs unknown",
+    );
   });
 });

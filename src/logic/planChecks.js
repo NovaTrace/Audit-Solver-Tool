@@ -4,6 +4,8 @@
 //   courseWarnings()  about one planned course: it comes before its
 //                     prerequisites (logic/prereqs.js), or it sits in a
 //                     term it isn't offered
+//   shownWarnings()   courseWarnings(), except none for a locked or
+//                     registered course: the student has settled it there
 //   termWarning()     about one semester: too many credits
 //   planCheckText()   one line adding all of them up, for above the
 //                     schedule
@@ -74,6 +76,17 @@ export function termWarning(audit, termKey) {
  * `heavy` counts overloaded semesters; `planned` is how many courses
  * are in the plan at all.
  */
+/**
+ * The warnings to SHOW for a course: the same as courseWarnings(), but
+ * none once it's locked or registered. Locking says "I know, it stays
+ * here", so its warning would only be noise. (The plan's warning box
+ * still says how many are hidden.)
+ */
+export function shownWarnings(audit, course) {
+  if (course.locked || course.status === "registered") return [];
+  return courseWarnings(audit, course);
+}
+
 export function planProblems(audit) {
   const planned = audit.plan.terms.flatMap((t) => coursesInTerm(audit, t.key));
   return {

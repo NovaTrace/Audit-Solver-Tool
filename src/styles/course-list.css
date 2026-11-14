@@ -1,261 +1,421 @@
-.cat-head {
-  max-width: 1380px;
-  height: auto;
-  background-color: var(--accent-bg);
-  padding: 10px;
-  margin: auto;
-}
-
+/* ---------- Toolbar: category, Show, search ---------- */
 .controls {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  margin: 22px 0 12px;
   align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
 }
 
-.chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.chip {
-  font-family: var(--mono);
-  font-size: 12px;
-  padding: 6px 12px;
-  border: 1px solid var(--ink-faint);
-  background: var(--button);
-  color: var(--ink-dim);
-  cursor: pointer;
-  transition: all 0.12s;
-}
-
-.chip:hover {
-  border-color: var(--accent);
+/* Dropdowns and the search box share one look */
+.field {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  background: var(--surface);
   color: var(--ink);
+  font: 14px var(--sans);
 }
 
-.chip.active {
-  background: var(--panel);
+.field:hover:not(:disabled) {
   border-color: var(--accent);
-  color: var(--ink);
-  font-weight: 600;
 }
 
-/* SEARCH BAR AND COURSE INFO CONTAINER FOR PLACEMENT */
+.field:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+#category {
+  max-width: 280px;
+}
+
 .search-container {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-left: auto;
 }
 
 #search {
-  font-family: var(--sans);
-  font-size: 13px;
-  padding: 7px 12px;
-  border-radius: 5px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink);
-  min-width: 250px;
-  margin-left: auto;
+  min-width: 230px;
 }
 
 #search::placeholder {
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
-.cat-head {
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
+/* ---------- One card per category ---------- */
+.grp {
+  margin-bottom: 22px;
+}
+
+.grp-h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+
+.grp-h h3 {
+  margin: 0;
+  font: 600 17px var(--sans);
   color: var(--ink);
-  background: var(--panel-alt);
-  padding: 7px 12px;
+}
+
+.grp-h span {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  border-radius: 8px;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-bottom: none;
-  border-radius: 0px 0px 0 0;
-  margin-top: 14px;
+  overflow: hidden;
 }
 
-.cat-head + .row {
-  border-top: 1px solid var(--line);
-  border-radius: 0;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 100px 1fr 300px;
-  gap: 14px;
+/* ---------- Completed courses, folded at the top of a card ---------- */
+.fold summary {
+  display: flex;
   align-items: center;
-  background: var(--course);
-  border: 1px solid var(--line);
-  border-top: none;
-  padding: 10px 12px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: color-mix(in srgb, var(--done) 9%, var(--surface));
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none; /* hide the browser's own triangle (Firefox) */
 }
 
-.row.locked {
-  background: var(--lock-bg);
+.fold summary::-webkit-details-marker {
+  display: none; /* hide the browser's own triangle (Chrome, Safari) */
 }
 
-.row.locked .r-code {
-  color: var(--lock);
+.fold-check {
+  color: var(--done);
+  font-weight: 700;
 }
 
-.row:last-of-type {
-  border-radius: 0 0 0px 0px;
-}
-.row.pool {
-  background: var(--panel-alt);
-}
-.r-code {
-  font-family: var(--mono);
+.fold b {
   font-weight: 600;
+}
+
+/* "Show" / "Hide" on the right */
+.fold-toggle {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.fold-toggle::after {
+  content: "Show";
+}
+
+.fold[open] .fold-toggle::after {
+  content: "Hide";
+}
+
+.fold summary:hover .fold-toggle {
   color: var(--ink);
+}
+
+.done-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 16px 8px;
+  background: color-mix(in srgb, var(--done) 5%, var(--surface));
+}
+
+.done-list li {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto 50px;
+  gap: 12px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
   font-size: 13px;
 }
-.r-cr {
-  display: block;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-faint);
-  margin-top: 2px;
-}
-.r-title {
-  color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 600;
-}
-.r-sub {
-  display: block;
-  color: var(--ink-faint);
-  font-size: 11.5px;
-  margin-top: 1px;
-  line-height: 1.4;
-}
-.r-term {
-  display: inline-block;
-  font-family: var(--mono);
-  background: var(--highlight);
-  color: var(--ink);
-  font-size: 10px;
-  padding: 2px 6px;
-  margin-top: 4px;
+
+.done-list li:first-child {
+  border-top: none;
 }
 
-.r-prereq {
-  display: block;
-  color: var(--ink-dim);
-  font-size: 11.5px;
-  margin-top: 4px;
-  line-height: 1.4;
-}
-.pills {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+.done-title {
+  color: var(--muted);
 }
 
-.pill {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  padding: 5px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-faint);
-  cursor: pointer;
-  transition: all 0.1s;
-  user-select: none;
-}
-
-.pill:hover {
-  border-color: var(--accent);
-  color: var(--ink);
-}
-.pill.on {
-  background: var(--button);
-  border-color: var(--button-border);
-  color: #fff;
-  font-weight: 600;
-}
-
-.lock-btn {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  padding: 5px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--ink-faint);
-  cursor: pointer;
-  /* Wide enough for "Locked 🔒", so the button doesn't change size (and
-     nudge the pills) when it switches from "Lock 🔓" */
-  min-width: 80px;
-  text-align: center;
+.done-grade,
+.done-cr {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.lock-btn.on {
-  background: var(--lock);
-  border-color: var(--accent);
-  color: #fff;
+.done-cr {
+  text-align: right;
+}
+
+/* ---------- A course still to plan ----------
+   status | code, title and details | credits | semester dropdown + lock */
+.row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) 48px 230px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.card > .row:first-child {
+  border-top: none;
+}
+
+.row.is-check {
+  background: color-mix(in srgb, var(--check) 9%, transparent);
+}
+
+/* Status: icon + word. Only the matching icon shows (.on). */
+.r-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
   font-weight: 600;
 }
+
+.r-status .ic {
+  display: none;
+  flex-shrink: 0;
+}
+
+.r-status .ic.on {
+  display: block;
+}
+
+.st-prog {
+  color: var(--prog);
+}
+
+.st-plan {
+  color: var(--plan);
+}
+
+.st-check {
+  color: var(--check);
+}
+
+.st-need {
+  color: var(--muted);
+}
+
+.r-code {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.r-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.r-sub,
+.r-meta,
+.r-unlocks,
+.r-locked {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.r-locked {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Warnings under a course: one line each */
+.r-warn {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--check);
+}
+
+.r-warn span {
+  display: block;
+}
+
+.r-cr {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.r-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-select {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.r-now {
+  font-size: 13px;
+  color: var(--prog);
+}
+
+/* Padlock button beside the dropdown */
+.lock-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.lock-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.lock-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--onfill);
+}
+
 .lock-btn:disabled {
   opacity: 0.4;
-  cursor: default; /* the regular arrow: greyed out already says "not yet" */
+  cursor: default;
 }
 
-/* Term the course isn't scheduled in (from the course details) */
-.pill.not-offered {
-  border-style: dashed;
-}
-
-.pill[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+/* Narrow: status and credits on one line, details, then the dropdown */
 @media (max-width: 760px) {
   .row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
   }
-  .pills {
-    margin-top: 6px;
+
+  .r-main,
+  .r-when {
+    grid-column: 1 / -1;
+  }
+
+  .r-cr {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .done-list li {
+    grid-template-columns: 90px minmax(0, 1fr) auto;
+  }
+
+  .done-grade {
+    display: none;
+  }
+
+  #search {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .search-container {
+    margin-left: 0;
+    flex: 1 1 100%;
+  }
+
+  /* The two dropdowns share the first row evenly */
+  .field-label {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .field-label .field {
+    width: 100%;
   }
 }
 
-/* Shown in #list when no course matches the chip + search */
+/* Shown in #list when nothing matches the dropdowns + search */
 .list-empty {
-  margin: 14px 0 0;
+  margin: 0;
   padding: 12px 14px;
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed var(--line2);
   border-radius: 6px;
-  font-size: 12.5px;
-  color: var(--ink-dim);
+  font-size: 13px;
+  color: var(--muted);
 }
 
 /* ---------- Add a course that isn't listed (#add-course) ---------- */
 .add-course {
-  margin: 0 0 12px;
-  padding: 10px 14px;
-  border: 1px dashed var(--ink-faint);
-  background: var(--panel-alt);
-  font-size: 12.5px;
+  margin: 0 0 16px;
+  border: 1px dashed var(--line2);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.add-course[open] {
+  border-style: solid;
+  background: var(--surface);
 }
 
 .add-course summary {
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-weight: 600;
+  font-size: 14px;
   color: var(--ink);
+  cursor: pointer;
+  list-style: none; /* hide the browser's own triangle (Firefox) */
+}
+
+.add-course summary::-webkit-details-marker {
+  display: none; /* hide the browser's own triangle (Chrome, Safari) */
+}
+
+.add-plus {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--raised);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.add-course > :not(summary) {
+  margin-left: 14px;
+  margin-right: 14px;
 }
 
 .add-course-hint {
-  margin: 8px 0;
-  color: var(--ink-dim);
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--muted);
   max-width: 70ch;
 }
 
@@ -272,20 +432,20 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-dim);
+  font-size: 12.5px;
+  color: var(--muted);
 }
 
 .add-course-form input,
 .add-course-form select,
 .add-course-form button {
-  font-family: var(--sans);
-  font-size: 13px;
-  padding: 6px 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  background: var(--page);
   color: var(--ink);
+  font: 14px var(--sans);
 }
 
 #add-code {
@@ -293,7 +453,7 @@
 }
 
 #add-credits {
-  width: 70px;
+  width: 80px;
 }
 
 #add-req {
@@ -301,33 +461,38 @@
 }
 
 .add-course-form button {
-  font-family: var(--mono);
+  padding: 0 16px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--onfill);
+  font-weight: 600;
   cursor: pointer;
 }
 
 .add-course-form button:hover {
-  background: var(--button);
+  background: color-mix(in srgb, var(--accent) 85%, var(--ink));
 }
 
 .add-course-msg {
-  margin: 8px 0 0;
+  margin: 8px 0 12px;
   min-height: 1.4em; /* keeps the box from jumping when a message shows */
-  color: var(--ink-dim);
+  color: var(--muted);
 }
 
 .add-course-msg.error {
-  color: var(--ink);
+  color: var(--danger);
   font-weight: 600;
 }
 
 /* Remove button on a course the student added (after its Lock button) */
 .remove-course-btn {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  padding: 5px 8px;
-  border: 1px dashed var(--ink-faint);
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font: 600 13px var(--sans);
+  border: 1px dashed var(--line2);
   background: none;
-  color: var(--ink-dim);
+  color: var(--muted);
   cursor: pointer;
 }
 
@@ -339,27 +504,4 @@
 .remove-course-btn:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-/* Prerequisite warning under a course planned too early */
-.r-warn {
-  display: block;
-  margin-top: 4px;
-  color: var(--warn);
-  font-size: 11.5px;
-  line-height: 1.4;
-}
-
-/* Each warning on its own line */
-.r-warn span {
-  display: block;
-}
-
-/* "Needed for: CS 4500, ECE 4899" under a course's prerequisites */
-.r-unlocks {
-  display: block;
-  margin-top: 4px;
-  color: var(--ink-dim);
-  font-size: 11.5px;
-  line-height: 1.4;
 }
