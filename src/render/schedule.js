@@ -8,8 +8,8 @@
 //                   tick box per unmet requirement to switch it off, and
 //                   the requirements no course can meet
 //   #plan-check     the plan's warnings, course by course
-//   #sched-grid     one card per semester, then '+ Add' after the last one;
-//                   only the last semester has a '−'
+//   #sched-grid     one card per semester, then a narrow '+' column after
+//                   the last one; only the last semester has a '−'
 //   #unassigned     required courses that still need a term
 // They're drawn together because they all change whenever a pick changes.
 //
@@ -31,12 +31,15 @@ import {
   requirementTotals,
   otherRequirements,
 } from "../logic/credits.js";
-import { courseWarnings, termWarning } from "../logic/planChecks.js";
+import {
+  courseWarnings,
+  shownWarnings,
+  termWarning,
+} from "../logic/planChecks.js";
 import { creditText } from "../logic/courses.js";
 import {
   termAfter,
   termLabel,
-  termForDate,
   isPastTerm,
   MAX_TERMS,
 } from "../logic/courseText.js";
@@ -300,14 +303,24 @@ function renderPlanCheck(audit) {
     return;
   }
 
+  // Locked and registered courses keep their warnings to themselves
+  // (shownWarnings); the box just says how many it isn't showing
   const lines = [];
+  let hidden = 0;
   for (const course of planned) {
-    for (const warning of courseWarnings(audit, course)) {
+    const all = courseWarnings(audit, course);
+    const shown = shownWarnings(audit, course);
+    hidden += all.length - shown.length;
+    for (const warning of shown) {
       lines.push(
         `${course.code} (${termLabel(course.plannedTerm)}): ${warning}`,
       );
     }
   }
+  const hiddenNote =
+    hidden === 0
+      ? ""
+      : `${hidden} more on locked or registered courses ${hidden === 1 ? "isn't" : "aren't"} shown.`;
   for (const term of audit.plan.terms) {
     const warning = termWarning(audit, term.key);
     if (warning) lines.push(`${term.label}: ${warning}`);
@@ -315,7 +328,9 @@ function renderPlanCheck(audit) {
 
   if (lines.length === 0) {
     box.className = "plan-check ok";
-    box.replaceChildren("No problems found in your plan");
+    box.replaceChildren(
+      "No problems found in your plan" + (hiddenNote ? ` (${hiddenNote})` : ""),
+    );
     return;
   }
 
@@ -335,6 +350,12 @@ function renderPlanCheck(audit) {
     }),
   );
   body.append(title, list);
+  if (hiddenNote) {
+    const note = document.createElement("small");
+    note.className = "pc-hidden";
+    note.textContent = hiddenNote;
+    body.append(note);
+  }
   box.replaceChildren(count, body);
 }
 
@@ -348,15 +369,14 @@ function setText(id, text) {
 
 // ---------- Semesters ----------
 // One card per semester, in a 2-column grid. Only the LAST semester can be
-// removed, and a new one is only ever added after it: one '+ Add' tile at
-// the end. (state.js still accepts any term, so older saved plans with a
+// removed (its '−' sits in its heading), and a new one is only ever added
+// after it: one narrow '+' column at the end. (state.js still accepts any term, so older saved plans with a
 // gap in the middle keep working.)
 function renderTermCards(audit) {
   const grid = document.getElementById("sched-grid");
   const cardTemplate = document.getElementById("term-card-tpl");
   const courseTemplate = document.getElementById("term-course-tpl");
   const terms = audit.plan.terms;
-  const nowKey = termForDate(new Date());
 
   const cards = terms.map((term, i) => {
     const items = coursesInTerm(audit, term.key);
@@ -368,11 +388,6 @@ function renderTermCards(audit) {
     card.dataset.term = term.key;
     card.querySelector(".term-name").textContent = term.label;
     card.querySelector(".term-cr").textContent = `${sumCredits(items)} cr`;
-
-    // "Now" on the semester happening today
-    const isNow = term.key === nowKey;
-    card.classList.toggle("is-now", isNow);
-    if (!isNow) card.querySelector(".now-tag").remove();
 
     // Too many credits? Say so under the heading
     const load = card.querySelector(".term-warn");
@@ -429,6 +444,9 @@ function courseRow(template, audit, course) {
 
   item.classList.toggle("is-locked", locked);
   item.classList.toggle("is-registered", isRegistered);
+  // Only unlocked courses can be dragged to another semester (ui/dragDrop.js)
+  item.classList.toggle("is-movable", !locked);
+  item.dataset.id = course.id;
   fragment.querySelector(".course-code").textContent = course.code;
   fragment.querySelector(".course-cr").textContent = creditText(course);
 
@@ -451,7 +469,7 @@ function courseRow(template, audit, course) {
 
   // Planned before its prerequisites, or in a term it isn't offered: a
   // warning mark, with the reason on hover
-  const warnings = courseWarnings(audit, course);
+  const warnings = shownWarnings(audit, course); // none once locked
   item.classList.toggle("has-warning", warnings.length > 0);
   if (warnings.length) {
     item.title = warnings.join("\n");
@@ -461,7 +479,7 @@ function courseRow(template, audit, course) {
   return fragment;
 }
 
-// The '+ Add' tile after the last semester: "Add Summer 2028"
+// The narrow '+' column after the last semester: "+ Summer 2028"
 function addBlock(key, terms) {
   const label = termLabel(key);
   const isFull = terms.length >= MAX_TERMS;
@@ -476,12 +494,10 @@ function addBlock(key, terms) {
   plus.setAttribute("aria-hidden", "true");
   plus.textContent = "+";
   const name = document.createElement("span");
-  name.textContent = `Add ${label}`;
-  const after = document.createElement("small");
-  after.textContent = isFull
-    ? `At most ${MAX_TERMS} semesters`
-    : `after ${terms.at(-1).label}`;
-  add.append(plus, name, after);
+  name.textContent = label;
+  add.setAttribute("aria-label", `Add ${label}`);
+  add.title = isFull ? `A plan can have at most ${MAX_TERMS} semesters` : "";
+  add.append(plus, name);
   return add;
 }
 

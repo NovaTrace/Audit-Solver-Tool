@@ -8,6 +8,7 @@ import { parseAudit } from "../logic/parser.js";
 import {
   offeredWarning,
   courseWarnings,
+  shownWarnings,
   termWarning,
   planProblems,
   planCheckText,
@@ -115,5 +116,18 @@ describe("planProblems and planCheckText", () => {
     a.courses.ece4891.prereqs = { groups: [], notes: [] };
     place(a, "ece4891", "FA27", 12);
     expect(planCheckText(a)).toBe("Plan check: no problems found");
+  });
+});
+
+describe("shownWarnings", () => {
+  it("shows a planned course's warnings, and none once it's locked", () => {
+    const a = audit();
+    place(a, "ece3020", "SP27"); // Fall only
+    expect(shownWarnings(a, a.courses.ece3020)).toEqual(
+      courseWarnings(a, a.courses.ece3020),
+    );
+    expect(shownWarnings(a, a.courses.ece3020).length).toBeGreaterThan(0);
+    a.courses.ece3020.locked = true;
+    expect(shownWarnings(a, a.courses.ece3020)).toEqual([]);
   });
 });

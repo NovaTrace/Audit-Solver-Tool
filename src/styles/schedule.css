@@ -246,7 +246,6 @@ label.cat-name {
 }
 
 .term-card {
-  position: relative; /* for the '−' in the corner */
   min-width: 0;
   min-height: 92px;
   padding: 8px 8px 6px;
@@ -254,32 +253,20 @@ label.cat-name {
   background: var(--raised);
 }
 
-/* The semester happening now: a top edge in the in-progress color */
-.term-card.is-now {
-  box-shadow: inset 0 3px 0 var(--prog);
-}
-
-/* Heading: Fall 2026 [Now] ........ 9 cr */
+/* Heading: Fall 2026 ........ 9 cr [−] */
 .term-head {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-height: 22px;
   margin: 0 0 4px;
-  font: 600 13px var(--sans);
-  color: var(--ink);
 }
 
 .term-name {
+  margin: 0;
+  font: 600 13px var(--sans);
   line-height: 1.2;
-}
-
-.now-tag {
-  padding: 0 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--prog) 22%, transparent);
-  color: var(--prog);
-  font-size: 10.5px;
-  line-height: 16px;
+  color: var(--ink);
 }
 
 .term-cr {
@@ -290,16 +277,9 @@ label.cat-name {
   font-variant-numeric: tabular-nums;
 }
 
-/* Last semester: leave room for the '−' in the corner */
-.term-card.is-last .term-cr {
-  margin-right: 16px;
-}
-
-/* '−' on the last semester: a small round button on its top-right corner */
+/* '−' on the last semester: a small round button at the end of its heading */
 .term-remove {
-  position: absolute;
-  top: -8px;
-  right: -8px;
+  flex-shrink: 0;
   width: 24px;
   height: 24px;
   padding: 0;
@@ -322,8 +302,9 @@ label.cat-name {
   cursor: not-allowed;
 }
 
-/* '+ Add Summer 2028 / after Spring 2028', in the next cell */
+/* '+ Summer 2028': a half-width column in the cell after the last semester */
 .term-add {
+  width: 50%;
   min-height: 92px;
   display: flex;
   flex-direction: column;
@@ -337,12 +318,6 @@ label.cat-name {
   color: var(--ink);
   font: 600 12.5px var(--sans);
   cursor: pointer;
-}
-
-.term-add small {
-  font-weight: 400;
-  font-size: 11.5px;
-  color: var(--muted);
 }
 
 .term-add-plus {
@@ -375,7 +350,7 @@ label.cat-name {
 /* One row: [grip/padlock] CODE △ ...... 3 */
 .tc {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 4px;
   min-height: 30px;
@@ -448,6 +423,61 @@ label.cat-name {
   color: var(--accent);
 }
 
+/* ---------- Dragging a course between semesters (ui/dragDrop.js) ---------- */
+/* Movable rows: a grab cursor, and no text selection or iPhone long-press
+   menu getting in the way of a press-and-hold */
+.tc.is-movable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* The row being dragged stays in place, faded */
+.tc.is-dragging {
+  opacity: 0.35;
+}
+
+/* The copy that follows the pointer */
+.tc-ghost {
+  position: fixed;
+  z-index: 50;
+  margin: 0;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+  cursor: grabbing;
+}
+
+body.is-dragging-course,
+body.is-dragging-course * {
+  cursor: grabbing !important;
+}
+
+/* The semester under the pointer */
+.term-card.is-drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--raised));
+}
+
+/* ...and when the course wouldn't fit there (not offered, prerequisites):
+   amber, with the reason at the bottom of the card */
+.term-card.is-drop-warn {
+  outline-color: var(--check);
+  background: color-mix(in srgb, var(--check) 8%, var(--raised));
+}
+
+.term-card.is-drop-warn::after {
+  content: attr(data-drop-warning);
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--check);
+}
+
 .term-courses .empty {
   padding: 6px 2px;
   color: var(--muted);
@@ -473,4 +503,11 @@ label.cat-name {
   margin: 0 0 4px;
   font-size: 11.5px;
   color: var(--check);
+}
+
+/* "1 more on locked or registered courses isn't shown." */
+.pc-hidden {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
 }

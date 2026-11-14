@@ -8,6 +8,7 @@ import {
   loadSample,
   resetPlan,
   toggleTerm,
+  setTerm,
   toggleLock,
   addTerm,
   removeTerm,
@@ -456,5 +457,34 @@ describe("clearAllData", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(course("cs4500").plannedTerm).toBeNull();
     expect(getAudit().plan.terms).toEqual(sample.plan.terms);
+  });
+});
+
+describe("setTerm (the semester dropdown)", () => {
+  beforeEach(() => loadSample());
+  const course = (id) => getAudit().courses[id];
+
+  it("places a course, moves it, and takes it out of the plan", () => {
+    expect(setTerm("cs4500", "SP27")).toBe(true);
+    expect(course("cs4500").plannedTerm).toBe("SP27");
+    expect(setTerm("cs4500", "FA27")).toBe(true);
+    expect(course("cs4500").plannedTerm).toBe("FA27");
+    expect(setTerm("cs4500", "")).toBe(true);
+    expect(course("cs4500").plannedTerm).toBeNull();
+  });
+
+  it("reports no change when the course is already there", () => {
+    setTerm("cs4500", "SP27");
+    expect(setTerm("cs4500", "SP27")).toBe(false);
+  });
+
+  it("won't move a locked course or accept a made-up term", () => {
+    setTerm("cs4500", "SP27");
+    toggleLock("cs4500");
+    expect(setTerm("cs4500", "FA27")).toBe(false);
+    expect(setTerm("cs4500", "")).toBe(false);
+    toggleLock("cs4500");
+    expect(setTerm("cs4500", "nope")).toBe(false);
+    expect(course("cs4500").plannedTerm).toBe("SP27");
   });
 });

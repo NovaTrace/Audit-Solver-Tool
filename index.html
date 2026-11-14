@@ -3,9 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Native controls (dropdowns, scrollbars) drawn dark to match the palette -->
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#1d232c" />
+    <!-- Put the saved palette on <html> before anything is drawn, so a
+         light-theme user doesn't see a dark flash. Same rules as
+         resolvePalette() in src/ui/settings.js. -->
+    <script>
+      try {
+        var saved = JSON.parse(localStorage.getItem("audit-solver-settings"));
+        var pal = (saved && saved.palette) || "auto";
+        if (pal === "mist-light") pal = "mist"; // Mist's earlier name
+        if (pal === "auto") {
+          pal = matchMedia("(prefers-color-scheme: light)").matches
+            ? "mist"
+            : "graphite";
+        }
+        document.documentElement.dataset.pal = pal;
+      } catch (e) {
+        // storage blocked: keep Graphite
+      }
+    </script>
     <title>Audit Solver Tool</title>
     <!-- Fonts are bundled with the site: see the imports in src/main.js -->
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
@@ -16,9 +33,29 @@
     <link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
+    <!-- First thing a keyboard user reaches: jumps past the header -->
+    <a class="skip-link" href="#req-title">Skip to the course list</a>
+
+    <!-- Feedback bar across the top, shown on every visit. When testing is
+         done, delete this <div> and the .dev-banner styles in
+         src/styles/base.css. -->
+    <div class="dev-banner" role="region" aria-label="Feedback">
+      <p>
+        <b>Audit Solver is still in development.</b> Tell us what works and what
+        doesn't:
+        <a
+          href="https://forms.gle/Uhe7K1Yr6ZXMhjXi6"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Feedback Form</a
+        >
+      </p>
+    </div>
     <div class="sheet">
       <header class="titleblock">
-        <div class="logo">
+        <!-- The page's main heading: the logo mark and the animated title,
+             whose svg is named "Audit Solver" for screen readers -->
+        <h1 class="logo">
           <!-- Logo mark: same drawing as public/logo.svg, placed inline so its
                colors can use CSS variables (see .logo-mark in layout.css).
                The width/height/fill attributes are fallbacks for the moment
@@ -64,7 +101,7 @@
             settle=".18"
             turned=".07"
           ></sliced-word>
-        </div>
+        </h1>
         <div class="tb-left">
           <!-- Filled by src/render/header.js: name, then degree and programs -->
           <p class="tb-name" id="student-name"></p>
@@ -83,14 +120,7 @@
         </dl>
 
         <div class="tb-btn">
-          <button type="button" class="btn btn-primary" id="import-btn">
-            Import audit
-          </button>
-          <input type="file" id="import-file" accept=".pdf, .json" hidden />
-          <button type="button" class="btn btn-secondary" id="export-btn">
-            Export plan
-          </button>
-          <div class="info-popup info-popup--right">
+          <div class="info-popup info-popup--right" data-spotlight=".tb-btn">
             <button
               type="button"
               class="info-btn"
@@ -99,16 +129,110 @@
             >
               ⓘ
             </button>
-            <span class="info-text">
-              Click 'Import audit' to load a plan you exported (.json), or your
-              degree audit saved as a PDF.<br />
-              Used the bookmark's 'Copy' button? Press Ctrl+V on this page.<br />
-              Click 'Export plan' to download your plan (.json). It includes
-              your grades, so keep it private.
-            </span>
+            <div class="info-text">
+              <ul>
+                <li>
+                  <b>Import</b>: a plan you exported (.json), or an audit PDF
+                  (which has no prerequisites or offerings).
+                </li>
+                <li>Used the bookmark's <b>Copy</b>? Press Ctrl+V here.</li>
+                <li>
+                  <b>Export</b> saves your plan, grades included: keep it
+                  private.
+                </li>
+              </ul>
+            </div>
           </div>
+          <button type="button" class="btn btn-primary" id="import-btn">
+            Import audit
+          </button>
+          <input type="file" id="import-file" accept=".pdf, .json" hidden />
+          <button type="button" class="btn btn-secondary" id="export-btn">
+            Export plan
+          </button>
+          <!-- Opens the Settings dialog (palette, course details) -->
+          <button
+            type="button"
+            class="icon-btn"
+            id="settings-btn"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+              />
+            </svg>
+          </button>
         </div>
       </header>
+
+      <!-- Settings dialog: opened by the gear button, wired in
+           src/ui/settings.js. Changes apply at once and are saved in this
+           browser; Escape or a click outside closes it. -->
+      <dialog class="settings" id="settings" aria-labelledby="settings-title">
+        <form method="dialog" id="settings-form">
+          <div class="settings-head">
+            <h2 id="settings-title">Settings</h2>
+          </div>
+
+          <fieldset>
+            <legend>Colors</legend>
+            <!-- One choice per palette: filled by src/ui/settings.js -->
+            <div class="pal-choices" id="palette-choices"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Course details in the list</legend>
+            <label class="set-row">
+              <input type="checkbox" name="showCounts" />
+              What each course counts toward
+            </label>
+            <label class="set-row">
+              <input type="checkbox" name="showOffered" />
+              When it's offered (Fall, Spring…)
+            </label>
+            <label class="set-row">
+              <input type="checkbox" name="showNeededFor" />
+              "Needed for": courses that require it first
+            </label>
+            <p class="set-label" id="prereq-label">Prerequisites</p>
+            <div
+              class="set-radios"
+              role="radiogroup"
+              aria-labelledby="prereq-label"
+            >
+              <label
+                ><input type="radio" name="prereqs" value="full" /> Full
+                text</label
+              >
+              <label
+                ><input type="radio" name="prereqs" value="codes" /> Course
+                numbers only</label
+              >
+              <label
+                ><input type="radio" name="prereqs" value="hide" />
+                Hidden</label
+              >
+            </div>
+          </fieldset>
+
+          <p class="settings-note">
+            Saved in this browser. Clearing your plan data doesn't reset them.
+          </p>
+        </form>
+      </dialog>
 
       <main>
         <!-- Open on the first visit, collapsed once an audit is loaded
@@ -147,10 +271,12 @@
             · Or
             <button type="button" id="import-alt">
               upload a PDF or JSON file</button
-            >. Your audit never leaves this browser.
+            >. The bookmark also captures each course's prerequisites and when
+            it's offered, which a PDF doesn't include. Your audit never leaves
+            this browser.
           </p>
         </details>
-        <aside class="note">
+        <aside class="note" aria-label="Note about this website">
           <h2>
             <span aria-hidden="true">⚑</span> A quick note about our website
           </h2>
@@ -166,22 +292,29 @@
         <div class="cols">
           <section class="list-col" aria-labelledby="req-title">
             <div class="col-head">
-              <h2 class="col-title" id="req-title">Requirements</h2>
+              <h2 class="col-title" id="req-title" tabindex="-1">
+                Requirements
+              </h2>
               <!-- Only shown when the plan sits below the list (narrow screens) -->
               <a class="jump-plan" href="#plan">Jump to your plan ↓</a>
             </div>
             <div class="controls">
-              <!-- Filter chips, one per audit section: filled by src/render/courseList.js -->
-              <div
-                class="chips"
-                id="chips"
-                role="group"
-                aria-label="Filter courses by section"
-              ></div>
+              <!-- Category and "Show" dropdowns: filled by src/render/courseList.js -->
+              <label class="field-label">
+                <span class="vh">Category</span>
+                <select class="field" id="category"></select>
+              </label>
+              <label class="field-label">
+                <span class="vh">Show</span>
+                <select class="field" id="show"></select>
+              </label>
 
               <!-- SEARCH BAR AND CLASS INFO POPUP-->
               <div class="search-container">
-                <div class="info-popup info-popup--right">
+                <div
+                  class="info-popup info-popup--right"
+                  data-spotlight=".list-col"
+                >
                   <button
                     type="button"
                     class="info-btn"
@@ -190,14 +323,21 @@
                   >
                     ⓘ
                   </button>
-                  <span class="info-text">
-                    Click the dropdown to assign the class to the term.<br />
-                    Click the 'lock' button to lock the class in that semester
-                    block.
-                  </span>
+                  <div class="info-text">
+                    <ul>
+                      <li>
+                        Pick a semester from a course's dropdown. Greyed-out
+                        terms aren't offered.
+                      </li>
+                      <li>
+                        The padlock keeps it there and hides its warnings.
+                      </li>
+                    </ul>
+                  </div>
                 </div>
                 <input
-                  type="text"
+                  type="search"
+                  class="field"
                   id="search"
                   aria-label="Search courses"
                   placeholder="Search course code or title…"
@@ -207,7 +347,10 @@
 
             <!-- Add a course the audit doesn't list (wired in src/main.js) -->
             <details class="add-course" id="add-course">
-              <summary>Add a course that isn't listed</summary>
+              <summary>
+                <span class="add-plus" aria-hidden="true">+</span>
+                Add a course that isn't listed
+              </summary>
               <p class="add-course-hint">
                 For requirements like "any MATH course numbered 3100 or higher",
                 where the audit doesn't name the choices. Check the catalog for
@@ -256,21 +399,110 @@
             <!-- Template: one course row (never shown directly; JS copies it) -->
             <template id="course-row-tpl">
               <div class="row">
-                <div>
-                  <span class="r-code"></span>
-                  <span class="r-cr"></span>
+                <!-- Status: icon + word (JS shows the matching icon) -->
+                <div class="r-status">
+                  <svg
+                    class="ic ic-prog"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path
+                      d="M12 3a9 9 0 0 1 0 18z"
+                      fill="currentColor"
+                      stroke="none"
+                    />
+                  </svg>
+                  <svg
+                    class="ic ic-plan"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                  <svg
+                    class="ic ic-check"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 3 2 21h20L12 3z" />
+                    <path d="M12 10v5M12 18v.01" />
+                  </svg>
+                  <svg
+                    class="ic ic-need"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-dasharray="3 3"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                  </svg>
+                  <span class="r-status-word"></span>
                 </div>
-                <div>
-                  <span class="r-title"></span>
+                <div class="r-main">
+                  <div>
+                    <span class="r-code"></span> <span class="r-title"></span>
+                  </div>
                   <span class="r-sub"></span>
-                  <span class="r-term"></span>
-                  <span class="r-prereq"></span>
+                  <span class="r-meta"></span>
                   <span class="r-unlocks"></span>
+                  <span class="r-locked"
+                    ><svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="5" y="11" width="14" height="10" rx="2" />
+                      <path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg
+                  ></span>
                   <span class="r-warn"></span>
                 </div>
-                <div class="pills">
-                  <!-- term pills are inserted here by JS -->
-                  <button type="button" class="lock-btn"></button>
+                <div class="r-cr"></div>
+                <div class="r-when">
+                  <select class="field term-select"></select>
+                  <button type="button" class="lock-btn">
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="5" y="11" width="14" height="10" rx="2" />
+                      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </template>
@@ -279,7 +511,7 @@
           <aside class="plan" id="plan" aria-labelledby="plan-title">
             <div class="section-header">
               <h2 id="plan-title">Your plan</h2>
-              <div class="info-popup info-popup--left">
+              <div class="info-popup info-popup--left" data-spotlight=".plan">
                 <button
                   type="button"
                   class="info-btn"
@@ -288,15 +520,21 @@
                 >
                   ⓘ
                 </button>
-                <span class="info-text">
-                  Click '+ Add' after the last semester to add one.<br />
-                  Click the last semester's '−' to remove it.<br />
-                  Click a course's grip to lock it in its semester; click the
-                  padlock to unlock it.<br />
-                  A semester with a locked course can't be removed.
-                </span>
+                <div class="info-text">
+                  <ul>
+                    <li>
+                      Drag courses between semesters.
+                    </li>
+                    <li>
+                      Click a grip to lock and unlock courses.
+                    </li>
+                    <li>
+                      <b>+</b> adds a semester; <b>−</b> removes the last one.
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <span id="save-status" class="save-status">
+              <span id="save-status" class="save-status" role="status">
                 Autosaves in browser
               </span>
               <button type="button" id="reset-btn" class="reset-btn">
@@ -371,15 +609,14 @@
             <!-- Templates: never shown directly; JS copies them to build the term cards -->
             <template id="term-card-tpl">
               <article class="term-card">
-                <h4 class="term-head">
-                  <span class="term-name"></span>
-                  <span class="now-tag">Now</span>
+                <div class="term-head">
+                  <h4 class="term-name"></h4>
                   <span class="term-cr"></span>
-                </h4>
-                <!-- Only on the last semester: removes it -->
-                <button type="button" class="term-remove">
-                  <span aria-hidden="true">−</span>
-                </button>
+                  <!-- Only on the last semester: removes it -->
+                  <button type="button" class="term-remove">
+                    <span aria-hidden="true">−</span>
+                  </button>
+                </div>
                 <p class="term-warn"></p>
                 <ul class="term-courses"></ul>
               </article>
