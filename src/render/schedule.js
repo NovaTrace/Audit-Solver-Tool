@@ -411,7 +411,7 @@ function setText(id, text) {
 // ---------- Semesters ----------
 // One card per semester, three per row (Fall, Spring, Summer), so each row is
 // an academic year; seasonClass() sets the column. Only the last semester
-// has a '−'; the '+' tile follows it.
+// has a '−'; the '+' tile follows it. Each year's row is labelled.
 function renderTermCards(audit, loadWarning) {
   const grid = document.getElementById("sched-grid");
   const cardTemplate = document.getElementById("term-card-tpl");
@@ -472,7 +472,26 @@ function renderTermCards(audit, loadWarning) {
     return fragment;
   });
 
-  grid.replaceChildren(...cards, addBlock(termAfter(terms.at(-1).key), terms));
+  // A "2026–27" label before the first semester of each academic year, and
+  // before the '+' tile when it starts a new one.
+  const nextKey = termAfter(terms.at(-1).key);
+  const keys = [...terms.map((t) => t.key), nextKey];
+  const nodes = [...cards, addBlock(nextKey, terms)].flatMap((node, i) => {
+    const year = academicYear(keys[i]);
+    if (i > 0 && year === academicYear(keys[i - 1])) return [node];
+    const label = document.createElement("div");
+    label.className = "year-label";
+    label.textContent = year;
+    return [label, node];
+  });
+  grid.replaceChildren(...nodes);
+}
+
+// "FA26", "SP27" and "SU27" -> "2026–27": the academic year a term is in
+function academicYear(termKey) {
+  const year = Number(termKey.slice(2));
+  const start = termKey.startsWith("FA") ? year : year - 1;
+  return `20${String(start).padStart(2, "0")}–${String(start + 1).padStart(2, "0")}`;
 }
 
 // "FA27" -> "season-fa", the card's grid column (.season-* in schedule.css).

@@ -22,11 +22,11 @@ export function sectionNames(audit) {
   return [...new Set(audit.requirements.map((r) => r.section))];
 }
 
-/** "Show" dropdown choices as [value, label] pairs. */
+/** "Show" switch choices as [value, label] pairs. */
 export const SHOW_OPTIONS = [
-  ["all", "Everything left"],
+  ["all", "Everything"],
   ["attention", "Needs attention"],
-  ["unplaced", "Not in a semester yet"],
+  ["unplaced", "Unplaced"],
 ];
 
 /**

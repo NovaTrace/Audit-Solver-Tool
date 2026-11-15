@@ -33,11 +33,13 @@ export function setupBookmarkletPanel() {
   link.href = href;
 
   // The link is meant to be dragged; clicking it here only shows a hint.
-  const label = link.textContent;
+  // Only the label changes, so the logo stays.
+  const labelBox = document.getElementById("bookmarklet-label");
+  const label = labelBox.textContent;
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    link.textContent = "Drag me to your bookmarks bar ↑";
-    setTimeout(() => (link.textContent = label), 1500);
+    labelBox.textContent = "Drag me to your bookmarks bar ↑";
+    setTimeout(() => (labelBox.textContent = label), 1500);
   });
 
   // Fallback when dragging doesn't work: copy the URL into a new bookmark.

@@ -10,12 +10,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 2px 12px;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 }
 
 .plan-headline {
   margin: 0;
-  font: 600 19px var(--sans);
+  font: 600 16px var(--sans);
   line-height: 1.25;
   color: var(--ink);
 }
@@ -29,7 +29,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px 12px;
-  margin: -6px 0 14px;
+  margin: -6px 0 16px;
   font-size: 12px;
   color: var(--muted);
 }
@@ -63,7 +63,7 @@
 
 .bar.thick {
   height: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -84,7 +84,7 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  margin-right: 5px;
+  margin-right: 4px;
   border-radius: 50%;
   vertical-align: 1px;
 }
@@ -105,7 +105,8 @@
 .req-cats {
   margin-bottom: 8px;
   border: 1px solid var(--line2);
-  border-radius: 6px;
+  border-radius: 8px;
+  border-color: var(--line);
 }
 
 .req-cats summary {
@@ -113,7 +114,7 @@
   align-items: center;
   gap: 8px;
   min-height: 30px;
-  padding: 0 10px;
+  padding: 0 12px;
   font: 600 13px var(--sans);
   cursor: pointer;
   list-style: none; /* hide the default marker (Firefox) */
@@ -125,7 +126,7 @@
 
 .req-cats-count {
   margin-left: auto;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--muted);
 }
@@ -141,20 +142,20 @@
 
 .req-cats-hint {
   margin: 0 12px 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--muted);
 }
 
 .cat {
-  padding: 10px 12px;
+  padding: 12px 12px;
   border-top: 1px solid var(--line);
 }
 
 .cat-row {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: 5px;
+  gap: 8px;
+  margin-bottom: 4px;
   font-size: 13px;
 }
 
@@ -186,9 +187,9 @@ label.cat-name {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 2px 10px;
+  gap: 2px 8px;
   padding: 2px 0;
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 .cat-reqs label {
@@ -206,7 +207,7 @@ label.cat-name {
 }
 
 .plan-check {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   font-size: 13px;
 }
 
@@ -232,7 +233,7 @@ label.cat-name {
   background: var(--check);
   color: var(--onfill);
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 .plan-check summary {
@@ -240,7 +241,7 @@ label.cat-name {
   align-items: center;
   gap: 8px;
   min-height: 30px;
-  padding: 0 10px;
+  padding: 0 12px;
   cursor: pointer;
   list-style: none; /* hide the default marker (Firefox) */
 }
@@ -271,7 +272,7 @@ label.cat-name {
 }
 
 .plan-check ul {
-  margin: 0 12px 10px;
+  margin: 0 12px 12px;
   padding-left: 16px;
   color: var(--muted);
 }
@@ -279,7 +280,7 @@ label.cat-name {
 /* "Semesters" heading above the cards. */
 .plan-sub {
   margin: 0 0 8px;
-  font: 600 15px var(--sans);
+  font: 600 14px var(--sans);
   color: var(--ink);
 }
 
@@ -291,7 +292,7 @@ label.cat-name {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .season-fa {
@@ -329,7 +330,7 @@ label.cat-name {
   min-width: 0;
   min-height: 92px;
   padding: 8px 6px 6px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--raised);
 }
 
@@ -352,7 +353,7 @@ label.cat-name {
 .term-cr {
   margin-left: auto;
   font-weight: 400;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -392,10 +393,10 @@ label.cat-name {
   gap: 4px;
   padding: 8px;
   border: 1.5px dashed var(--line2);
-  border-radius: 6px;
+  border-radius: 8px;
   background: none;
   color: var(--ink);
-  font: 600 12.5px var(--sans);
+  font: 600 12px var(--sans);
   cursor: pointer;
 }
 
@@ -433,12 +434,12 @@ label.cat-name {
   align-items: center;
   gap: 4px;
   min-height: 30px;
-  margin-top: 3px;
+  margin-top: 4px;
   padding: 0 6px 0 0;
-  border-radius: 4px;
+  border-radius: 6px;
   border-left: 3px solid var(--plan);
   background: var(--surface);
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 .tc.is-in-progress {
@@ -459,12 +460,12 @@ label.cat-name {
 
 .course-warn {
   color: var(--check);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .course-cr {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -551,7 +552,7 @@ body.is-dragging-course * {
   content: attr(data-drop-warning);
   display: block;
   margin-top: 6px;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.35;
   color: var(--check);
 }
@@ -567,8 +568,8 @@ body.is-dragging-course * {
   border-radius: 6px;
   background: var(--raised);
   border: 1px dashed var(--line2);
-  padding: 12px 14px;
-  font-size: 12.5px;
+  padding: 12px 16px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -579,13 +580,48 @@ body.is-dragging-course * {
 /* Credit-load warning under a card's heading. */
 .term-warn {
   margin: 0 0 4px;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--check);
 }
 
 /* "1 more on locked or registered courses isn't shown." */
 .pc-hidden {
   display: block;
-  margin: 0 12px 10px;
+  margin: 0 12px 12px;
   color: var(--muted);
+}
+
+/* Bars ease to their new widths when the plan changes. */
+.bar span {
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* "2026–27" above each academic year's row of semesters. */
+.year-label {
+  grid-column: 1 / -1;
+  margin: 4px 0 -2px;
+  font: 600 12px var(--sans);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.year-label:first-child {
+  margin-top: 0;
+}
+
+/* A movable course lifts slightly under the pointer. */
+.tc.is-movable {
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.15s ease-out;
+}
+
+.tc.is-movable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.req-cats .chev,
+.plan-check .chev {
+  transition: transform 0.2s ease-out;
 }

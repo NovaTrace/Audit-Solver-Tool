@@ -8,16 +8,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px 28px;
-  padding: 12px 0 16px;
-  margin-bottom: 18px;
+  gap: 12px 24px;
+  padding: 8px 0;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--line);
+  min-height: 64px;
 }
 
 /* ---------- Title block ---------- */
 .tb-left h1 {
   font-family: var(--mono);
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.3px;
   margin: 0 0 6px;
@@ -30,14 +31,14 @@
   display: flex;
   justify-content: center;
   align-items: center; /* no stretching to the box's height */
-  gap: 12px; /* between the logo mark and the title */
+  gap: 8px;
   min-width: 0; /* lets the box shrink when narrow */
 }
 
 /* Logo mark. Colors: the --logo-* variables in base.css. */
 .logo-mark {
-  width: 56px;
-  height: 56px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
 .logo-page {
@@ -73,7 +74,7 @@
 /* Animated title (src/ui/titleAnimation.js). Height follows width; color
    follows `color`. */
 .title-anim {
-  width: 260px;
+  width: 200px;
   max-width: 100%;
   color: var(--ink);
 }
@@ -82,7 +83,7 @@
 .tb-left {
   flex: 1 1 260px;
   min-width: 0;
-  padding-left: 20px;
+  padding-left: 24px;
   border-left: 1px solid var(--line2);
 }
 
@@ -94,10 +95,11 @@
 .tb-name {
   font-weight: 600;
   color: var(--ink);
+  font-size: 14px;
 }
 
 .tb-programs {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -110,13 +112,13 @@
 }
 
 .tb-facts dt {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
 }
 
 .tb-facts dd {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
 }
@@ -129,12 +131,16 @@
 }
 
 .btn {
-  min-height: 44px;
-  padding: 0 18px;
+  min-height: 36px;
+  padding: 0 14px;
   border-radius: 6px;
   border: 1px solid transparent;
-  font: 600 14px var(--sans);
+  font: 600 13px var(--sans);
   cursor: pointer;
+  transition:
+    background 0.15s ease-out,
+    border-color 0.15s ease-out,
+    transform 0.1s ease-out;
 }
 
 .btn-primary {
@@ -160,9 +166,9 @@
    A <details>: the summary is the heading row with Show / Hide; the three
    steps sit in one row below. */
 .get-started {
-  margin: 0 0 18px;
-  padding: 14px 18px;
-  border-radius: 8px;
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
 }
@@ -181,7 +187,7 @@
 
 .get-started h2 {
   margin: 0;
-  font: 600 16px var(--sans);
+  font: 600 14px var(--sans);
   color: var(--ink);
 }
 
@@ -219,25 +225,25 @@
 
 /* Collapsed: a slimmer bar. */
 .get-started:not([open]) {
-  padding: 10px 18px;
+  padding: 8px 16px;
 }
 
 .gs-steps {
   list-style: none;
   counter-reset: step;
-  margin: 12px 0 10px;
+  margin: 12px 0 12px;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 28px;
+  gap: 8px 24px;
 }
 
 .gs-steps li {
   counter-increment: step;
   display: flex;
   align-items: center;
-  gap: 10px; /* no wrapping: the number stays beside its text */
+  gap: 8px; /* no wrapping: the number stays beside its text */
   font-size: 14px;
 }
 
@@ -276,7 +282,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 6px;
   border: 2px dashed var(--accent);
   color: var(--ink);
@@ -284,6 +290,17 @@
   text-decoration: none;
   white-space: nowrap;
   cursor: grab;
+}
+
+/* Logo on the link: the header's mark, without its slide-in. */
+.bm-logo {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.logo-accent {
+  fill: var(--logo-accent);
 }
 
 .bookmarklet:hover {
@@ -296,7 +313,7 @@
 .cols {
   display: flex;
   flex-wrap: wrap;
-  gap: 28px;
+  gap: 32px;
   align-items: flex-start; /* each column as tall as its content */
 }
 
@@ -310,12 +327,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
 
 .col-title {
   margin: 0;
-  font: 600 22px var(--sans);
+  font: 600 20px var(--sans);
   color: var(--ink);
 }
 
@@ -324,8 +341,8 @@
      semester cards fit side by side on a laptop. */
   flex: 3 1 360px;
   min-width: 0;
-  padding: 18px;
-  border-radius: 8px;
+  padding: 20px;
+  border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
 }
@@ -379,7 +396,7 @@
   font: 600 13px var(--sans);
   min-height: 36px;
   padding: 0 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid var(--line2);
   background: var(--surface);
   color: var(--muted);
@@ -397,15 +414,15 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 10px;
-  padding-bottom: 10px;
-  margin: 0 0 12px;
+  gap: 8px 12px;
+  padding-bottom: 12px;
+  margin: 0 0 16px;
   border-bottom: 1px solid var(--line);
 }
 
 .section-header h2 {
   margin: 0;
-  font: 600 22px var(--sans);
+  font: 600 20px var(--sans);
   color: var(--ink);
 }
 
@@ -438,8 +455,8 @@
 
 /* ---------- Settings (gear button, dialog) ---------- */
 .icon-btn {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -448,6 +465,7 @@
   background: transparent;
   color: var(--ink);
   cursor: pointer;
+  transition: border-color 0.15s ease-out;
 }
 
 .icon-btn:hover {
@@ -515,7 +533,7 @@
 }
 
 .settings form {
-  padding: 18px 20px 16px;
+  padding: 16px 20px 16px;
 }
 
 .settings-head {
@@ -563,7 +581,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 5px 8px;
+  padding: 4px 8px;
   border: 1px solid var(--line2);
   border-radius: 6px;
   cursor: pointer;
@@ -581,12 +599,12 @@
 }
 
 .pal-choice b {
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
 .pal-choice small {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 /* Dots take the colors of the palette in data-pal (the palette blocks in
@@ -637,7 +655,7 @@
 }
 
 .set-label {
-  margin: 10px 0 4px;
+  margin: 12px 0 4px;
   font-size: 14px;
 }
 
@@ -659,4 +677,60 @@
   margin: 16px 0 0;
   font-size: 12px;
   color: var(--muted);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Touch screens keep full-size targets. */
+@media (max-width: 760px) {
+  .btn {
+    min-height: 44px;
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ---------- Motion ----------
+   One entrance on the first draw (main.js adds .is-first-draw for a moment),
+   then only hover and state feedback. base.css switches all of it off for
+   reduced motion. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.is-first-draw .get-started,
+.is-first-draw .plan,
+.is-first-draw .grp {
+  animation: rise 0.35s ease-out both;
+}
+
+.is-first-draw .grp:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.is-first-draw .grp:nth-child(n + 3) {
+  animation-delay: 0.08s;
+}
+
+/* The dot beside "Saved 3:42 PM" pulses once per save. */
+@keyframes saved-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--done) 60%, transparent);
+  }
+
+  to {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+.save-status.is-saved::before {
+  animation: saved-pulse 1s ease-out 1;
 }

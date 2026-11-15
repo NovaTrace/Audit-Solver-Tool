@@ -175,7 +175,10 @@ function saveAndRefresh() {
 function setSaveStatus(text) {
   const status = document.getElementById("save-status");
   status.textContent = text;
-  // The dot shows only after a successful save.
+  // The dot shows only after a successful save. Removing the class and
+  // reading the layout first restarts its pulse on every save.
+  status.classList.remove("is-saved");
+  void status.offsetWidth;
   status.classList.toggle("is-saved", text.startsWith("Saved"));
 }
 
@@ -322,15 +325,15 @@ function setupPlanButtons() {
     saveAndRefresh();
   });
 
-  // Delete the saved audit and return to the demo.
+  // Delete the saved audit and settings, and return to the demo.
   document.getElementById("clear-data-btn").addEventListener("click", () => {
     const ok = confirm(
-      "Delete your saved audit and plan from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
+      "Delete your saved audit, plan and settings from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
     );
     if (!ok) return;
     clearAllData();
     setSaveStatus(SAMPLE_STATUS);
-    refreshAll();
+    settingsDialog.reset(); // redraws the page through onChange
   });
 }
 
@@ -341,8 +344,10 @@ function setupCourseList() {
     activeSection = e.target.value;
     refreshList();
   });
-  document.getElementById("show").addEventListener("change", (e) => {
-    activeShow = e.target.value;
+  document.getElementById("show").addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (!button || button.dataset.value === activeShow) return;
+    activeShow = button.dataset.value;
     refreshList();
   });
 
@@ -397,7 +402,7 @@ function setupAddCourse() {
     }
     message.textContent = result.linkedTo
       ? `${result.code} now counts toward ${result.linkedTo} too.`
-      : `Added ${result.code}. Pick its semester in the list below.`;
+      : `Added ${result.code}. Pick its semester in the list above.`;
     // Clear for the next entry; credits and requirement stay as chosen.
     field("add-code").value = "";
     field("add-title").value = "";
@@ -437,3 +442,8 @@ setupAddCourse();
 loadState(); // replaces the demo with a saved audit, if any
 setSaveStatus(isSampleLoaded() ? SAMPLE_STATUS : "Autosaves in browser");
 refreshAll(); // first draw
+
+// Entrance animation for the first draw only (layout.css); later redraws
+// rebuild the same elements and must not replay it.
+document.body.classList.add("is-first-draw");
+setTimeout(() => document.body.classList.remove("is-first-draw"), 800);

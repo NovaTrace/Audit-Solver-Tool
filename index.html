@@ -38,8 +38,7 @@
     <a class="skip-link" href="#req-title">Skip to the course list</a>
 
     <!-- Feedback bar. Temporary: delete this <div> and the .dev-banner styles
-         in
-         src/styles/base.css when testing ends. -->
+         in src/styles/base.css when testing ends. -->
     <div class="dev-banner" role="region" aria-label="Feedback">
       <p>
         <b>Audit Solver is still in development.</b> Tell us what works and what
@@ -138,10 +137,10 @@
                   <b>Import</b>: a plan you exported (.json), or an audit PDF
                   (which has no prerequisites or offerings).
                 </li>
-                <li>Used the bookmark's <b>Copy</b>? Press Ctrl+V here.</li>
+                <li>Used the bookmark's <b>Copy</b>? Press Ctrl+V anywhere.</li>
                 <li>
-                  <b>Export</b> saves your plan, grades included: keep it
-                  private.
+                  <b>Export</b> saves your plan, grades included, as a JSON
+                  file.
                 </li>
               </ul>
             </div>
@@ -255,7 +254,7 @@
           </fieldset>
 
           <p class="settings-note">
-            Saved in this browser. Clearing your plan data doesn't reset them.
+            Saved in this browser. "Clear data" resets them.
           </p>
         </form>
       </dialog>
@@ -286,7 +285,34 @@
           <ol class="gs-steps">
             <li>
               Drag
-              <a class="bookmarklet" id="bookmarklet-link">⤓ Grab my audit</a>
+              <a class="bookmarklet" id="bookmarklet-link"
+                ><svg
+                  class="bm-logo"
+                  viewBox="0 0 42.333 42.333"
+                  aria-hidden="true"
+                >
+                  <g transform="translate(3.3073 4.6302)">
+                    <path
+                      class="logo-page"
+                      d="m 10.054166,15.213542 h 22.225001 a 0.79374997,0.79374997 45 0 1 0.79375,0.79375 v 6.35 a 0.79374997,0.79374997 135 0 1 -0.79375,0.79375 H 10.054166 a 0.79374997,0.79374997 45 0 1 -0.7937496,-0.79375 l 0,-6.35 a 0.79374997,0.79374997 135 0 1 0.7937496,-0.79375 z"
+                    />
+                    <path
+                      class="logo-accent"
+                      d="M 3.4395833,25.135417 H 25.664584 a 0.79374997,0.79374997 45 0 1 0.79375,0.79375 v 6.35 a 0.79374997,0.79374997 135 0 1 -0.79375,0.79375 H 3.4395833 a 0.79374997,0.79374997 45 0 1 -0.79375,-0.79375 v -6.35 a 0.79374997,0.79374997 135 0 1 0.79375,-0.79375 z"
+                    />
+                    <g transform="translate(0 -4.85035)">
+                      <path
+                        class="logo-page"
+                        d="M 9.2604167,5.6440999 V 17.285767 a 0.79374997,0.79374997 45 0 0 0.7937503,0.79375 h 22.225 a 0.79374997,0.79374997 135 0 0 0.79375,-0.79375 V 12.78785 L 24.782983,4.8503499 H 10.054167 a 0.79374997,0.79374997 135 0 0 -0.7937503,0.79375 z"
+                      />
+                      <path
+                        class="logo-fold"
+                        d="m 24.783021,11.9941 0,-7.14375 8.289896,7.9375 h -7.496146 a 0.79374997,0.79374997 45 0 1 -0.79375,-0.79375 z"
+                      />
+                    </g>
+                  </g></svg
+                ><span id="bookmarklet-label">Grab my audit</span></a
+              >
               to your bookmarks bar
             </li>
             <li>Open your audit in the portal and run it with HTML output</li>
@@ -317,16 +343,13 @@
               <a class="jump-plan" href="#plan">Jump to your plan ↓</a>
             </div>
             <div class="controls">
-              <!-- Category and Show dropdowns: filled by
+              <!-- Category dropdown and Show switch: filled by
                    src/render/courseList.js. -->
               <label class="field-label">
                 <span class="vh">Category</span>
                 <select class="field" id="category"></select>
               </label>
-              <label class="field-label">
-                <span class="vh">Show</span>
-                <select class="field" id="show"></select>
-              </label>
+              <div class="seg" id="show" role="group" aria-label="Show"></div>
 
               <!-- Search box and its help popup. -->
               <div class="search-container">
@@ -361,55 +384,6 @@
                 />
               </div>
             </div>
-
-            <!-- Add a course the audit doesn't list. Wired in src/main.js. -->
-            <details class="add-course" id="add-course">
-              <summary>
-                <span class="add-plus" aria-hidden="true">+</span>
-                Add a course that isn't listed
-              </summary>
-              <p class="add-course-hint">
-                For requirements like "any MATH course numbered 3100 or higher",
-                where the audit doesn't name the choices. A course already in
-                the list can be counted toward one more requirement the same
-                way. Check the catalog for what counts: this page can't.
-              </p>
-              <form class="add-course-form" id="add-course-form">
-                <label>
-                  Course code
-                  <input
-                    type="text"
-                    id="add-code"
-                    placeholder="MATH 3110"
-                    autocomplete="off"
-                    required
-                  />
-                </label>
-                <label>
-                  Title (optional)
-                  <input type="text" id="add-title" autocomplete="off" />
-                </label>
-                <label>
-                  Credits
-                  <input
-                    type="number"
-                    id="add-credits"
-                    min="0.5"
-                    max="12"
-                    step="0.5"
-                    value="3"
-                    required
-                  />
-                </label>
-                <label>
-                  Counts toward
-                  <!-- Options filled by src/render/courseList.js. -->
-                  <select id="add-req"></select>
-                </label>
-                <button type="submit">Add course</button>
-              </form>
-              <p class="add-course-msg" id="add-course-msg" role="status"></p>
-            </details>
 
             <!-- Filled by src/render/courseList.js -->
             <section id="list" aria-label="Courses"></section>
@@ -486,7 +460,6 @@
                     <span class="r-code"></span> <span class="r-title"></span>
                   </div>
                   <span class="r-meta"></span>
-                  <span class="r-unlocks"></span>
                   <span class="r-locked"
                     ><svg
                       width="12"
@@ -524,6 +497,55 @@
                 </div>
               </div>
             </template>
+
+            <!-- Add a course the audit doesn't list. Wired in src/main.js. -->
+            <details class="add-course" id="add-course">
+              <summary>
+                <span class="add-plus" aria-hidden="true">+</span>
+                Add or link a course
+              </summary>
+              <p class="add-course-hint">
+                For requirements like "any MATH course numbered 3100 or higher",
+                where the audit doesn't name the choices. A course already in
+                the list can be counted toward one more requirement the same
+                way. Check the catalog for what counts: this page can't.
+              </p>
+              <form class="add-course-form" id="add-course-form">
+                <label>
+                  Course code
+                  <input
+                    type="text"
+                    id="add-code"
+                    placeholder="MATH 3110"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label>
+                  Title (optional)
+                  <input type="text" id="add-title" autocomplete="off" />
+                </label>
+                <label>
+                  Credits
+                  <input
+                    type="number"
+                    id="add-credits"
+                    min="0.5"
+                    max="12"
+                    step="0.5"
+                    value="3"
+                    required
+                  />
+                </label>
+                <label>
+                  Counts toward
+                  <!-- Options filled by src/render/courseList.js. -->
+                  <select id="add-req"></select>
+                </label>
+                <button type="submit">Add course</button>
+              </form>
+              <p class="add-course-msg" id="add-course-msg" role="status"></p>
+            </details>
           </section>
 
           <aside class="plan" id="plan" aria-labelledby="plan-title">
@@ -674,9 +696,12 @@
 
       <footer>
         <p class="disclaimer">
-          <b>Disclaimer:</b> The current iteration of this website may not yet
-          support particular edge cases including but not limited to: multiple
-          speciality tracks, multiple majors/minors, etc.
+          <b>Privacy (FERPA):</b> Your degree audit is an education record
+          protected by FERPA. Audit Solver keeps it in this browser only; it is
+          never uploaded, and exported files are yours to share or keep private.
+          This is an unofficial planning tool, not affiliated with UCCS and
+          tested only with UCCS audits. Confirm your plan with your advisor and
+          your official audit.
         </p>
         <button type="button" id="clear-data-btn" class="clear-data-btn">
           Clear data

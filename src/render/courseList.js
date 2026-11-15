@@ -1,6 +1,6 @@
 // src/render/courseList.js — draws the course list and its dropdowns.
 //
-//   #category, #show   filter dropdowns
+//   #category, #show   category dropdown; Show switch
 //   #list              one card per audit section: a fold of completed
 //                      courses, then a row per course left to plan
 //                      (<template id="course-row-tpl"> in index.html)
@@ -38,20 +38,23 @@ export function renderCategoryOptions(sections, active) {
   select.value = active;
 }
 
-/** "Show" dropdown, filled once from SHOW_OPTIONS. */
+/** "Show" switch: one button per SHOW_OPTIONS entry, built once. */
 export function renderShowOptions(active) {
-  const select = document.getElementById("show");
-  if (select.options.length === 0) {
-    select.append(
+  const group = document.getElementById("show");
+  if (group.children.length === 0) {
+    group.append(
       ...SHOW_OPTIONS.map(([value, label]) => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = label;
-        return option;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.value = value; // read by main.js
+        button.textContent = label;
+        return button;
       }),
     );
   }
-  select.value = active;
+  for (const button of group.children) {
+    button.setAttribute("aria-pressed", button.dataset.value === active);
+  }
 }
 
 /**
@@ -113,7 +116,7 @@ export function renderCourseList({ audit, groups, query, show, settings }) {
     return;
   }
 
-  // "2 of 5 requirements done" beside each section heading.
+  // A small bar and "2 of 5" (requirements done) beside each section heading.
   const progress = new Map(categoryProgress(audit).map((g) => [g.section, g]));
 
   const cards = groups.map(({ section, courses, completed = [] }) => {
@@ -127,9 +130,20 @@ export function renderCourseList({ audit, groups, query, show, settings }) {
     head.append(title);
     const p = progress.get(section);
     if (p && p.total > 0 && section !== UNLINKED) {
+      const bar = document.createElement("div");
+      bar.className = "grp-bar";
+      bar.setAttribute("aria-hidden", "true");
+      const fill = document.createElement("i");
+      fill.style.width = `${(p.done / p.total) * 100}%`;
+      bar.append(fill);
       const frac = document.createElement("span");
-      frac.textContent = `${p.done} of ${p.total} requirements done`;
-      head.append(frac);
+      frac.textContent = `${p.done} of ${p.total}`;
+      frac.title = "Requirements done";
+      frac.setAttribute(
+        "aria-label",
+        `${p.done} of ${p.total} requirements done`,
+      );
+      head.append(bar, frac);
     }
 
     const card = document.createElement("div");
@@ -223,19 +237,24 @@ function buildRow(template, audit, course, settings) {
   if (settings.showOffered) meta.push(offeredText(course));
   if (settings.prereqs === "full") meta.push(prereqText(course));
   if (settings.prereqs === "codes") meta.push(prereqCodesText(course));
+  // Courses that require this one.
+  const neededFor = settings.showNeededFor ? unlocks(audit, course) : [];
+  if (neededFor.length) meta.push(`Needed for: ${neededFor.join(", ")}`);
   const metaLine = row.querySelector(".r-meta");
   if (meta.length) {
     metaLine.textContent = meta.join(" · ");
+    // The offered part comes first; bold it.
+    if (settings.showOffered) {
+      const offered = document.createElement("strong");
+      offered.className = "r-offered";
+      offered.textContent = meta[0];
+      metaLine.replaceChildren(
+        offered,
+        metaLine.textContent.slice(meta[0].length),
+      );
+    }
   } else {
     metaLine.remove();
-  }
-  // Courses that require this one.
-  const neededFor = settings.showNeededFor ? unlocks(audit, course) : [];
-  const unlocksLine = row.querySelector(".r-unlocks");
-  if (neededFor.length) {
-    unlocksLine.textContent = `Needed for: ${neededFor.join(", ")}`;
-  } else {
-    unlocksLine.remove();
   }
   // "Locked in Spring 2027"
   const lockedLine = row.querySelector(".r-locked");

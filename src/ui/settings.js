@@ -1,9 +1,9 @@
 // src/ui/settings.js — Settings dialog: palette, course-list details, plan
 // warnings.
 //
-// Stored in localStorage under SETTINGS_KEY, separate from the plan; "Clear
-// data" and imports leave settings alone. If saving fails, defaults apply on
-// the next load.
+// Stored in localStorage under SETTINGS_KEY, separate from the plan. Imports
+// leave settings alone; "Clear data" resets them (reset()). If saving fails,
+// defaults apply on the next load.
 // An inline script in index.html applies the saved palette before first
 // paint, using the same rules as resolvePalette().
 // Used by: main.js. Tests: settings.test.js.
@@ -13,8 +13,10 @@ export const SETTINGS_KEY = "audit-solver-settings";
 /** Palettes, in dialog order. */
 export const PALETTES = [
   { id: "graphite", name: "Graphite", note: "Dark (default)" },
-  { id: "mist", name: "Mist", note: "Light" },
-  { id: "denim", name: "Denim", note: "Dark blue" },
+  { id: "mist", name: "Mist", note: "Light blue" },
+  { id: "paper", name: "Paper", note: "Light" },
+  { id: "midnight", name: "Midnight", note: "Blue-black" },
+  { id: "forest", name: "Forest", note: "Dark green" },
   { id: "dusk", name: "Dusk", note: "Dark violet" },
   { id: "harbor", name: "Harbor", note: "Dark teal" },
 ];
@@ -24,7 +26,7 @@ export const DEFAULT_SETTINGS = {
   palette: "auto",
   showOffered: true, // "Fall, Spring"
   prereqs: "full", // "full" text, course "codes" only, or "hide"
-  showNeededFor: true, // "Needed for: ..."
+  showNeededFor: false, // "Needed for: ..."
   warnOverload: true, // "Over 18 credits" warning
 };
 
@@ -59,6 +61,14 @@ export function loadSettings() {
   }
 }
 
+function clearSavedSettings() {
+  try {
+    localStorage.removeItem(SETTINGS_KEY);
+  } catch {
+    // Storage blocked: nothing was saved to begin with.
+  }
+}
+
 function saveSettings(settings) {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -85,8 +95,9 @@ export function applyPalette(settings) {
 
 /**
  * Wires the Settings button and dialog. `onChange(settings)` runs after
- * every change. Returns { settings, change }: the current settings, and a
- * function for changing some of them from outside the dialog.
+ * every change. Returns { settings, change, reset }: the settings at startup,
+ * a function for changing some of them from outside the dialog, and one
+ * that deletes the saved settings and returns to the defaults.
  */
 export function setupSettings({ onChange }) {
   let settings = loadSettings();
@@ -136,6 +147,11 @@ export function setupSettings({ onChange }) {
   return {
     settings,
     change: (changes) => use({ ...settings, ...changes }),
+    reset: () => {
+      use(DEFAULT_SETTINGS);
+      clearSavedSettings();
+      showInForm(form, settings);
+    },
   };
 }
 
