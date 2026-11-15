@@ -1,8 +1,9 @@
-// bookmarklet/scrape/courseDetails.js — the course popup's data, fetched
-// directly from the endpoint the audit page itself uses:
+// bookmarklet/scrape/courseDetails.js — fetches course details from the
+// endpoint the audit page's own course popup uses:
 //   POST populate-course-cat-details.ajax  (same folder as read.html)
-// The request rides on the student's own login, because the bookmarklet
-// runs on the audit page.
+// Requests use the student's existing login, since the bookmarklet runs on
+// the audit page.
+// Used by: collector.js.
 
 import {
   normalizeCode,
@@ -12,8 +13,10 @@ import {
 
 const ENDPOINT = "populate-course-cat-details.ajax";
 
-/** Thrown when the audit site answers with its login page: the student's
- *  session ran out. Every other request would fail the same way. */
+/**
+ * Thrown when the site answers with its login page: the session expired,
+ * and every further request would fail the same way.
+ */
 export class SessionExpiredError extends Error {
   constructor() {
     super(
@@ -23,8 +26,7 @@ export class SessionExpiredError extends Error {
   }
 }
 
-/** Thrown when the audit site answers 429 (Too Many Requests) or 503
- *  (overloaded). `waitMs` is how long it asked us to wait. */
+/** Thrown on 429 or 503. `waitMs` is the wait the site asked for. */
 export class SlowDownError extends Error {
   constructor(waitMs) {
     super(
@@ -35,23 +37,19 @@ export class SlowDownError extends Error {
   }
 }
 
-export const AT_ONCE = 5; // requests in flight at a time: be polite to the server
-const DEFAULT_WAIT_MS = 2000; // when told to slow down without saying how long
-const MAX_WAIT_MS = 10000; // never pause longer than this before retrying
+export const AT_ONCE = 5; // concurrent requests
+const DEFAULT_WAIT_MS = 2000; // wait when the site gives no Retry-After
+const MAX_WAIT_MS = 10000; // longest pause before retrying
 
 /**
- * Whether a course is worth a details request. Completed courses aren't:
- * their title and credits come from the course history, and they're never
- * planned, so their prereqs and offerings don't matter.
+ * True if a course needs a details request. Completed courses don't: they
+ * are never planned.
  */
 export function needsDetails(course) {
   return course.status !== "completed";
 }
 
-/**
- * Raw endpoint response -> our course fields (see the Audit JSON Data
- * Guide). Pure, so it's tested with saved responses.
- */
+/** Endpoint response -> our course fields (Audit JSON Data Guide). Pure. */
 export function toCourseDetails(raw) {
   return {
     title: raw.title || null,
@@ -72,8 +70,8 @@ export function toCourseDetails(raw) {
 }
 
 /**
- * Fetch one course's details. Returns our fields, or throws.
- * `fetchImpl` and `baseUrl` let tests run it without a real server.
+ * Fetches one course's details. Returns our fields, or throws.
+ * `fetchImpl` and `baseUrl` are injectable for tests.
  */
 export async function fetchCourseDetails(
   code,
@@ -86,8 +84,8 @@ export async function fetchCourseDetails(
     fetchImpl(url, {
       method: "POST",
       credentials: "include",
-      // A logged-out request is redirected to the CU login page. Don't
-      // follow it: the redirect itself tells us the session expired.
+      // A logged-out request redirects to the login page. Not followed: the
+      // redirect itself signals an expired session.
       redirect: "manual",
       headers: {
         accept: "application/json",
@@ -112,14 +110,14 @@ export async function fetchCourseDetails(
     });
 
   let raw = await request(dept);
-  // The page itself sends the department padded to 4 characters ("PES ").
-  // If the short form finds nothing, try that.
+  // The page sends the department padded to 4 characters ("PES "); retry
+  // that form if the short one finds nothing.
   if (!raw?.title && dept.length < 4) raw = await request(dept.padEnd(4));
   if (!raw?.title) throw new Error(`${code}: no details found`);
   return toCourseDetails(raw);
 }
 
-// A Retry-After header ("5" seconds, or a date) -> milliseconds to wait
+// Retry-After header (seconds or a date) -> milliseconds.
 function waitTime(retryAfter) {
   if (retryAfter == null || retryAfter === "") return DEFAULT_WAIT_MS;
   const seconds = Number(retryAfter);
@@ -133,12 +131,9 @@ function waitTime(retryAfter) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Copy fetched details onto a course, without losing credits the audit
- * already gave it:
- * - the catalog lists no single number for a variable-credit course
- *   (`credits: null`), so the hours from the course history are kept;
- * - a registered course ("***") keeps the hours the student signed up for,
- *   which can differ from the catalog's number.
+ * Copies fetched details onto a course, keeping the audit's credits when:
+ * - the catalog gives none (variable credit, `credits: null`);
+ * - the course is registered ("***"), where the registered hours apply.
  */
 export function applyDetails(course, details) {
   const fromAudit = course.credits ?? null;
@@ -150,21 +145,21 @@ export function applyDetails(course, details) {
 }
 
 /**
- * Add details to every course, AT_ONCE at a time, calling
- * onProgress(done, total) as they finish. A course whose request fails
- * keeps detailsLoaded: false; returns the codes that failed.
+ * Adds details to every course, AT_ONCE at a time, calling
+ * onProgress(done, total). A failed course keeps detailsLoaded: false.
+ * Returns the codes that failed.
  *
- * Stops and throws SessionExpiredError if the login has run out. If the
- * site says to slow down, every worker pauses, then the course is tried
- * once more; if it says so again, stops and throws SlowDownError.
+ * Throws SessionExpiredError if the login expired. On a slow-down response
+ * every worker pauses and the course is retried once; a second one throws
+ * SlowDownError.
  */
 export async function addCourseDetails(courses, options = {}) {
   const { onProgress = () => {}, ...fetchOptions } = options;
   const queue = [...courses];
   const failed = [];
   let done = 0;
-  let stopError = null; // set when there's no point asking again
-  let pause = null; // a Promise every worker waits on while slowing down
+  let stopError = null; // set when further requests are pointless
+  let pause = null; // Promise all workers await while slowing down
 
   async function fetchWithRetry(code) {
     await pause;
@@ -172,11 +167,11 @@ export async function addCourseDetails(courses, options = {}) {
       return await fetchCourseDetails(code, fetchOptions);
     } catch (e) {
       if (!(e instanceof SlowDownError)) throw e;
-      // The first worker told to slow down starts the pause; any others
-      // told the same wait on that same pause
+      // The first worker told to slow down starts the pause; the others await
+      // it.
       pause ??= sleep(e.waitMs).then(() => (pause = null));
       await pause;
-      return fetchCourseDetails(code, fetchOptions); // a 2nd SlowDownError stops all
+      return fetchCourseDetails(code, fetchOptions); // a second SlowDownError stops everything
     }
   }
 
@@ -188,7 +183,7 @@ export async function addCourseDetails(courses, options = {}) {
       } catch (e) {
         if (e instanceof SessionExpiredError || e instanceof SlowDownError) {
           stopError ??= e;
-          queue.length = 0; // stop the other workers taking new courses
+          queue.length = 0; // stop other workers taking new courses
           return;
         }
         console.warn("Audit Solver:", e.message);

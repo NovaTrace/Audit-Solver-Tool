@@ -1,13 +1,11 @@
-// Tests for logic/courses.js: which courses the list shows, and the words
-// shown about each one. Testing only, not a site element.
+// Tests for src/logic/courses.js: which courses the list shows, and their text.
 
 import { describe, it, expect } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { parseAudit } from "../logic/parser.js";
 import {
   matchesQuery,
   sectionNames,
-  visibleSections,
   allSections,
   filterGroups,
   listGroups,
@@ -16,7 +14,6 @@ import {
   prereqCodesText,
   UNLINKED,
   creditText,
-  countsTowardText,
   offeredText,
   prereqText,
   notOfferedIn,
@@ -24,7 +21,7 @@ import {
 
 const audit = () => parseAudit(structuredClone(sample));
 
-// [section, [codes]] pairs, easy to compare
+// [section, [codes]] pairs, for comparing.
 const codes = (groups) =>
   groups.map((g) => [g.section, g.courses.map((c) => c.code)]);
 
@@ -54,7 +51,12 @@ describe("sectionNames", () => {
   });
 });
 
-describe("visibleSections", () => {
+// What the list shows for a category and search: allSections() narrowed by
+// filterGroups().
+const visibleSections = ({ audit, filterSection, query }) =>
+  filterGroups(allSections(audit), { filterSection, query });
+
+describe("allSections with filterGroups", () => {
   it("lists a course under every section it counts toward", () => {
     const groups = visibleSections({
       audit: audit(),
@@ -105,7 +107,7 @@ describe("visibleSections", () => {
   });
 
   it("hides options of a finished requirement until they're planned", () => {
-    const a = audit(); // cpe-arch is complete (ECE 4480), CS 4200 was an option
+    const a = audit(); // cpe-arch is complete (ECE 4480); CS 4200 was an option
     const core = (x) =>
       visibleSections({
         audit: x,
@@ -145,7 +147,7 @@ describe("visibleSections", () => {
 });
 
 describe("allSections and filterGroups", () => {
-  // main.js works the full list out once (allSections), then narrows it
+  // main.js computes the full list once (listGroups), then narrows it.
   it("narrows to the search text and drops sections left empty", () => {
     const groups = filterGroups(allSections(audit()), {
       filterSection: "all",
@@ -163,14 +165,6 @@ describe("row text", () => {
     expect(creditText(a.courses.cs4500)).toBe("3 cr");
     expect(creditText(a.courses.ece4910)).toBe("1–3 cr");
     expect(creditText(a.courses.ece4020)).toBe("? cr");
-  });
-
-  it("names the requirements a course counts toward", () => {
-    const a = audit();
-    expect(countsTowardText(a, a.courses.cs3300)).toBe(
-      "Counts toward: NAVIGATE · CS 3300 Software Engineering · TECHNICAL ELECTIVES",
-    );
-    expect(countsTowardText(a, a.courses.hsci1140)).toBe("");
   });
 
   it("tells 'not loaded' apart from 'none'", () => {

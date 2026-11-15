@@ -1,8 +1,7 @@
-// Tests for ui/importer.js: spotting an audit in pasted text (Ctrl+V).
-// Testing only, not a site element.
+// Tests for src/ui/importer.js: detecting an audit in pasted text.
 
 import { describe, it, expect } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { auditFromText } from "../ui/importer.js";
 
 describe("auditFromText", () => {

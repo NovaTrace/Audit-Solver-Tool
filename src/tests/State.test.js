@@ -1,5 +1,4 @@
-// Tests for state.js: the one audit the app runs on, the rules for
-// changing it, and saving it in the browser.
+// Tests for src/state.js: loading, changing and saving the audit.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   getAudit,
@@ -7,13 +6,13 @@ import {
   importAudit,
   loadSample,
   resetPlan,
-  toggleTerm,
   setTerm,
   toggleLock,
   addTerm,
   removeTerm,
   addCustomCourse,
   removeCustomCourse,
+  unlinkCourse,
   toggleRequirement,
   setSectionOff,
   MAX_TERMS,
@@ -24,17 +23,23 @@ import {
   AuditError,
 } from "../state.js";
 import { parseAudit } from "../logic/parser.js";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { NOV_2026, makeRegistered } from "./helpers.js";
+
+// state.js loads the demo audit (data/sample-audit.json), which may change.
+// Here it is replaced by the fixed test audit, so loadSample() loads the
+// courses these tests expect.
+vi.mock("../data/sample-audit.json", async () => ({
+  default: (await import("./fixtures/test-audit.json")).default,
+}));
 
 const STORAGE_KEY = "audit-solver-state";
 
-// Shortcuts: one course from the current audit, and its column keys
+// Shortcuts: a course from the current audit; the plan's column keys.
 const course = (id) => getAudit().courses[id];
 const keys = () => getAudit().plan.terms.map((t) => t.key);
 
-// Tests run in Node, which has no real localStorage, so we hand state.js a
-// simple stand-in that keeps values in a Map.
+// Node has no localStorage; this Map-backed stand-in replaces it.
 function fakeStorage() {
   const store = new Map();
   return {
@@ -45,13 +50,13 @@ function fakeStorage() {
 }
 
 beforeEach(() => {
-  // Pin "today" to Nov 5, 2026: an import keeps the semester columns
-  // current, so the tests would otherwise change with the calendar
+  // "Today" is fixed at Nov 5, 2026: imports keep the semester columns
+  // current, so results would otherwise change with the calendar.
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOV_2026);
   vi.stubGlobal("localStorage", fakeStorage());
-  // Every test starts from the sample, loaded as if it were a real import.
-  // (The demo has its own rules; see "the demo audit" below.)
+  // Each test starts from the test audit, loaded as a real import.
+  // (The demo behaves differently; see "the demo audit" below.)
   loadAudit(parseAudit(structuredClone(sample)));
 });
 
@@ -61,7 +66,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// Sample used below (see sample-audit.json):
+// Test audit (fixtures/test-audit.json):
 //   cs4500 needed, unplaced · math3400 completed · nothing registered
 //   columns: FA26 SP27 SU27 FA27 SP28
 
@@ -78,7 +83,7 @@ describe("the demo audit", () => {
 
   it("doesn't pass its picks on to a real import", () => {
     loadSample();
-    toggleTerm("cs4500", "SP27");
+    setTerm("cs4500", "SP27");
     importAudit(structuredClone(sample));
     expect(isSampleLoaded()).toBe(false);
     expect(course("cs4500").plannedTerm).toBeNull();
@@ -87,13 +92,13 @@ describe("the demo audit", () => {
 
 describe("importAudit", () => {
   it("keeps the student's picks on a fresh scrape", () => {
-    toggleTerm("cs4500", "SP27");
+    setTerm("cs4500", "SP27");
     importAudit(structuredClone(sample));
     expect(course("cs4500").plannedTerm).toBe("SP27");
   });
 
   it("leaves the current audit alone when the data is bad", () => {
-    toggleTerm("cs4500", "SP27");
+    setTerm("cs4500", "SP27");
     expect(() => importAudit({ schema: "nope" })).toThrow(AuditError);
     expect(course("cs4500").plannedTerm).toBe("SP27");
   });
@@ -101,15 +106,14 @@ describe("importAudit", () => {
 
 describe("resetPlan", () => {
   it("clears picks, re-places registered courses and restores the default columns", () => {
-    // The demo has no registered courses, so make ECE 2050 one for this test
+    // The test audit has no registered courses; register ECE 2050.
     const data = makeRegistered(structuredClone(sample), "ece2050", "SP27");
     loadAudit(parseAudit(data));
-    toggleTerm("cs4500", "FA27");
+    setTerm("cs4500", "FA27");
     toggleLock("cs4500");
-    toggleLock("ece2050"); // unlock the registered course...
-    toggleTerm("ece2050", "SP27"); // ...and unplace it
+    setTerm("ece2050", ""); // take the registered course out of the plan
     removeTerm("FA26");
-    addTerm("FA28"); // the plan now starts late and has a gap
+    addTerm(); // the plan now starts late and runs a term longer
 
     resetPlan();
 
@@ -118,10 +122,10 @@ describe("resetPlan", () => {
       locked: false,
     });
     expect(course("ece2050")).toMatchObject({
-      plannedTerm: "SP27",
-      locked: true,
+      plannedTerm: "SP27", // back in the term it's registered for
+      locked: false, // which hasn't started, so it can still be moved
     });
-    // "Today" is Nov 5, 2026: six terms from the current one
+    // "Today" is Nov 5, 2026: six terms from the current one.
     expect(keys()).toEqual(["FA26", "SP27", "SU27", "FA27", "SP28", "SU28"]);
   });
 
@@ -129,7 +133,7 @@ describe("resetPlan", () => {
     loadSample();
     removeTerm("FA26");
     addTerm();
-    toggleTerm("cs4500", "SP27");
+    setTerm("cs4500", "SP27");
 
     resetPlan();
 
@@ -139,33 +143,9 @@ describe("resetPlan", () => {
   });
 });
 
-describe("toggleTerm", () => {
-  it("places a course, moves it, and unplaces it on a second click", () => {
-    expect(toggleTerm("cs4500", "FA27")).toBe(true);
-    expect(course("cs4500").plannedTerm).toBe("FA27");
-    expect(toggleTerm("cs4500", "SP28")).toBe(true);
-    expect(course("cs4500").plannedTerm).toBe("SP28");
-    expect(toggleTerm("cs4500", "SP28")).toBe(true);
-    expect(course("cs4500").plannedTerm).toBeNull();
-  });
-
-  it("refuses a locked or completed course, and unknown courses and terms", () => {
-    expect(toggleTerm("math3400", "FA27")).toBe(false); // completed
-    expect(toggleTerm("nope", "FA27")).toBe(false);
-    expect(toggleTerm("__proto__", "FA27")).toBe(false);
-    expect(toggleTerm("cs4500", "FA35")).toBe(false); // not a column
-    expect(course("cs4500").plannedTerm).toBeNull();
-
-    toggleTerm("cs4500", "SP27");
-    toggleLock("cs4500");
-    expect(toggleTerm("cs4500", "FA27")).toBe(false); // locked
-    expect(course("cs4500").plannedTerm).toBe("SP27");
-  });
-});
-
 describe("toggleLock", () => {
   it("locks, then unlocks, a placed course", () => {
-    toggleTerm("cs4500", "FA27");
+    setTerm("cs4500", "FA27");
     expect(toggleLock("cs4500")).toBe(true);
     expect(course("cs4500").locked).toBe(true);
     expect(toggleLock("cs4500")).toBe(true);
@@ -180,7 +160,7 @@ describe("toggleLock", () => {
 });
 
 describe("addTerm", () => {
-  it("adds the term after the last column by default, with its label", () => {
+  it("adds the term after the last column, with its label", () => {
     removeTerm("SU27"); // a gap in the middle doesn't change that
     expect(addTerm()).toBe(true);
     expect(getAudit().plan.terms.at(-1)).toEqual({
@@ -190,40 +170,22 @@ describe("addTerm", () => {
     expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28", "SU28"]);
   });
 
-  it("adds a named term in time order: before the first column, or back in a gap", () => {
-    for (const key of ["FA26", "SP27", "SU27"]) removeTerm(key);
-    expect(addTerm("SP27")).toBe(true); // before the first column (FA27)
-    expect(addTerm("FA26")).toBe(true); // back as far as the current term
-    expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28"]);
-    expect(addTerm("SU27")).toBe(true); // back in the middle
-    expect(keys()).toEqual(["FA26", "SP27", "SU27", "FA27", "SP28"]);
-    expect(toggleTerm("cs4500", "SP27")).toBe(true); // works like any column
+  it("makes the new column usable like any other", () => {
+    addTerm();
+    expect(setTerm("cs4500", "SU28")).toBe(true);
   });
 
-  it("won't add a term that is already over", () => {
-    // "Today" is Nov 5, 2026, so Fall 2026 is the current term
-    expect(addTerm("SU26")).toBe(false);
-    expect(addTerm("SP25")).toBe(false);
-    expect(keys()[0]).toBe("FA26");
-  });
-
-  it("refuses a term that's already a column, isn't a term, or is one too many", () => {
-    expect(addTerm("SP27")).toBe(false);
-    expect(addTerm("WI27")).toBe(false);
-    expect(addTerm("")).toBe(false);
-    expect(keys()).toHaveLength(5);
-
+  it("refuses one semester too many", () => {
     while (keys().length < MAX_TERMS) addTerm();
     expect(addTerm()).toBe(false);
-    expect(addTerm("SU26")).toBe(false);
     expect(keys()).toHaveLength(MAX_TERMS);
   });
 });
 
 describe("removeTerm", () => {
   it("removes a column and unplaces its courses", () => {
-    toggleTerm("cs4500", "SU27");
-    toggleTerm("ece3020", "FA27");
+    setTerm("cs4500", "SU27");
+    setTerm("ece3020", "FA27");
     expect(removeTerm("SU27")).toBe(true);
     expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28"]);
     expect(course("cs4500").plannedTerm).toBeNull();
@@ -231,7 +193,7 @@ describe("removeTerm", () => {
   });
 
   it("refuses a column with a locked course, an unknown term, and the last column", () => {
-    toggleTerm("cs4500", "SU27");
+    setTerm("cs4500", "SU27");
     toggleLock("cs4500");
     expect(removeTerm("SU27")).toBe(false);
     expect(course("cs4500").plannedTerm).toBe("SU27");
@@ -291,7 +253,8 @@ describe("toggleRequirement", () => {
 });
 
 describe("custom courses", () => {
-  // The sample's rule with no course list: "any MATH course 3100 or higher"
+  // The test audit's rule with no course list: "any MATH course 3100 or
+  // higher".
   const RULE = "math-minor-electives";
   const rule = () => getAudit().requirements.find((r) => r.id === RULE);
   const add = (fields) =>
@@ -313,7 +276,7 @@ describe("custom courses", () => {
       plannedTerm: null,
     });
     expect(rule().options).toContain("MATH 3110");
-    expect(toggleTerm("math3110", "FA27")).toBe(true); // plans like any course
+    expect(setTerm("math3110", "FA27")).toBe(true); // plans like any course
   });
 
   it("can be added with no requirement and no title", () => {
@@ -352,7 +315,7 @@ describe("custom courses", () => {
     expect(removeCustomCourse("cs4500")).toBe(false); // from the audit
     expect(removeCustomCourse("nope")).toBe(false);
 
-    toggleTerm("math3110", "FA27");
+    setTerm("math3110", "FA27");
     toggleLock("math3110");
     expect(removeCustomCourse("math3110")).toBe(false); // locked
     toggleLock("math3110");
@@ -361,9 +324,61 @@ describe("custom courses", () => {
     expect(rule().options).not.toContain("MATH 3110");
   });
 
+  it("links a course that's already on the audit, instead of adding it twice", () => {
+    const before = Object.keys(getAudit().courses).length;
+    expect(add({ code: "cs 4500", requirementId: RULE })).toEqual({
+      ok: true,
+      code: "CS 4500",
+      linkedTo: "MATHEMATICS ELECTIVES",
+    });
+    expect(Object.keys(getAudit().courses).length).toBe(before);
+    expect(course("cs4500")).toMatchObject({
+      custom: false,
+      linkedTo: [RULE],
+      requirementIds: ["cpe-cs4500", RULE],
+    });
+    expect(rule().options).toContain("CS 4500");
+
+    // A second link is refused; a completed course can't be linked.
+    expect(add({ code: "CS 4500", requirementId: RULE }).message).toMatch(
+      /already counts toward/,
+    );
+    expect(add({ code: "MATH 3400", requirementId: RULE }).message).toMatch(
+      /already completed/,
+    );
+  });
+
+  it("unlinks only the links the student made", () => {
+    expect(unlinkCourse("cs4500")).toBe(false); // nothing linked by hand yet
+    add({ code: "CS 4500", requirementId: RULE });
+    expect(unlinkCourse("cs4500")).toBe(true);
+    expect(course("cs4500")).toMatchObject({
+      linkedTo: [],
+      requirementIds: ["cpe-cs4500"], // the audit's own link stays
+    });
+    expect(rule().options).not.toContain("CS 4500");
+    const own = getAudit().requirements.find((r) => r.id === "cpe-cs4500");
+    expect(own.options).toEqual(["CS 4500"]);
+  });
+
+  it("keeps a link through a save, a reload and a fresh audit import", () => {
+    add({ code: "CS 4500", requirementId: RULE });
+    saveState();
+    loadSample(); // like a fresh page load
+    loadState();
+    expect(course("cs4500").linkedTo).toEqual([RULE]);
+
+    importAudit(structuredClone(sample)); // a fresh scrape doesn't know it
+    expect(course("cs4500")).toMatchObject({
+      linkedTo: [RULE],
+      requirementIds: ["cpe-cs4500", RULE],
+    });
+    expect(rule().options).toContain("CS 4500");
+  });
+
   it("survives a save, a reload, Reset plan and a fresh audit import", () => {
     add({ requirementId: RULE });
-    toggleTerm("math3110", "FA27");
+    setTerm("math3110", "FA27");
     saveState();
     loadSample(); // like a fresh page load
     loadState();
@@ -389,7 +404,7 @@ describe("custom courses", () => {
 
 describe("saving and loading", () => {
   it("brings back picks, locks and changed columns after a reload", () => {
-    toggleTerm("cs4500", "FA27");
+    setTerm("cs4500", "FA27");
     toggleLock("cs4500");
     removeTerm("SU27");
     addTerm();
@@ -406,7 +421,7 @@ describe("saving and loading", () => {
     });
     expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28", "SU28"]);
 
-    // A fresh scrape after that keeps the student's columns too
+    // A later fresh scrape keeps the student's columns too.
     importAudit(structuredClone(sample));
     expect(keys()).toEqual(["FA26", "SP27", "FA27", "SP28", "SU28"]);
   });
@@ -446,7 +461,7 @@ describe("saving and loading", () => {
 
 describe("clearAllData", () => {
   it("deletes the save and goes back to the demo, columns included", () => {
-    toggleTerm("cs4500", "FA27");
+    setTerm("cs4500", "FA27");
     removeTerm("FA26");
     addTerm();
     saveState();
@@ -476,6 +491,14 @@ describe("setTerm (the semester dropdown)", () => {
   it("reports no change when the course is already there", () => {
     setTerm("cs4500", "SP27");
     expect(setTerm("cs4500", "SP27")).toBe(false);
+  });
+
+  it("refuses a completed course and unknown courses", () => {
+    expect(setTerm("math3400", "FA27")).toBe(false); // completed
+    expect(setTerm("nope", "FA27")).toBe(false);
+    expect(setTerm("__proto__", "FA27")).toBe(false);
+    expect(setTerm("cs4500", "FA35")).toBe(false); // not a column
+    expect(course("cs4500").plannedTerm).toBeNull();
   });
 
   it("won't move a locked course or accept a made-up term", () => {

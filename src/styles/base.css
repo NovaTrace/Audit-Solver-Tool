@@ -1,58 +1,63 @@
+/* src/styles/base.css — color palettes, fonts, page frame, footer and
+   accessibility helpers. Loaded first; the other stylesheets use its
+   tokens. */
+
 * {
   box-sizing: border-box;
 }
 
 :root {
-  /* Fonts (unchanged) */
+  /* Fonts */
   --mono: "IBM Plex Mono", sans-serif;
   --sans: "Inter", sans-serif;
 
-  /* Logo colors (the mark left of the title in the header) */
+  /* Logo colors (the mark beside the title) */
   --logo-page: #c9d6e8;
   --logo-fold: #919eaf;
-  --logo-accent: #9fd4c4; /* the bottom strip; point this at any other color */
+  --logo-accent: #9fd4c4; /* bottom strip */
 }
 
 /* ---------- Color palettes ----------
-   Every color on the page comes from these tokens. A palette is one block
-   that sets all of them; <html data-pal="..."> picks which block applies
-   (src/ui/settings.js sets it, from the Settings dialog). Five palettes:
-   Graphite (default dark), Mist (light), Denim, Dusk and Harbor. In every
-   palette the text tokens (--ink, --muted, --accent, --done ... --danger)
-   pass 4.5:1 contrast on --page, --surface and --raised.
+   Every color comes from these tokens. Each palette is one block that sets
+   them all; <html data-pal="..."> selects the block (set by
+   src/ui/settings.js). Palettes: Graphite (default dark), Mist and Paper
+   (light), Midnight, Forest, Dusk, Harbor. Text tokens pass 4.5:1 contrast on --page, --surface
+   and --raised in every palette.
 
-     --page      the page behind everything
-     --surface   panels and cards
-     --raised    things sitting on a panel (course rows, tiles, chips)
-     --line      faint dividers and the background grid
-     --line2     borders on boxes and controls
-     --ink       main text
-     --muted     secondary text
-     --accent    primary buttons, links, focus ring, highlights
-     --onfill    text on an --accent fill
-     --done / --prog / --plan / --check   status colors
-     --danger    destructive actions (Clear data)                       */
+   --page      page background
+   --surface   panels and cards
+   --raised    items on a panel (course rows, chips)
+   --line      faint dividers, background grid
+   --line2     borders on boxes and controls
+   --ink       main text
+   --muted     secondary text
+   --accent    primary buttons, links, focus ring
+   --onfill    text on an --accent fill
+   --done / --prog / --plan / --check   status colors
+   --danger    destructive actions (Clear data) */
 :root,
 [data-pal="graphite"] {
-  color-scheme: dark; /* dropdowns and scrollbars drawn dark */
-  --page: #1d232c;
-  --surface: #272e39;
-  --raised: #313947;
-  --line: rgba(182, 192, 206, 0.16);
-  --line2: rgba(182, 192, 206, 0.34);
-  --ink: #eef2f6;
-  --muted: #b6c0ce;
-  --accent: #ccdcef;
-  --onfill: #1d232c;
-  --done: #a7d3b5;
-  --prog: #c4b5e8;
-  --plan: #8fc3ea; /* sky blue: easier to tell from "done" green */
-  --check: #f1c18d;
-  --danger: #f2a7a0;
+  color-scheme: dark; /* native dropdowns and scrollbars drawn dark */
+  --page: #171b21;
+  --surface: #1f242c;
+  --raised: #29303a;
+  --line: rgba(255, 255, 255, 0.08);
+  --line2: rgba(255, 255, 255, 0.18);
+  --ink: #e8edf3;
+  --muted: #9ba7b6;
+  --accent: #e8edf3; /* neutral: color is kept for status */
+  --onfill: #141920;
+  --done: #7fd1a0;
+  --prog: #bba8f2;
+  --plan: #7cb4f5; /* blue: distinct from the "done" green */
+  --check: #f0b872;
+  --danger: #f2a39b;
+  --logo-page: #c9d3df;
+  --logo-fold: #8b97a6;
+  --logo-accent: #7fd1a0;
 }
 
-/* Mist: the light theme. Status colors are deepened to stay
-   readable on light backgrounds; the logo gets darker pieces. */
+/* Mist: the light theme. Status colors are darkened for light backgrounds. */
 [data-pal="mist"] {
   color-scheme: light;
   --page: #e6eef8;
@@ -69,27 +74,9 @@
   --plan: #1f5f8f;
   --check: #9a520c;
   --danger: #b3261e;
-  --logo-page: var(--accent); /* the logo's page pieces take the accent */
+  --logo-page: var(--accent); /* the logo's page pieces use the accent */
   --logo-fold: color-mix(in srgb, var(--accent) 45%, #ffffff);
   --logo-accent: #3f9c84;
-}
-
-[data-pal="denim"] {
-  color-scheme: dark;
-  --page: #1a2333;
-  --surface: #263347;
-  --raised: #2f3e55;
-  --line: rgba(179, 192, 212, 0.16);
-  --line2: rgba(179, 192, 212, 0.34);
-  --ink: #e8edf5;
-  --muted: #b3c0d4;
-  --accent: #e6b3c3;
-  --onfill: #1a2333;
-  --done: #a8d5ba;
-  --prog: #b9b2ec;
-  --plan: #9cc2e8;
-  --check: #f0c38e;
-  --danger: #f2a7a0;
 }
 
 [data-pal="dusk"] {
@@ -97,8 +84,8 @@
   --page: #20263a;
   --surface: #2d3448;
   --raised: #363e54;
-  --line: rgba(188, 192, 214, 0.16);
-  --line2: rgba(188, 192, 214, 0.34);
+  --line: rgba(188, 192, 214, 0.1);
+  --line2: rgba(188, 192, 214, 0.24);
   --ink: #ece9f4;
   --muted: #bcc0d6;
   --accent: #ecd89a;
@@ -115,8 +102,8 @@
   --page: #1c2a33;
   --surface: #283a45;
   --raised: #314753;
-  --line: rgba(173, 194, 201, 0.16);
-  --line2: rgba(173, 194, 201, 0.34);
+  --line: rgba(173, 194, 201, 0.1);
+  --line2: rgba(173, 194, 201, 0.24);
   --ink: #e6eff1;
   --muted: #adc2c9;
   --accent: #eaa597;
@@ -128,13 +115,73 @@
   --danger: #f4a6a6;
 }
 
-/* Tints worked out from the palette, so each palette only sets the above */
+/* Paper: neutral light theme, dark primary button. */
+[data-pal="paper"] {
+  color-scheme: light;
+  --page: #f3f4f6;
+  --surface: #ffffff;
+  --raised: #eef0f4;
+  --line: #e4e7eb;
+  --line2: #c9ced6;
+  --ink: #1a1f27;
+  --muted: #5a6472;
+  --accent: #1a1f27;
+  --onfill: #ffffff;
+  --done: #1a7f45;
+  --prog: #6a4cc2;
+  --plan: #2460c4;
+  --check: #9a5600;
+  --danger: #b3261e;
+  --logo-page: #1a1f27;
+  --logo-fold: #8a93a0;
+  --logo-accent: #1a7f45;
+}
+
+/* Midnight: blue-black with a periwinkle accent. */
+[data-pal="midnight"] {
+  color-scheme: dark;
+  --page: #0f1320;
+  --surface: #171c2e;
+  --raised: #21273d;
+  --line: rgba(170, 184, 255, 0.1);
+  --line2: rgba(170, 184, 255, 0.24);
+  --ink: #e9ecf8;
+  --muted: #a0a9c6;
+  --accent: #aab8ff;
+  --onfill: #10142a;
+  --done: #82d6a6;
+  --prog: #c3a9f5;
+  --plan: #7fc3f2;
+  --check: #f2bd7a;
+  --danger: #f5a59d;
+}
+
+/* Forest: deep green-grey. */
+[data-pal="forest"] {
+  color-scheme: dark;
+  --page: #111916;
+  --surface: #18221e;
+  --raised: #223029;
+  --line: rgba(190, 230, 210, 0.09);
+  --line2: rgba(190, 230, 210, 0.22);
+  --ink: #e6efe9;
+  --muted: #9db3a7;
+  --accent: #e6efe9;
+  --onfill: #0e1813;
+  --done: #8fd8a8;
+  --prog: #c2abf0;
+  --plan: #86c1ee;
+  --check: #eebd78;
+  --danger: #f0a69c;
+}
+
+/* Tints derived from the palette tokens. */
 :root {
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
   --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
-/* Tick boxes, radio buttons and range sliders in the palette's accent */
+/* Tick boxes, radio buttons and sliders use the accent. */
 :root {
   accent-color: var(--accent);
 }
@@ -146,8 +193,8 @@ body {
   font-family: var(--sans);
 }
 
-/* Only two weights of each font are shipped: 400 (regular) and 600 (bold).
-   Browsers make headings and <b> 700 by default, so point them at 600. */
+/* Only weights 400 and 600 are shipped. Headings and <b> default to 700,
+   so they are set to 600. */
 h1,
 h2,
 h3,
@@ -157,19 +204,19 @@ strong {
 }
 
 .sheet {
-  max-width: 1380px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 10px 16px 60px; /* 16px side gutter so nothing touches the screen edge */
+  padding: 0 24px 48px;
 }
 
 footer {
-  margin-top: 32px;
+  margin-top: 48px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--muted);
-  line-height: 1.8;
-  display: flex; /* source note left, Clear data right */
+  line-height: 1.5;
+  display: flex; /* disclaimer left, Clear data right */
   justify-content: space-between;
   align-items: center;
   gap: 16px;
@@ -178,14 +225,24 @@ footer {
 
 footer p {
   margin: 0;
+} 
+
+/* Takes the width left of the Clear data button. */
+.disclaimer {
+  flex: 1 1 320px;
+  line-height: 1.5;
 }
 
-/* The one button that deletes data: red so it stands apart */
+.disclaimer b {
+  color: var(--ink);
+}
+
+/* The only button that deletes data. */
 .clear-data-btn {
   font: 600 13px var(--sans);
-  min-height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
   border: 1px solid var(--danger);
   background: var(--surface);
   color: var(--danger);
@@ -197,14 +254,12 @@ footer p {
   border-radius: 20px;
 }
 
-/* ---------- Feedback bar (top of the page) ----------
-   Delete this block along with the bar's <div> in index.html once
-   testing is done. */
+/* ---------- Feedback bar (temporary) ---------- */
 .dev-banner {
   padding: 8px 16px;
   background: var(--accent-soft);
   border-bottom: 1px solid var(--line2);
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--ink);
   text-align: center;
 }
@@ -220,24 +275,24 @@ footer p {
 
 /* ---------- Accessibility ---------- */
 
-/* A visible ring on whatever the keyboard is on, in every palette */
+/* Visible focus ring for keyboard users, in every palette. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* The heading the skip link lands on doesn't need a ring */
+/* The skip link's target heading needs no ring. */
 #req-title:focus {
   outline: none;
 }
 
-/* "Skip to the course list": hidden until it has keyboard focus */
+/* "Skip to the course list": hidden until focused. */
 .skip-link {
   position: absolute;
   top: 8px;
   left: 8px;
   z-index: 100;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 6px;
   background: var(--accent);
   color: var(--onfill);
@@ -249,7 +304,7 @@ footer p {
   transform: none;
 }
 
-/* Visually hidden, still read by screen readers */
+/* Visually hidden; still read by screen readers. */
 .vh {
   position: absolute;
   width: 1px;
@@ -259,8 +314,8 @@ footer p {
   white-space: nowrap;
 }
 
-/* Less movement for people who ask their system for it: the title and
-   logo animations already check this; this catches every transition */
+/* Reduced motion: the title and logo animations check this themselves;
+   this covers every other transition. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

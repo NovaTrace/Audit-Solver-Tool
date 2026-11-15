@@ -1,23 +1,26 @@
-// Tests for logic/credits.js: totals and requirement progress.
+// Tests for src/logic/credits.js: credit totals and requirement progress.
 
 import { describe, it, expect } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { parseAudit } from "../logic/parser.js";
 import {
   creditsOf,
   sumCredits,
   coursesInTerm,
-  totalPlannedCredits,
   requirementProgress,
   unplacedRequired,
   creditSummary,
+  isInProgress,
   categoryProgress,
   requirementTotals,
   otherRequirements,
 } from "../logic/credits.js";
-import { makeRegistered } from "./helpers.js";
+import { NOV_2026, makeRegistered } from "./helpers.js";
 
 const audit = () => parseAudit(structuredClone(sample));
+// The test audit with one course registered in a term ("today" is Nov 5, 2026).
+const registeredIn = (id, term) =>
+  parseAudit(makeRegistered(structuredClone(sample), id, term), null, NOV_2026);
 const progressFor = (a, id) => requirementProgress(a).find((r) => r.id === id);
 
 describe("credit totals", () => {
@@ -35,13 +38,6 @@ describe("credit totals", () => {
     const codes = coursesInTerm(a, "FA26").map((c) => c.code);
     expect(codes).toEqual(["CS 4500", "ECE 3020"]);
   });
-
-  it("adds up every planned course", () => {
-    const a = audit();
-    expect(totalPlannedCredits(a)).toBe(0); // the demo starts blank
-    a.courses.cs4500.plannedTerm = "FA27";
-    expect(totalPlannedCredits(a)).toBe(3);
-  });
 });
 
 describe("requirementProgress", () => {
@@ -51,7 +47,7 @@ describe("requirementProgress", () => {
     const ids = requirementProgress(a).map((r) => r.id);
     expect(ids).not.toContain("cpe-arch"); // complete
     expect(ids).not.toContain("cc-navigate"); // in progress
-    expect(ids).not.toContain("cpe-cs4500"); // a fixed course, not a choice
+    expect(ids).not.toContain("cpe-cs4500"); // a single course, not a choice
     expect(ids).toContain("ee-lecture-electives");
   });
 
@@ -139,7 +135,7 @@ describe("requirementProgress", () => {
 
 describe("unplacedRequired", () => {
   it("lists needed courses with no term, not options or registered ones", () => {
-    // The demo has no registered courses, so make ECE 2050 one for this test
+    // The test audit has no registered courses; register ECE 2050.
     const data = makeRegistered(structuredClone(sample), "ece2050", "SP27");
     const codes = unplacedRequired(parseAudit(data)).map((c) => c.code);
     expect(codes).toEqual([
@@ -175,39 +171,94 @@ describe("credit summary (plan panel headline)", () => {
       inProgress: 0,
       planned: 0,
       required: 128,
-      left: 40,
     });
   });
 
-  it("takes planned hours off what's left", () => {
+  it("counts courses placed in a semester as planned", () => {
     const a = audit();
     a.courses.cs4500.plannedTerm = "FA27";
     a.courses.ece3020.plannedTerm = "FA26";
     const s = creditSummary(a);
     expect(s.planned).toBe(6);
-    expect(s.left).toBe(34);
   });
 
-  it("counts a registered course as in progress, not planned", () => {
-    const a = audit();
-    a.courses.cs4500.plannedTerm = "FA26";
-    a.courses.cs4500.status = "registered";
-    const s = creditSummary(a);
-    expect(s.inProgress).toBe(3);
-    expect(s.planned).toBe(0);
-    expect(s.left).toBe(37);
+  it("counts this term's registered course as in progress, a later one as planned", () => {
+    const a = registeredIn("cs4500", "FA26"); // "today" is in Fall 2026
+    expect(creditSummary(a, NOV_2026)).toMatchObject({
+      inProgress: 3,
+      planned: 0,
+    });
+    const b = registeredIn("cs4500", "SP27"); // registered, not started
+    expect(creditSummary(b, NOV_2026)).toMatchObject({
+      inProgress: 0,
+      planned: 3,
+    });
   });
 
-  it("has no headline number when the audit doesn't give a total", () => {
+  it("still counts hours the audit calls in progress that no course in the plan explains", () => {
+    const a = registeredIn("cs4500", "FA26");
+    a.student.hoursInProgress = 5; // the audit knows of 2 more
+    expect(creditSummary(a, NOV_2026).inProgress).toBe(5);
+  });
+
+  it("has no required total when the audit doesn't give one", () => {
     const a = audit();
     a.student.hoursRequired = null;
-    expect(creditSummary(a).left).toBeNull();
+    expect(creditSummary(a).required).toBeNull();
+  });
+});
+
+describe("isInProgress", () => {
+  it("is true only for a course registered in the current term (or an earlier one)", () => {
+    const now = (id, term) =>
+      isInProgress(registeredIn(id, term).courses[id], NOV_2026);
+    expect(now("cs4500", "FA26")).toBe(true); // this term
+    expect(now("cs4500", "SP27")).toBe(false); // next term
+
+    // Old audit: still registered in a term that has ended.
+    const old = makeRegistered(structuredClone(sample), "cs4500", "SU26");
+    expect(isInProgress(old.courses.cs4500, NOV_2026)).toBe(true);
+    // Goes by the registered term, not the plan.
+    const moved = registeredIn("cs4500", "SP27").courses.cs4500;
+    moved.plannedTerm = "FA26";
+    expect(isInProgress(moved, NOV_2026)).toBe(false);
+
+    const a = audit();
+    a.courses.cs4500.plannedTerm = "FA26"; // planned there, not registered
+    expect(isInProgress(a.courses.cs4500, NOV_2026)).toBe(false);
+    expect(isInProgress(a.courses.math3400, NOV_2026)).toBe(false); // completed
   });
 });
 
 describe("category progress (requirement category bars)", () => {
   const section = (a, name) =>
-    categoryProgress(a).find((g) => g.section === name);
+    categoryProgress(a, NOV_2026).find((g) => g.section === name);
+
+  it("calls a requirement in progress only when its course is being taken now", () => {
+    const core = "Computer Engineering - Core";
+    expect(section(registeredIn("cs4500", "FA26"), core)).toMatchObject({
+      inProgress: 1,
+      planned: 0,
+    });
+    expect(section(registeredIn("cs4500", "SP27"), core)).toMatchObject({
+      inProgress: 0,
+      planned: 1,
+    });
+  });
+
+  it("does the same when the audit itself says in progress", () => {
+    // The audit marks a requirement in progress once any registered course
+    // covers it, whatever its term.
+    const covered = (term) => {
+      const a = registeredIn("cs4500", term);
+      const req = a.requirements.find((r) => r.id === "cpe-cs4500");
+      req.status = "in-progress";
+      req.applied = [{ code: "CS 4500", hours: 3 }];
+      return section(a, "Computer Engineering - Core");
+    };
+    expect(covered("FA26")).toMatchObject({ inProgress: 1, planned: 0 });
+    expect(covered("SP27")).toMatchObject({ inProgress: 0, planned: 1 });
+  });
 
   it("counts complete and needed requirements per section", () => {
     const g = section(audit(), "Computer Engineering - Core");
@@ -233,7 +284,7 @@ describe("requirement totals (plan panel headline)", () => {
   it("adds up every section's requirements", () => {
     const t = requirementTotals(audit());
     expect(t.done + t.inProgress + t.planned + t.needed).toBe(t.total);
-    expect(t.done).toBe(2); // CPE arch + CPE math are complete in the demo
+    expect(t.done).toBe(2); // CPE arch and CPE math are complete in the test audit
   });
 
   it("drops a requirement from 'needed' once it's planned", () => {

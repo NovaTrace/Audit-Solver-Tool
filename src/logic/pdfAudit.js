@@ -1,26 +1,19 @@
-// =====================================================================
-// logic/pdfAudit.js — an audit PDF's text -> our audit JSON.
+// src/logic/pdfAudit.js — converts an audit PDF's text to audit JSON.
 //
-// The PDF counterpart of the bookmarklet's scrapers. Those read the audit
-// PAGE (its elements); this reads the audit as TEXT, one line at a time.
-// Both hand the same plain values to logic/auditBuild.js, which makes the
-// requirements and courses, so the two imports can't disagree.
+// The PDF counterpart of the bookmarklet scrapers. Both pass the same plain
+// values to logic/auditBuild.js.
 //
-// Two kinds of audit PDF are understood. Their lines say the same things;
-// they differ in how a line shows what it is:
-//   "printed"  the audit web page printed to PDF. Nothing marks a
-//              sub-requirement's status, so it's worked out from what the
-//              sub-requirement holds (see printedStatus).
-//   "site"     the audit site's own PDF. A block starts "NO", "OK" or
-//              "IP"; a sub-requirement starts "+" (done) or "-" (not).
+// Two PDF layouts are supported:
+//   "printed"  the audit page printed to PDF. Status marks don't print, so
+//              status is inferred from content (printedStatus).
+//   "site"     the audit site's own PDF. Blocks start "NO", "OK" or "IP";
+//              sub-requirements start "+" (met) or "-" (not met).
 //
-//   textLines(pages)    pdf.js text pieces -> lines of text
-//   pdfToAudit(lines)   lines -> audit JSON (throws AuditError if the PDF
-//                       isn't an audit)
+//   textLines(pages)    pdf.js text pieces -> lines
+//   pdfToAudit(lines)   lines -> audit JSON; throws AuditError if not an audit
 //
-// Pure logic: no `document`, no pdf.js (ui/pdfReader.js does the reading).
-// Tested in pdfAudit.test.js against made-up audits in both layouts.
-// =====================================================================
+// Used by: ui/importer.js (text comes from ui/pdfReader.js).
+// Pure logic, no DOM or pdf.js. Tests: pdfAudit.test.js.
 
 import { SCHEMA, AuditError } from "./parser.js";
 import {
@@ -30,22 +23,17 @@ import {
   studentTotals,
 } from "./auditBuild.js";
 
-// ---------------------------------------------------------------------
-// 1. Text pieces -> lines
-// ---------------------------------------------------------------------
+// ---------- 1. Text pieces -> lines ----------
 
 /**
- * pdf.js gives a page's text as loose pieces, each with a position. This
- * puts them back into lines, top to bottom, left to right.
- *
- * `pages` is one list per page of { str, x, y, width }. Returns
- * [{ x, text }]: each line's text, and where it starts from the left
- * (the printed layout shows headings by how far in they start).
+ * Rebuilds lines from pdf.js text pieces, top to bottom, left to right.
+ * `pages`: one list per page of { str, x, y, width }.
+ * Returns [{ x, text }]; x is where the line starts from the left.
  */
 export function textLines(pages) {
   const lines = [];
   for (const pieces of pages) {
-    // Pieces at (nearly) the same height are one line
+    // Pieces at nearly the same height form one line.
     const rows = [];
     for (const piece of pieces) {
       if (!piece.str.trim()) continue;
@@ -53,15 +41,15 @@ export function textLines(pages) {
       if (row) row.pieces.push(piece);
       else rows.push({ y: piece.y, pieces: [piece] });
     }
-    rows.sort((a, b) => b.y - a.y); // PDF heights count up from the bottom
+    rows.sort((a, b) => b.y - a.y); // PDF y counts up from the bottom
 
     for (const row of rows) {
       row.pieces.sort((a, b) => a.x - b.x);
       let text = "";
-      let end = null; // where the previous piece stopped
+      let end = null; // where the previous piece ended
       for (const piece of row.pieces) {
-        // Pieces that touch are one word split in two ("Di" + "ff" +
-        // "erential"); a gap between them is a space
+        // Touching pieces are one word ("Di" + "ff" + "erential"); a gap is a
+        // space.
         if (end !== null && piece.x - end > 1) text += " ";
         text += piece.str;
         end = piece.x + piece.width;
@@ -72,22 +60,20 @@ export function textLines(pages) {
   return lines;
 }
 
-// Text with runs of spaces collapsed
+// Collapses runs of spaces.
 function clean(text) {
   return text.replace(/\s+/g, " ").trim();
 }
 
-// ---------------------------------------------------------------------
-// 2. What each line is
-// ---------------------------------------------------------------------
+// ---------- 2. Classifying lines ----------
 
-// A course row: "FA26 CS 3300 3.0 *** Intro to Software Engineering".
+// Course row: "FA26 CS 3300 3.0 *** Intro to Software Engineering".
 // Groups: season, year, code, credits, grade, flags (">E >S"), title.
 const ROW =
   /^(FA|SP|SU)(\d{2}) ([A-Z]{2,4} ?\d{4}[A-Z]*) (\d+(?:\.\d+)?) (\S+)((?: >\S+)*) (.+)$/;
 
-// Lines that are furniture, not part of the audit: the browser's print
-// header and footer, the site PDF's page numbers and table headings
+// Lines that are not audit content: print headers and footers, page numbers,
+// table headings.
 const NOISE = [
   /^\d{1,2}\/\d{1,2}\/\d{2,4}, \d{1,2}:\d{2} ?[AP]M\b/, // "11/10/26, 11:20 PM My Audit…"
   /^https?:\/\//,
@@ -96,15 +82,14 @@ const NOISE = [
   /^Open All Sections\b/,
 ];
 
-// Blocks that aren't requirements to plan for (as in the bookmarklet)
+// Blocks that are not requirements (same as the bookmarklet).
 const HISTORY = /^Course History$/;
 const NOT_REQUIREMENTS =
   /^(WORK NOT APPLIED TO THIS PROGRAM|\*\*\*LEGEND\*\*\*)$/;
 
 /**
- * Sort every line into a kind, with the values read from it. `layout` is
- * { site, rowX }: which kind of PDF this is, and how far in its course
- * rows start (headings are judged against that).
+ * Classifies a line and reads its values.
+ * `layout` is { site, rowX }: the PDF kind, and the x where course rows start.
  */
 function classify(line, previous, layout) {
   const { text, x } = line;
@@ -124,8 +109,8 @@ function classify(line, previous, layout) {
       },
     };
   }
-  // Extra lines under a course row ("CO-PPCC: MAT201") sit far to the
-  // right, under the row's title
+  // Extra lines under a course row ("CO-PPCC: MAT201") sit far right, under its
+  // title.
   if (x > rowX + 60 && ["row", "more"].includes(previous?.kind)) {
     return { kind: "more" };
   }
@@ -147,7 +132,7 @@ function classify(line, previous, layout) {
   if ((m = text.match(/^SELECT FROM: ?(.*)$/))) {
     return { kind: "select", codes: codeList(m[1]) };
   }
-  // A long SELECT FROM list runs on to the next line
+  // A long SELECT FROM list continues on the next line.
   if (
     previous?.kind === "select" &&
     /^[,\s]*([A-Z]{2,4} ?)?\d{4}[A-Z]*(\s*,|$)/.test(text)
@@ -166,13 +151,13 @@ function classify(line, previous, layout) {
     return { kind: "gpa", attemptedHours: Number(m[1]), gpa: Number(m[2]) };
   }
 
-  // Block headings. Site PDF: "NO Computer Engineering - Core", at the
-  // far left. Printed: any other line that starts left of the rest.
+  // Block headings. Site: "NO Computer Engineering - Core" at the far left.
+  // Printed: any other line starting left of the rest.
   if (site) {
     if (x < rowX - 30 && (m = text.match(/^(NO|OK|IP) (\S.*)$/))) {
       return { kind: "block", title: m[2], status: m[1] };
     }
-    // A sub-requirement's mark, then its title: "- CS 4500 Operating…"
+    // Sub-requirement mark, then title: "- CS 4500 Operating…".
     if (x < rowX - 30 && (m = text.match(/^([+\-*]) (\S.*)$/))) {
       return { kind: "text", words: m[2], marker: m[1] };
     }
@@ -182,17 +167,17 @@ function classify(line, previous, layout) {
   return { kind: "text", words: text, marker: null };
 }
 
-// The number just before a word: numberBefore("6.0 HOURS 2 COURSES",
-// /COURSES?/) -> 2. null if the word isn't there.
+// The number just before a word, or null:
+// numberBefore("6.0 HOURS 2 COURSES", /COURSES?/) -> 2.
 function numberBefore(text, word) {
   const m = text.match(new RegExp(`([\\d.]+) ${word.source}`));
   return m ? Number(m[1]) : null;
 }
 
 /**
- * "ECE 4020,4910, CS 4200" -> ["ECE 4020", "ECE 4910", "CS 4200"]. A
- * number with no department takes the one before it; `after` is the last
- * code of the line above, for a list that ran on to a second line.
+ * "ECE 4020,4910, CS 4200" -> ["ECE 4020", "ECE 4910", "CS 4200"].
+ * A number with no department takes the previous one. `after` is the last
+ * code of the line above, for a list continued from it.
  */
 function codeList(text, after = "") {
   const codes = [];
@@ -204,21 +189,18 @@ function codeList(text, after = "") {
   return codes;
 }
 
-// ---------------------------------------------------------------------
-// 3. Lines -> blocks of sub-requirements
-// ---------------------------------------------------------------------
+// ---------- 3. Lines -> blocks of sub-requirements ----------
 
 /**
- * Walk the lines once, collecting blocks ("Computer Engineering - Core")
- * and the sub-requirements inside each:
- * [{ title, subs: [{ marker, titleLines, select, applied, … }] }]
+ * Collects blocks and their sub-requirements in one pass:
+ * [{ title, subs: [{ marker, titleLines, select, applied, … }] }].
  */
 function readBlocks(lines, layout) {
   const blocks = [];
-  let block = null; // the block being filled
-  let sub = null; // the sub-requirement being filled
+  let block = null; // block being filled
+  let sub = null; // sub-requirement being filled
   let lastRow = null;
-  let previous = null; // the line before, with its kind
+  let previous = null; // previous line, classified
 
   const startSub = (marker = null) => {
     sub = {
@@ -249,8 +231,7 @@ function readBlocks(lines, layout) {
       continue;
     }
     if (!block) continue; // before the first block
-    // The block's own totals, printed under its heading: EARNED, IN
-    // PROGRESS and, if it still lacks something, NEEDS
+    // The block's own totals under its heading: EARNED, IN PROGRESS, NEEDS.
     if (info.kind === "summary") {
       block.totals.add(info.says);
       continue;
@@ -264,11 +245,11 @@ function readBlocks(lines, layout) {
       continue;
     }
 
-    // Everything else is data, which belongs to a sub-requirement. A block
-    // can open straight into rows (Course History's "Transfer credit")
+    // Everything else is data for a sub-requirement. A block can open straight
+    // into rows (Course History's "Transfer credit").
     if (!sub) {
       if (info.kind === "needs") {
-        // The block's own NEEDS line. One about GPA alone is a reminder.
+        // The block's own NEEDS line. GPA alone is a reminder, not a need.
         const lacks = [info.hours, info.courses, info.subGroups];
         if (lacks.some((n) => n !== null)) block.totals.add("needs");
         continue;
@@ -301,23 +282,22 @@ function readBlocks(lines, layout) {
 }
 
 /**
- * Does this line of plain text start a new sub-requirement, or carry on
- * the one before (its description, a NOTE, the second half of an
- * either/or)? `before` is the line above.
+ * True if a plain-text line starts a new sub-requirement; false if it
+ * continues the previous one. `before` is the line above.
  */
 function startsSub(text, before, layout) {
-  // Text straight after a sub-requirement's data (its rows, NEEDS, SELECT
-  // FROM…) can't belong to it: that one is finished
+  // Text after a sub-requirement's data (rows, NEEDS, SELECT FROM) starts a new
+  // one.
   if (before?.kind !== "text") return true;
   if (layout.site) return false; // the site PDF marks its own with + or -
   if (text === "OR" || before.text === "OR" || /^NOTE\b/.test(text)) {
     return false;
   }
-  // Printed titles are either in capitals ("TECHNICAL ELECTIVES")…
+  // Printed titles are in capitals ("TECHNICAL ELECTIVES")…
   if (!/[a-z]/.test(text) && /[A-Z]{3}/.test(text)) return true;
-  // …or a course ("MATH 1350 Calculus I"). A description can wrap on to a
-  // line that starts with a course code too, so a course only counts as a
-  // title when the line above finished its sentence.
+  // …or a course ("MATH 1350 Calculus I"). A wrapped description can also
+  // start with a course code, so this counts only when the line above ended
+  // its sentence.
   return (
     /^[A-Z]{2,4} \d{4}[A-Z]* \S/.test(text) &&
     !/[.,;:]$/.test(text) &&
@@ -325,11 +305,9 @@ function startsSub(text, before, layout) {
   );
 }
 
-// ---------------------------------------------------------------------
-// 4. Blocks -> the plain values auditBuild.js works from
-// ---------------------------------------------------------------------
+// ---------- 4. Blocks -> values for auditBuild.js ----------
 
-// One sub-requirement as collected -> the shape auditBuild.js takes
+// A collected sub-requirement -> the shape auditBuild.js takes.
 function finishSub(sub, layout) {
   return {
     ...sub,
@@ -338,21 +316,21 @@ function finishSub(sub, layout) {
   };
 }
 
-// True when the audit counts on a course still being taken
+// True when the audit counts a course still being taken.
 const isInProgress = (sub) =>
   sub.inProgressHours !== null || sub.applied.some((r) => r.grade === "***");
 
-// Site PDF: "-" isn't met; "+" is met, or will be once the courses in
-// progress are passed; no mark is information only
+// Site PDF: "-" not met; "+" met, or met once in-progress courses pass;
+// no mark is information only.
 function siteStatus(sub) {
   if (sub.marker === "-") return "needs";
   if (sub.marker === "+") return isInProgress(sub) ? "in-progress" : "complete";
   return null;
 }
 
-// Printed page: the status icons don't print, so read it from what's
-// there. Still needing hours or courses, or offering courses to SELECT
-// FROM, means not met. (A "NEEDS: 2.000 GPA" line is only a reminder.)
+// Printed page: status inferred from content. Needing hours or courses, or
+// listing courses to SELECT FROM, means not met. "NEEDS: 2.000 GPA" alone
+// is a reminder.
 function printedStatus(sub) {
   if (sub.needHours !== null || sub.needCourses !== null || sub.select.length) {
     return "needs";
@@ -361,18 +339,16 @@ function printedStatus(sub) {
   if (sub.applied.length || sub.earnedHours !== null || sub.hasGpa) {
     return "complete";
   }
-  return null; // only words: information
+  return null; // text only: information
 }
 
 /**
- * Printed page only: check the guessed statuses against the block's own
- * totals, which are stated outright, and fix the two cases where they
- * disagree. (A block that prints no totals is left as guessed.)
- * - The block has totals but no NEEDS line, so it lacks nothing: a
- *   sub-requirement in it can't be unmet, whatever it looked like.
- * - The block says it NEEDS something, yet nothing in it reads as unmet:
- *   the unmet one must be written in words only. If exactly one is, that's
- *   it. With several, there's no telling which, so they're left alone.
+ * Printed page only: corrects inferred statuses against the block's stated
+ * totals.
+ * - Totals but no NEEDS line: no sub-requirement in the block is unmet.
+ * - NEEDS something but nothing reads as unmet: if exactly one sub-requirement
+ *   is text only, that one is unmet. With several, none is changed.
+ * Blocks with no totals are left as inferred.
  */
 function checkAgainstBlock(subs, totals) {
   if (totals.size === 0) return;
@@ -389,15 +365,13 @@ function checkAgainstBlock(subs, totals) {
 }
 
 /**
- * A PDF wraps long text, so a description arrives as several lines. Join
- * them back up: the title stays first, the choices of an either/or
- * ("OR" and the line after it) stay on their own, and everything else
- * runs together. Otherwise a wrapped line that happens to start with a
- * course code would be taken for another course title.
+ * Rejoins wrapped description lines. The title stays first; either/or
+ * choices ("OR" and the line after) stay separate; the rest is joined, so a
+ * wrapped line starting with a course code isn't read as a title.
  */
 function paragraphs(lines) {
   const out = [];
-  let joining = false; // true while the last entry is running description
+  let joining = false; // the last entry is running description
   lines.forEach((line, i) => {
     const alone = i === 0 || line === "OR" || lines[i - 1] === "OR";
     if (alone || !joining) out.push(line);
@@ -407,13 +381,11 @@ function paragraphs(lines) {
   return out;
 }
 
-// ---------------------------------------------------------------------
-// 5. The student header
-// ---------------------------------------------------------------------
+// ---------- 5. Student header ----------
 
 const SEASON_OF_TERM_CODE = { 1: "Spring", 4: "Summer", 7: "Fall" };
 
-/** The audit's header lines -> the `student` object, without the totals. */
+/** Header lines -> the `student` object, without totals. */
 function readStudent(lines, layout) {
   const texts = lines.map((l) => l.text);
   const find = (pattern) => texts.findIndex((t) => pattern.test(t));
@@ -438,8 +410,8 @@ function readStudent(lines, layout) {
   };
 
   if (layout.site) {
-    // PREPARED: 11/05/26 - 01:35 PM …     then the name on the next line
-    // REQUESTED: ESBS---CPEN CATALOG YEAR: 20237   then the degree
+    // PREPARED: 11/05/26 - 01:35 PM …               name on the next line
+    // REQUESTED: ESBS---CPEN CATALOG YEAR: 20237    then the degree
     const prepared = find(/^PREPARED:/);
     const requested = find(/^REQUESTED:/);
     const when = texts[prepared]?.match(
@@ -455,8 +427,8 @@ function readStudent(lines, layout) {
       student.catalogYear = `${SEASON_OF_TERM_CODE[catalog[2]]} ${catalog[1]}`;
     }
   } else {
-    // Name, then degree, then a small table: its headings on one line
-    // ("Prepared On  Program Code  Catalog Year …"), its values on the next
+    // Name, degree, then a table: headings on one line ("Prepared On  Program
+    // Code  Catalog Year …"), values on the next.
     const headings = find(/^Prepared On\b/);
     if (headings >= 2) {
       const values = texts[headings + 1] ?? "";
@@ -481,14 +453,11 @@ function isoLocal([, month, day, , hour, minute, ampm], year) {
   return `${year}-${month}-${day}T${String(h).padStart(2, "0")}:${minute}:00`;
 }
 
-// ---------------------------------------------------------------------
-// 6. Putting it together
-// ---------------------------------------------------------------------
+// ---------- 6. Assembly ----------
 
 /**
- * An audit PDF's lines (from textLines) -> audit JSON, ready for
- * parseAudit(). `now` stamps when it was imported.
- * Throws AuditError if the lines aren't a degree audit.
+ * Lines from textLines() -> audit JSON for parseAudit(). `now` is the
+ * import time. Throws AuditError if the lines are not a degree audit.
  */
 export function pdfToAudit(allLines, now = new Date()) {
   const lines = allLines.filter(
@@ -505,7 +474,7 @@ export function pdfToAudit(allLines, now = new Date()) {
   }
   const layout = {
     site: lines.some((line) => /^PREPARED:/.test(line.text)),
-    rowX: rowStarts[Math.floor(rowStarts.length / 2)], // the usual start
+    rowX: rowStarts[Math.floor(rowStarts.length / 2)], // median row start
   };
 
   const blocks = readBlocks(lines, layout).map((block) => {
@@ -519,8 +488,8 @@ export function pdfToAudit(allLines, now = new Date()) {
   );
   const allSubs = required.flatMap((b) => b.subs);
 
-  // Course History lists each attempt once. Without it, fall back to
-  // every course row in the requirements.
+  // Course History lists each attempt once. Without it, use every course row
+  // in the requirements.
   const rows = (history?.subs ?? allSubs).flatMap((sub) => sub.applied);
   const requirements = buildRequirements(required);
 
