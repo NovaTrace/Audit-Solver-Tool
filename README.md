@@ -5,7 +5,7 @@ your remaining courses semester by semester to find hidden conflicts.
 
 **Use it here: https://novatrace.github.io/Audit-Solver-Tool/**
 
-Version 1.1.1 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
+Version 1.2.0 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
 
 ## What it does
 
