@@ -1,7 +1,7 @@
-// Tests for logic/pdfAudit.js: reading an audit PDF's text. Run against a
-// made-up audit written out in both PDF layouts (fixtures/*.pdf.txt), with
-// the real layouts' structure. Each fixture line is "[x]text": how far in
-// the line starts, then its words. Testing only, not a site element.
+// Tests for src/logic/pdfAudit.js: reading an audit PDF's text.
+//
+// Fixtures (fixtures/*.pdf.txt) hold one made-up audit in both PDF layouts.
+// Each fixture line is "[x]text": the line's start position, then its text.
 
 import { describe, it, expect } from "vitest";
 import { textLines, pdfToAudit } from "../logic/pdfAudit.js";
@@ -26,7 +26,7 @@ const site = pdfToAudit(linesOf(siteText), NOV_2026);
 const requirement = (audit, title) =>
   audit.requirements.find((r) => r.title.startsWith(title));
 
-// Everything below must hold for both layouts
+// Every test in this block must hold for both layouts.
 describe.each([
   ["the printed page", printed],
   ["the site's PDF", site],
@@ -83,8 +83,9 @@ describe.each([
       status: "complete",
       options: ["ECE 4480", "CS 4200"],
       description:
-        // The note wraps on to a line that starts with a course code,
-        // which must not be taken for a third course in the title
+        // The note wraps onto a line starting with a course code, which must
+        // not
+        // be read as a third course in the title.
         "NOTE: Beginning fall 2023, if you have not passed ECE 4480 already, take that course.",
     });
   });
@@ -115,8 +116,8 @@ describe.each([
   });
 
   it("keeps a rule with no course list when courses count toward it", () => {
-    // NAVIGATE is in progress and shows no SELECT FROM list any more;
-    // dropping it would leave CS 3300 looking like it counts for less
+    // NAVIGATE is in progress and no longer lists SELECT FROM courses; dropping
+    // it would leave CS 3300 linked to one requirement fewer.
     const navigate = requirement(audit, "NAVIGATE");
     expect(navigate).toMatchObject({
       section: "Compass Curriculum",
@@ -139,7 +140,7 @@ describe.each([
     ]) {
       expect(titles).not.toContain(skipped);
     }
-    // A description line that starts with a course code isn't a requirement
+    // A description line starting with a course code isn't a requirement.
     expect(requirement(audit, "CS 1150")).toBeUndefined();
   });
 
@@ -188,8 +189,8 @@ describe("the two layouts", () => {
   });
 
   it("give the same requirements, apart from ones that are only words", () => {
-    // The site's PDF marks "SUMMIT" as not met. Printed, it's only a
-    // paragraph, with nothing to say whether it's met, so it's left out.
+    // The site PDF marks "SUMMIT" as not met. Printed, it is plain text with no
+    // status, so it is left out.
     const withoutWordsOnly = site.requirements.filter(
       (r) => r.title !== "SUMMIT",
     );
@@ -202,7 +203,7 @@ describe("the two layouts", () => {
 });
 
 describe("pdfToAudit", () => {
-  // A small printed-layout audit around the lines under test
+  // A small printed-layout audit around the lines under test.
   const printedAudit = (...subLines) =>
     pdfToAudit([
       { x: 106, text: "Some Program - Core" },
@@ -233,7 +234,7 @@ describe("pdfToAudit", () => {
   });
 
   it("doesn't take a wrapped line that starts with a course code for a title", () => {
-    // The line above hasn't finished its sentence, so this carries it on
+    // The line above hasn't ended its sentence, so this continues it.
     const [req] = printedAudit(
       "TECHNICAL ELECTIVES",
       "Choose one course, for example",
@@ -245,7 +246,7 @@ describe("pdfToAudit", () => {
   });
 
   it("trusts the site PDF's own marks over what a line looks like", () => {
-    // "CS 4500 Operating Systems I" reads like a title, but has no + or -
+    // "CS 4500 Operating Systems I" reads like a title but has no + or - mark.
     const at = (x, text) => ({ x, text });
     const [req] = pdfToAudit([
       at(37, "PREPARED: 11/05/26 - 01:32 PM 100000001"),
@@ -265,7 +266,7 @@ describe("pdfToAudit", () => {
     });
   });
 
-  // A printed-layout block with its own totals printed under the heading
+  // A printed-layout block with its totals under the heading.
   const printedBlock = (totals, ...subLines) =>
     pdfToAudit([
       { x: 106, text: "Some Program - Core" },
@@ -277,17 +278,17 @@ describe("pdfToAudit", () => {
 
   it("printed: a block that needs nothing can't hold an unmet requirement", () => {
     const lines = ["CS 4500 Operating Systems I", "SELECT FROM: CS 4500"];
-    // The block prints EARNED and no NEEDS: everything in it is met
+    // EARNED and no NEEDS: everything in the block is met.
     expect(printedBlock(["EARNED: 30.0 HOURS"], ...lines)[0].status).toBe(
       "complete",
     );
-    // A NEEDS line, or no totals at all, leaves the reading as it was
+    // A NEEDS line, or no totals, leaves the inferred status unchanged.
     expect(
       printedBlock(["EARNED: 27.0 HOURS", "NEEDS: 3.0 HOURS"], ...lines)[0]
         .status,
     ).toBe("needs");
     expect(printedBlock([], ...lines)[0].status).toBe("needs");
-    // "NEEDS: 2.000 GPA" is a reminder, not something missing
+    // "NEEDS: 2.000 GPA" is a reminder, not a need.
     expect(
       printedBlock(["EARNED: 30.0 HOURS", "NEEDS: 2.000 GPA"], ...lines)[0]
         .status,
@@ -303,7 +304,7 @@ describe("pdfToAudit", () => {
     );
     expect(req).toMatchObject({ title: "EXIT INTERVIEW", status: "needs" });
 
-    // Two in words only: no telling which, so neither is guessed
+    // Two text-only sub-requirements: neither is chosen.
     expect(
       printedBlock(
         totals,
@@ -316,9 +317,9 @@ describe("pdfToAudit", () => {
   });
 
   it("site PDF: marks are trusted, so the block's totals change nothing", () => {
-    // The block needs something and holds one paragraph in words only.
-    // Printed, that paragraph would be taken for the unmet requirement;
-    // here it has no "-" mark, so it's information.
+    // The block needs something and holds one text-only paragraph. Printed,
+    // that paragraph would be read as the unmet requirement; here it has no
+    // "-" mark, so it is information.
     const at = (x, text) => ({ x, text });
     const { requirements } = pdfToAudit([
       at(37, "PREPARED: 11/05/26 - 01:32 PM 100000001"),
@@ -343,7 +344,7 @@ describe("pdfToAudit", () => {
 });
 
 describe("textLines", () => {
-  // A text piece as pdf.js reports it: its words, where it starts, its width
+  // A text piece as pdf.js reports it: text, start position, width.
   const piece = (str, x, y, width = str.length * 5) => ({ str, x, y, width });
 
   it("puts pieces back into lines, top to bottom and left to right", () => {
@@ -373,9 +374,9 @@ describe("textLines", () => {
   });
 });
 
-// The shared rule both imports use, given hand-made sub-requirements
+// The rule shared by both imports, given hand-made sub-requirements.
 describe("buildRequirements: rules with no course list", () => {
-  // An in-progress sub-requirement with one course counted toward it
+  // An in-progress sub-requirement with one course applied.
   const sub = (titleLines) => ({
     status: "in-progress",
     titleLines,

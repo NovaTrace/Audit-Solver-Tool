@@ -1,4 +1,4 @@
-// Tests for logic/courseText.js: codes, prereqs and terms.
+// Tests for src/logic/courseText.js: course codes, prerequisites, terms.
 
 import { describe, it, expect } from "vitest";
 import {
@@ -10,10 +10,8 @@ import {
   termIndex,
   termFromIndex,
   termAfter,
-  termBefore,
   isPastTerm,
   termLabel,
-  shortTermLabel,
   isTermKey,
   termKeyFromName,
   termForDate,
@@ -146,14 +144,10 @@ describe("terms", () => {
     expect(termFromIndex(termIndex("FA26") + 1)).toBe("SP27");
   });
 
-  it("finds the term after and before another, across the new year", () => {
+  it("finds the term after another, across the new year", () => {
     expect(termAfter("SP27")).toBe("SU27");
     expect(termAfter("SU27")).toBe("FA27");
     expect(termAfter("FA27")).toBe("SP28");
-    expect(termBefore("SP27")).toBe("FA26");
-    expect(termBefore("FA26")).toBe("SU26");
-    expect(termBefore("SU26")).toBe("SP26");
-    expect(isTermKey(termBefore("SP00"))).toBe(false); // nothing before 2000
   });
 
   it("knows which terms are already over", () => {
@@ -170,9 +164,7 @@ describe("terms", () => {
     );
   });
 
-  it("labels terms, in full and short for term pills", () => {
-    expect(shortTermLabel("FA26")).toBe("Fall ’26");
-    expect(shortTermLabel("SU27")).toBe("Summer ’27");
+  it("labels terms", () => {
     expect(termLabel("SU27")).toBe("Summer 2027");
   });
 

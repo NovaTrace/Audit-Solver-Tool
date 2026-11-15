@@ -1,25 +1,23 @@
-// ui/popups.js — the ⓘ help popups (.info-popup in index.html).
+// src/ui/popups.js — the ⓘ help popups (.info-popup in index.html).
 //
-// One click listener on the whole page handles all of them: clicking an ⓘ
-// button opens its popup, and clicking anywhere else (or pressing Escape)
-// closes whichever one is open. Only one is open at a time.
-//
-// While a popup is open the page is dimmed, except the part it explains:
-// the popup's data-spotlight="selector" names it (e.g. ".plan"), and that
-// element gets .is-spotlit, which lifts it above the dimming.
+// One document-level click listener handles all popups. Clicking an ⓘ
+// button opens its popup; any other click, or Escape, closes the open one.
+// While open, the page is dimmed except the element named by the popup's
+// data-spotlight selector, which gets .is-spotlit.
+// Used by: main.js.
 
 export function setupPopups() {
   document.addEventListener("click", (e) => {
-    if (e.target.closest(".info-text")) return; // clicks inside a popup: stay open
+    if (e.target.closest(".info-text")) return; // clicks inside a popup keep it open
 
     const btn = e.target.closest(".info-btn");
     const popup = btn?.closest(".info-popup");
     const wasOpen = popup?.classList.contains("open");
 
-    closeAll(); // every click closes whatever was open...
+    closeAll(); // every click closes the open popup…
 
     if (popup && !wasOpen) {
-      // ...then a click on a closed popup's button opens that one
+      // …and a click on a closed popup's button opens it.
       popup.classList.add("open");
       btn.setAttribute("aria-expanded", "true");
       document.body.classList.add("popup-open");
@@ -29,12 +27,11 @@ export function setupPopups() {
     }
   });
 
-  // Escape closes the open popup and puts the keyboard back on its button,
-  // so a keyboard user carries on from where they were
+  // Escape closes the open popup and returns focus to its button.
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const openButton = document.querySelector(".info-popup.open .info-btn");
-    if (!openButton) return; // nothing open: leave Escape alone
+    if (!openButton) return; // nothing open
     closeAll();
     openButton.focus();
   });
@@ -51,16 +48,16 @@ function closeAll() {
     .forEach((el) => el.classList.remove("is-spotlit"));
 }
 
-// Nudges a popup back inside the window, or inside the plan panel when
-// it's in there (the panel scrolls, so it would cut the popup off)
+// Moves a popup back inside the window, or inside the plan panel when it is
+// in there (the panel clips its contents).
 function keepOnScreen(el) {
   const margin = 8;
-  el.style.translate = ""; // clear any earlier nudge
-  // Measure at full size: the opening animation starts it slightly shrunk
+  el.style.translate = ""; // clear the previous offset
+  // Measure at full size; the opening animation starts scaled down.
   el.style.animation = "none";
-  const box = el.getBoundingClientRect(); // where it is right now
+  const box = el.getBoundingClientRect();
   el.style.animation = "";
-  // The panel's inside edges, not counting its scrollbar
+  // Panel's inner edges, excluding its scrollbar.
   const panelEl = el.closest(".plan");
   const panel = panelEl?.getBoundingClientRect();
   const right = Math.min(
@@ -72,15 +69,15 @@ function keepOnScreen(el) {
   let drop = 0;
 
   if (box.right > right - margin) {
-    shift = right - margin - box.right; // off the right edge: move left
+    shift = right - margin - box.right; // past the right edge
   }
   if (box.left + shift < left + margin) {
-    shift = left + margin - box.left; // off the left edge: move right
+    shift = left + margin - box.left; // past the left edge
   }
   if (box.top < margin) {
-    drop = margin - box.top; // off the top: move down
+    drop = margin - box.top; // above the top
   }
-  // `translate` (not `transform`), so it doesn't fight the opening
-  // animation in popups.css, which uses `scale`
+  // `translate`, not `transform`: the opening animation in popups.css uses
+  // `scale`.
   el.style.translate = `${shift}px ${drop}px`;
 }

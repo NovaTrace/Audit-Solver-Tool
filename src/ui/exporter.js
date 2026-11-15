@@ -1,28 +1,22 @@
-// ui/exporter.js — Export button: download the current audit as a .json
-// file the student can keep, move to another computer, or load back in
-// with the Import button.
+// src/ui/exporter.js — Export button: downloads the current audit as .json.
 //
-// The file is the same format as everything else (the Audit JSON Data
-// Guide), with `source.exportedAt` set. That stamp is how parseAudit()
-// knows a file is a saved plan, so importing it restores its own picks.
-//
-// downloadJsonFile() is also used by the bookmarklet's Download button
-// (bookmarklet/send.js), so saving a file works the same way in both.
+// The file has the standard format (Audit JSON Data Guide) with
+// `source.exportedAt` set, which marks it as a saved plan: importing it
+// restores its own picks.
+// Used by: main.js; bookmarklet/send.js (downloadJsonFile).
+// Tests: exporter.test.js.
 
-/**
- * The file to download for an audit: { filename, text }.
- * Pure (no `document`), so it can be tested; never changes `audit`.
- */
+/** The file for an audit: { filename, text }. Pure; `audit` is not changed. */
 export function exportFile(audit, now = new Date()) {
   const data = structuredClone(audit);
   data.source = { ...data.source, exportedAt: now.toISOString() };
   return {
     filename: `audit-plan-${localDate(now)}.json`,
-    text: JSON.stringify(data, null, 2), // indented, so it's readable
+    text: JSON.stringify(data, null, 2), // indented for reading
   };
 }
 
-/** Wire the Export button. `getAudit` returns the audit to export. */
+/** Wires the Export button. `getAudit` returns the audit to export. */
 export function setupExport(getAudit) {
   document.getElementById("export-btn").addEventListener("click", () => {
     const { filename, text } = exportFile(getAudit());
@@ -30,10 +24,7 @@ export function setupExport(getAudit) {
   });
 }
 
-/**
- * Save `text` as a file called `filename`: wrap it in a Blob, give it a
- * temporary URL, and click a hidden link with a `download` attribute.
- */
+/** Downloads `text` as a file, using a Blob URL and a temporary link. */
 export function downloadJsonFile(filename, text) {
   const blob = new Blob([text], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -43,13 +34,12 @@ export function downloadJsonFile(filename, text) {
   document.body.append(link);
   link.click();
   link.remove();
-  // Free the memory once the download has started. Some browsers (Firefox,
-  // Safari) start it a moment after the click, so don't revoke right away.
+  // Revoke after a delay: Firefox and Safari start the download slightly after
+  // the click.
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// "2026-11-06" in the student's own time zone (toISOString would use UTC,
-// which can be tomorrow's date in the evening)
+// "2026-11-06" in local time (toISOString would use UTC).
 function localDate(date) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;

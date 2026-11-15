@@ -1,17 +1,17 @@
-// Tests for logic/parser.js: parseAudit() rejects broken data, merges with
-// the previous audit, and repairs what's incomplete.
+// Tests for src/logic/parser.js: parseAudit() rejects, merges and repairs.
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
+import demo from "../data/sample-audit.json";
 import { parseAudit, AuditError } from "../logic/parser.js";
 import { NOV_2026, makeRegistered } from "./helpers.js";
 
 const copy = () => structuredClone(sample); // fresh copy, so one test can't affect another
 const keysOf = (audit) => audit.plan.terms.map((t) => t.key);
-// The columns a new plan gets when "today" is Nov 5, 2026
+// Columns a new plan gets when "today" is Nov 5, 2026.
 const SIX_FROM_FA26 = ["FA26", "SP27", "SU27", "FA27", "SP28", "SU28"];
 
-// parseAudit uses today's date to keep the semester columns current, so
-// "today" is pinned to Nov 5, 2026: the tests give the same answer any day.
+// parseAudit uses the current date to keep semester columns current, so
+// "today" is fixed at Nov 5, 2026.
 beforeAll(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOV_2026);
@@ -23,7 +23,7 @@ describe("parseAudit: rejects", () => {
     expect(() => parseAudit("not an object")).toThrow(AuditError);
   });
 
-  // [what's wrong, how to break the sample, words the message must contain]
+  // [what is wrong, how to break the test audit, text the message must contain]
   it.each([
     ["an unknown schema", (d) => (d.schema = "audit-solver/v9"), /schema/],
     ["a missing student", (d) => delete d.student, /student/],
@@ -54,8 +54,7 @@ describe("parseAudit: rejects", () => {
       (d) => d.requirements.push(structuredClone(d.requirements[0])),
       /share the id/,
     ],
-    // Wrong types would otherwise get past the parser and stop the page
-    // drawing
+    // Wrong types would otherwise pass the parser and break rendering.
     ["applied: not a list", (d) => (d.requirements[0].applied = 5), /list/],
     ["options: not a list", (d) => (d.requirements[0].options = "CS"), /list/],
     [
@@ -193,10 +192,25 @@ describe("parseAudit: repairs", () => {
     ]);
   });
 
-  it("places and locks a registered course", () => {
-    const result = parseAudit(makeRegistered(copy(), "ece2050", "SP27"));
-    expect(result.courses.ece2050).toMatchObject({
+  it("places a registered course: locked if it's being taken now, movable if it starts later", () => {
+    // "Today" is Nov 5, 2026: Fall 2026 is the current term.
+    const now = parseAudit(makeRegistered(copy(), "ece2050", "FA26"));
+    expect(now.courses.ece2050).toMatchObject({
+      plannedTerm: "FA26",
+      locked: true,
+    });
+    const later = parseAudit(makeRegistered(copy(), "ece2050", "SP27"));
+    expect(later.courses.ece2050).toMatchObject({
       plannedTerm: "SP27",
+      locked: false,
+    });
+  });
+
+  it("puts a course being taken now back in its term, wherever the plan had it", () => {
+    const data = makeRegistered(copy(), "ece2050", "FA26");
+    Object.assign(data.courses.ece2050, { plannedTerm: "SP28", locked: false });
+    expect(parseAudit(data).courses.ece2050).toMatchObject({
+      plannedTerm: "FA26",
       locked: true,
     });
   });
@@ -222,13 +236,13 @@ describe("parseAudit: repairs", () => {
 });
 
 describe("parseAudit: merging with previous", () => {
-  // The student had planned CS 4500 for Fall '27...
+  // The student had planned CS 4500 for Fall 2027…
   const plannedBefore = () => {
     const previous = parseAudit(copy());
     previous.courses.cs4500.plannedTerm = "FA27";
     return previous;
   };
-  // ...and the new audit shows it with an attempt in Spring '27
+  // …and the new audit shows it with an attempt in Spring 2027.
   const withAttempt = (status, grade) => {
     const data = copy();
     Object.assign(data.courses.cs4500, {
@@ -251,7 +265,7 @@ describe("parseAudit: merging with previous", () => {
     );
     expect(result.courses.cs4500).toMatchObject({
       plannedTerm: "SP27",
-      locked: true,
+      locked: false, // it starts next term, so it can still be moved
     });
   });
 
@@ -270,7 +284,7 @@ describe("parseAudit: merging with previous", () => {
     );
     expect(result.courses.ece2050).toMatchObject({
       plannedTerm: "FA27",
-      locked: true,
+      locked: false,
     });
   });
 
@@ -357,7 +371,7 @@ describe("parseAudit: merging with previous", () => {
     expect(course.detailsLoaded).toBe(true);
   });
 
-  // A course the student added by hand, planned for Fall '27
+  // A hand-added course, planned for Fall 2027.
   const withCustom = (requirementIds) => {
     const previous = parseAudit(copy());
     previous.courses.math3110 = {
@@ -437,5 +451,33 @@ describe("parseAudit: merging with previous", () => {
       code: "OLD 1000",
     };
     expect(parseAudit(copy(), previous).courses.old1000).toBeUndefined();
+  });
+});
+
+// The demo audit (data/sample-audit.json). Other tests use a fixed copy of
+// an older one (fixtures/test-audit.json), so the demo may change; these
+// check that it stays internally consistent.
+describe("the demo audit", () => {
+  const audit = parseAudit(structuredClone(demo), null, NOV_2026);
+  const courses = Object.values(audit.courses);
+
+  it("links courses and requirements the same way from both sides", () => {
+    for (const req of audit.requirements) {
+      const listed = [...req.options, ...req.applied.map((a) => a.code)];
+      const linked = courses
+        .filter((c) => c.requirementIds.includes(req.id))
+        .map((c) => c.code);
+      expect(linked.sort(), req.id).toEqual([...new Set(listed)].sort());
+    }
+  });
+
+  it("only names prerequisites that are courses in the demo", () => {
+    const codes = new Set(courses.map((c) => c.code));
+    for (const course of courses) {
+      const needs = [...course.prereqs.groups, ...course.coreqs.groups];
+      for (const code of needs.flatMap((g) => g.anyOf)) {
+        expect(codes.has(code), `${course.code} needs ${code}`).toBe(true);
+      }
+    }
   });
 });

@@ -1,44 +1,36 @@
-// =====================================================================
-// main.js — entry point: connects the page to state.js
+// src/main.js — entry point. Wires the page to state.js.
 //
-//   state.js   holds the audit and changes it (no `document`)
-//   render/*   draws parts of the page from the audit (no state changes)
-//   main.js    listens for clicks, asks state.js to change, then redraws
+//   state.js   holds and changes the audit (no DOM)
+//   render/*   draws the page from the audit (no state changes)
+//   main.js    handles events, calls state.js, then redraws
 //
-// In this file, top to bottom:
-//   imports            fonts, styles, then the other modules
-//   REDRAWING          refreshAll() and friends: call after any change
-//   IMPORTING          what happens when an audit arrives
-//   one setup function per part of the page, each wiring its own clicks:
-//     setupHeader()        popups, Import / Export, the bookmarklet panel
-//     setupSemesters()     the '+' and '−' on the semester cards
-//     setupRequirements()  switching requirements on and off
-//     setupPlanButtons()   Reset plan, Clear data
-//     setupCourseList()    category/Show dropdowns, search, semester dropdowns, lock, remove
-//     setupAddCourse()     the add-a-course form
-//   STARTUP            runs the setup functions, then the first draw
+// Sections:
+//   Redrawing            refreshAll() and parts; call after any change
+//   Importing            handleImport(): every incoming audit
+//   setupHeader()        popups, Import / Export, bookmarklet panel
+//   setupSemesters()     '+' and '−' on semester cards, course locks
+//   setupDragging()      dragging a course between semesters
+//   setupRequirements()  requirement tick boxes
+//   setupPlanButtons()   Reset plan, Clear data
+//   setupCourseList()    category / Show dropdowns, search, row controls
+//   setupAddCourse()     add-a-course form
+//   setupWarnings()      "Hide" on a credit-load warning
+//   Startup              runs the setup functions, then the first draw
 //
-// Every listener follows the same three steps: find what was clicked, ask
-// state.js to make the change, and if it says something changed, call
-// saveAndRefresh().
-// =====================================================================
+// Listener pattern: find the target, call state.js, and if it returns true
+// call saveAndRefresh().
 
 // ---------- Fonts ----------
-// Served from our own site (the @fontsource packages) instead of Google
-// Fonts, so the page asks no other site for anything and works offline.
-// The names stay "Inter" and "IBM Plex Mono" (see --sans and --mono in
-// styles/base.css).
-// To keep the site small, only two weights of each are shipped (400
-// regular, 600 bold: the CSS uses no others), and only the Latin alphabet
-// ("latin-" files). A character outside it, like "ł" in a name, is drawn
-// in the computer's own font.
+// Bundled from the @fontsource packages; no requests to other sites.
+// Only weights 400 and 600 and the Latin subset are shipped. Family names
+// are set in --sans and --mono (styles/base.css).
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-600.css";
 import "@fontsource/ibm-plex-mono/latin-400.css";
 import "@fontsource/ibm-plex-mono/latin-600.css";
 
 // ---------- Styles ----------
-// Order matters: when two files style the same thing, the later one wins.
+// Order matters: later files override earlier ones.
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/popups.css";
@@ -59,6 +51,7 @@ import {
   removeTerm,
   addCustomCourse,
   removeCustomCourse,
+  unlinkCourse,
   toggleRequirement,
   setSectionOff,
   importAudit,
@@ -86,60 +79,54 @@ import {
   renderRequirementChoices,
 } from "./render/courseList.js";
 
-// The course list's dropdowns: the chosen category ("all" or a section
-// name) and "Show" choice ("all", "attention" or "unplaced"). This is
-// display state, not plan data, so it lives here rather than in state.js
-// and isn't saved.
+// Course-list dropdown choices: category ("all" or a section name) and
+// Show ("all", "attention", "unplaced"). Display state only; not saved.
 let activeSection = "all";
 let activeShow = "all";
 
-// Palette and course-detail choices from the Settings dialog
-// (ui/settings.js). Set before the first draw, at the bottom of this file.
+// Current settings from ui/settings.js. Set at startup.
 let settings = null;
 
-// =====================================================================
-// REDRAWING — call these after anything changes the audit
-// =====================================================================
+// ---------- Redrawing ----------
 
-// Which audit the get-started panel was last opened/closed for
-// (null until the first draw)
+// Whether the get-started panel was last set for the demo (null before the
+// first draw).
 let panelShowsSample = null;
 
-// Header, footer, and the get-started panel (only shown with the demo)
+// Header and the get-started panel.
 function refreshHeader() {
-  renderHeader(getAudit(), { isSample: isSampleLoaded() });
+  renderHeader(getAudit());
   const panel = document.getElementById("get-started");
   panel.querySelector("h2").textContent = isSampleLoaded()
     ? "Load your degree audit"
     : "Update your audit or get the bookmarklet again";
 
-  // Open on first visit, collapsed once an audit is loaded. Only change it
-  // when switching between the demo and a real audit: this runs after every
-  // click, and would otherwise shut a panel the student just opened.
+  // Open for the demo, collapsed for a real audit. Changed only when
+  // switching between the two, so a panel the student opened stays open.
   if (panelShowsSample !== isSampleLoaded()) {
     panelShowsSample = isSampleLoaded();
     panel.open = panelShowsSample;
   }
 }
 
-// The plan panel (everything below its heading row)
+// Plan panel, below its heading row.
 function refreshSchedule() {
-  renderSchedule(getAudit());
+  renderSchedule(getAudit(), settings);
 }
 
-// Dropdowns + course list, keeping the current choices and search text
+// Dropdowns and course list, keeping the current choices and search text.
 function refreshList() {
   const audit = getAudit();
-  // Worked out once, then used for both the category dropdown and the list
+  // Computed once; used for the category dropdown and the list.
   const everything = listGroups(audit);
   const sections = everything.map((group) => group.section);
-  // A new audit may not have the section that was chosen before
+  // A new audit may lack the previously chosen section.
   if (activeSection !== "all" && !sections.includes(activeSection)) {
     activeSection = "all";
   }
   renderCategoryOptions(sections, activeSection);
   renderShowOptions(activeShow);
-  renderRequirementChoices(audit); // the add-a-course form's list
+  renderRequirementChoices(audit); // add-a-course form's requirement list
 
   const query = document.getElementById("search").value.trim().toLowerCase();
   renderCourseList({
@@ -156,26 +143,30 @@ function refreshList() {
   });
 }
 
-// Everything
+// Everything.
 function refreshAll() {
   refreshHeader();
   refreshList();
   refreshSchedule();
 }
 
-// The save-status text while the demo audit is showing
+// Save-status text while the demo is loaded.
 const SAMPLE_STATUS = "Sample data: changes aren't saved";
 
-// Save, update the "Saved 3:42 PM" text, and redraw.
-// Call this after any change to the plan.
+// Saves, updates the save-status text, and redraws. Call after any change to
+// the plan.
 function saveAndRefresh() {
   if (saveState()) {
-    setSaveStatus("Saved " + new Date().toLocaleTimeString());
+    // "Saved 3:42 PM"
+    const time = new Date().toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    setSaveStatus("Saved " + time);
   } else if (isSampleLoaded()) {
     setSaveStatus(SAMPLE_STATUS);
   } else {
-    // Storage full or blocked (e.g. a private window): don't keep showing
-    // an old "Saved" time
+    // Storage full or blocked (e.g. a private window).
     setSaveStatus("Couldn't save in this browser. Export to keep a copy.");
   }
   refreshAll();
@@ -184,32 +175,51 @@ function saveAndRefresh() {
 function setSaveStatus(text) {
   const status = document.getElementById("save-status");
   status.textContent = text;
-  // The green dot only shows after a real save
+  // The dot shows only after a successful save. Removing the class and
+  // reading the layout first restarts its pulse on every save.
+  status.classList.remove("is-saved");
+  void status.offsetWidth;
   status.classList.toggle("is-saved", text.startsWith("Saved"));
 }
 
-// =====================================================================
-// IMPORTING — an audit arriving from a file, a PDF, pasted text or the
-// bookmarklet's Send. All four end up in handleImport().
-// =====================================================================
+// ---------- Importing ----------
+// Files, PDFs, pasted text and the bookmarklet's Send all reach handleImport().
 
-// importAudit() runs parseAudit(), which throws AuditError for data that
-// isn't a valid audit; the current plan is left untouched in that case.
+// Loads incoming audit data. Invalid data (AuditError) leaves the current plan
+// unchanged.
 function handleImport(raw) {
+  if (!okToReplacePlan(raw.content)) return;
   try {
     importAudit(raw.content);
   } catch (e) {
-    if (!(e instanceof AuditError)) throw e; // a bug in our code: let it show
-    alert(`That isn't a valid audit, so nothing was changed.\n\n${e.message}`);
+    if (e instanceof AuditError) {
+      alert(
+        `That isn't a valid audit, so nothing was changed.\n\n${e.message}`,
+      );
+    } else {
+      // Unexpected error. Reported here because the async import callers would
+      // otherwise swallow it.
+      console.error("Import failed:", e);
+      alert("Something went wrong loading that audit, so nothing was changed.");
+    }
     return;
   }
   saveAndRefresh();
   warnIfOldBookmark(raw.content);
 }
 
-// Send, Download and Copy all arrive through handleImport, so this one
-// check covers them all. Only fresh scrapes count: an exported plan keeps
-// the version that made it, however old.
+// Asks before an exported plan replaces the current one. A fresh audit
+// keeps the current picks, and the demo has nothing to lose, so neither asks.
+function okToReplacePlan(data) {
+  const isSavedPlan = data?.source?.exportedAt != null;
+  if (!isSavedPlan || isSampleLoaded()) return true;
+  return confirm(
+    "This file is a saved plan. Loading it replaces the plan you have now, including its semester choices.\n\nExport first if you want to keep a copy. Load it?",
+  );
+}
+
+// Warns when a fresh scrape came from an older bookmarklet version.
+// Exported plans are skipped: they keep the version that made them.
 function warnIfOldBookmark(data) {
   const { type, exportedAt, collectorVersion } = data.source ?? {};
   if (type !== "bookmarklet" || exportedAt != null) return;
@@ -218,46 +228,40 @@ function warnIfOldBookmark(data) {
   alert(
     "Your audit was loaded, but your Audit Solver bookmark is out of date.\n\nDrag the new “Grab my audit” link to your bookmarks bar to replace it.",
   );
-  // Open the panel with the link and bring it into view
+  // Open the panel holding the link and scroll to it.
   const panel = document.getElementById("get-started");
   panel.open = true;
   panel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// =====================================================================
-// HEADER — popups, Import / Export, the bookmarklet panel
-// (each lives in its own ui/ file; this just switches them on)
-// =====================================================================
+// ---------- Header ----------
+// Popups, Import / Export and the bookmarklet panel; each lives in ui/.
 function setupHeader() {
-  setupPopups(); // handles every .info-popup on the page
-  setupImport(handleImport); // Import button: a .json file or an audit PDF
+  setupPopups(); // every .info-popup
+  setupImport(handleImport); // Import button: .json or audit PDF
   setupPaste(handleImport); // Ctrl+V: JSON copied by the bookmarklet
-  setupReceiver(handleImport); // the bookmarklet's Send button
-  setupBookmarkletPanel(); // the "Grab my audit" link and Copy code
-  setupExport(getAudit); // Export button: downloads the audit as .json
+  setupReceiver(handleImport); // bookmarklet's Send button
+  setupBookmarkletPanel(); // "Grab my audit" link, Copy code
+  setupExport(getAudit); // Export button
 }
 
-// =====================================================================
-// SEMESTERS — '+ Add', the last semester's '−', and the lock on each
-// course in the semester cards (#sched-grid)
-// Drawing lives in render/schedule.js.
-// =====================================================================
+// ---------- Semesters (#sched-grid) ----------
+// '+' tile, the last semester's '−', and each course's lock. Drawn by
+// render/schedule.js.
 function setupSemesters() {
-  // ONE listener on the grid, since the cards (and their buttons) are
-  // rebuilt on every redraw: a listener on each button would be thrown
-  // away with it.
+  // One listener on the grid: the cards are rebuilt on every redraw.
   document.getElementById("sched-grid").addEventListener("click", (e) => {
-    // The grip / padlock on a course: lock or unlock it in that semester
+    // Grip / padlock: lock or unlock the course.
     const lockBtn = e.target.closest(".tc-lock");
     if (lockBtn) {
       if (toggleLock(lockBtn.dataset.id)) saveAndRefresh();
       return;
     }
 
-    // The '+ Add' tile carries the term it adds in data-term
+    // '+' tile: add the next semester.
     const addBtn = e.target.closest(".term-add");
     if (addBtn) {
-      if (addTerm(addBtn.dataset.term)) saveAndRefresh();
+      if (addTerm()) saveAndRefresh();
       return;
     }
 
@@ -265,7 +269,7 @@ function setupSemesters() {
     if (!removeBtn) return;
     const term = removeBtn.dataset.term;
 
-    // An empty block goes straight away; one with courses asks first
+    // An empty semester is removed at once; one with courses asks first.
     const count = coursesInTerm(getAudit(), term).length;
     if (count > 0) {
       const ok = confirm(
@@ -277,8 +281,8 @@ function setupSemesters() {
   });
 }
 
-// Dragging a course from one semester card to another (ui/dragDrop.js).
-// While hovering a semester, it says if the course wouldn't fit there.
+// Dragging a course between semester cards (ui/dragDrop.js). `warnFor`
+// supplies the warning shown while hovering a semester.
 function setupDragging() {
   setupDragDrop({
     onMove: (id, term) => {
@@ -294,15 +298,12 @@ function setupDragging() {
   });
 }
 
-// =====================================================================
-// REQUIREMENTS — switching one off ("I don't need to finish this") or
-// back on, with the tick boxes in the plan panel's "Requirement
-// categories" dropdown (drawn by render/schedule.js).
-// =====================================================================
+// ---------- Requirements (#req-categories) ----------
+// Tick boxes that switch requirements off and on. Drawn by render/schedule.js.
 function setupRequirements() {
-  // A tick box reports "change" (not "click") when it's ticked or unticked
+  // Tick boxes fire "change", not "click".
   document.getElementById("req-categories").addEventListener("change", (e) => {
-    // A section's box switches everything under it; ticked means "on"
+    // A section's box switches every requirement under it; ticked means on.
     const { id, section } = e.target.dataset;
     const changed =
       section !== undefined
@@ -312,10 +313,8 @@ function setupRequirements() {
   });
 }
 
-// =====================================================================
-// PLAN BUTTONS — Reset plan (schedule header), Clear data (footer)
-// Both ask first, since neither can be undone.
-// =====================================================================
+// ---------- Plan buttons ----------
+// Reset plan and Clear data. Both confirm first; neither can be undone.
 function setupPlanButtons() {
   document.getElementById("reset-btn").addEventListener("click", () => {
     const ok = confirm(
@@ -326,40 +325,39 @@ function setupPlanButtons() {
     saveAndRefresh();
   });
 
-  // Delete the save and go back to the demo
+  // Delete the saved audit and settings, and return to the demo.
   document.getElementById("clear-data-btn").addEventListener("click", () => {
     const ok = confirm(
-      "Delete your saved audit and plan from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
+      "Delete your saved audit, plan and settings from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
     );
     if (!ok) return;
     clearAllData();
     setSaveStatus(SAMPLE_STATUS);
-    refreshAll();
+    settingsDialog.reset(); // redraws the page through onChange
   });
 }
 
-// =====================================================================
-// COURSE LIST — the category and Show dropdowns, search, and each row's
-// semester dropdown, lock and remove buttons (#category, #show, #search,
-// #list). Drawing lives in render/courseList.js.
-// =====================================================================
+// ---------- Course list (#category, #show, #search, #list) ----------
+// Drawn by render/courseList.js.
 function setupCourseList() {
   document.getElementById("category").addEventListener("change", (e) => {
     activeSection = e.target.value;
     refreshList();
   });
-  document.getElementById("show").addEventListener("change", (e) => {
-    activeShow = e.target.value;
+  document.getElementById("show").addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (!button || button.dataset.value === activeShow) return;
+    activeShow = button.dataset.value;
     refreshList();
   });
 
-  // Search box: redraw the list on every keystroke
+  // Redraw on every keystroke.
   document.getElementById("search").addEventListener("input", refreshList);
 
   const list = document.getElementById("list");
 
-  // A row's semester dropdown: one listener on the whole list (the rows
-  // are rebuilt on every redraw). state.js decides if the move is allowed.
+  // Semester dropdowns: one listener on the list, since rows are rebuilt on
+  // every redraw. state.js decides whether the move is allowed.
   list.addEventListener("change", (e) => {
     const select = e.target.closest(".term-select");
     if (select && setTerm(select.dataset.id, select.value)) saveAndRefresh();
@@ -374,22 +372,21 @@ function setupCourseList() {
     if (lockBtn) {
       changed = toggleLock(lockBtn.dataset.id);
     } else if (removeBtn) {
-      changed = removeCustomCourse(removeBtn.dataset.id);
+      // "Remove" on a hand-added course, "Unlink" on an audit course.
+      const { id } = removeBtn.dataset;
+      changed = removeCustomCourse(id) || unlinkCourse(id);
     }
     if (changed) saveAndRefresh();
   });
 }
 
-// =====================================================================
-// ADD A COURSE — the form for courses the audit doesn't list
-// (#add-course-form). state.js checks what was typed and says what's
-// wrong; we show its message.
-// =====================================================================
+// ---------- Add a course (#add-course-form) ----------
+// state.js validates the input and returns the message to show.
 function setupAddCourse() {
   const field = (id) => document.getElementById(id);
 
   field("add-course-form").addEventListener("submit", (e) => {
-    e.preventDefault(); // don't reload the page, which a form does by default
+    e.preventDefault(); // no page reload
     const result = addCustomCourse({
       code: field("add-code").value,
       title: field("add-title").value,
@@ -403,24 +400,37 @@ function setupAddCourse() {
       message.textContent = result.message;
       return;
     }
-    message.textContent = `Added ${result.code}. Pick its semester in the list below.`;
-    // Ready for the next one; credits and the requirement stay as chosen
+    message.textContent = result.linkedTo
+      ? `${result.code} now counts toward ${result.linkedTo} too.`
+      : `Added ${result.code}. Pick its semester in the list above.`;
+    // Clear for the next entry; credits and requirement stay as chosen.
     field("add-code").value = "";
     field("add-title").value = "";
     saveAndRefresh();
   });
 }
 
-// =====================================================================
-// STARTUP
-// =====================================================================
-// Settings first: they pick the palette and what the list shows
-settings = setupSettings({
+// ---------- Warnings (#plan-check) ----------
+// "Hide" on an "Over 18 credits" line switches that warning off, the same
+// as the tick box in Settings.
+function setupWarnings() {
+  document.getElementById("plan-check").addEventListener("click", (e) => {
+    if (e.target.closest(".pc-hide")) {
+      settingsDialog.change({ warnOverload: false });
+    }
+  });
+}
+
+// ---------- Startup ----------
+// Settings first: palette, list details and plan warnings depend on them.
+const settingsDialog = setupSettings({
   onChange: (next) => {
     settings = next;
-    refreshList();
+    refreshAll();
   },
 });
+settings = settingsDialog.settings;
+setupWarnings();
 setupHeader();
 setupSemesters();
 setupDragging();
@@ -429,6 +439,11 @@ setupPlanButtons();
 setupCourseList();
 setupAddCourse();
 
-loadState(); // state.js starts from the demo; this swaps in a saved audit
+loadState(); // replaces the demo with a saved audit, if any
 setSaveStatus(isSampleLoaded() ? SAMPLE_STATUS : "Autosaves in browser");
 refreshAll(); // first draw
+
+// Entrance animation for the first draw only (layout.css); later redraws
+// rebuild the same elements and must not replay it.
+document.body.classList.add("is-first-draw");
+setTimeout(() => document.body.classList.remove("is-first-draw"), 800);

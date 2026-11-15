@@ -1,10 +1,13 @@
+/* src/styles/popups.css — the ⓘ help popups and the dimming behind them.
+   Behavior: src/ui/popups.js. */
+
 .info-popup {
   position: relative;
 }
 
 .info-btn {
   min-width: 24px;
-  min-height: 24px; /* big enough to hit */
+  min-height: 24px; /* minimum hit area */
   background: none;
   border: none;
   padding: 0;
@@ -13,8 +16,7 @@
   cursor: pointer;
 }
 
-/* The popup box: same look as the Settings dialog (rounded, soft
-   shadow), with a short list of tips */
+/* Popup box: same look as the Settings dialog. */
 .info-text {
   display: none;
   position: absolute;
@@ -22,9 +24,9 @@
   width: max-content;
   max-width: min(320px, 85vw);
   z-index: 10;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--line2);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   color: var(--ink);
@@ -63,10 +65,10 @@
   }
 }
 
-/* What the open popup explains stays bright: lifted above the dimming
-   layer below (z-index 5). Set by ui/popups.js from data-spotlight. */
+/* The element an open popup explains, lifted above the dimming layer
+   (z-index 5). Set by src/ui/popups.js from data-spotlight. */
 .is-spotlit {
-  position: relative; /* z-index needs a position; the sticky plan keeps its own */
+  position: relative; /* z-index needs a position */
   z-index: 6;
 }
 
@@ -74,8 +76,7 @@
   position: sticky;
 }
 
-/* Dims the page behind an open info popup: the same black shade as the
-   Settings dialog's backdrop, but lighter (0.25 here, 0.45 there) */
+/* Dims the page behind an open popup (0.25; the Settings backdrop is 0.45). */
 body::before {
   content: "";
   position: fixed;
@@ -89,5 +90,5 @@ body::before {
 
 body.popup-open::before {
   opacity: 0.25;
-  pointer-events: auto; /* while shown, it catches clicks */
+  pointer-events: auto; /* catches clicks while shown */
 }

@@ -1,25 +1,21 @@
-// Tests for logic/planChecks.js: warnings about the plan (a course in a
-// term it isn't offered, a semester's credit load) and the one-line
-// summary. Testing only, not a site element.
+// Tests for src/logic/planChecks.js: term-offered and credit-load warnings.
 
 import { describe, it, expect } from "vitest";
-import sample from "../data/sample-audit.json";
+import sample from "./fixtures/test-audit.json";
 import { parseAudit } from "../logic/parser.js";
 import {
   offeredWarning,
   courseWarnings,
   shownWarnings,
   termWarning,
-  planProblems,
-  planCheckText,
 } from "../logic/planChecks.js";
 import { makeRegistered } from "./helpers.js";
 
 const audit = () => parseAudit(structuredClone(sample));
 
-// In the sample, ECE 3020 runs in Fall only: its schedule says
-// "available" for FA26 and FA27 and "unknown" for the other terms.
-// Give a course exactly `credits` so a term's total is easy to set.
+// In the test audit ECE 3020 is Fall only: "available" for FA26 and FA27,
+// "unknown" otherwise. `credits` sets the course's hours, to control a term's
+// total.
 function place(a, id, term, credits) {
   a.courses[id].plannedTerm = term;
   if (credits !== undefined) a.courses[id].credits = credits;
@@ -43,7 +39,7 @@ describe("offeredWarning", () => {
 
   it("falls back on the usual seasons when the schedule doesn't cover the term", () => {
     const a = audit();
-    a.courses.ece3020.availability = {}; // nothing published
+    a.courses.ece3020.availability = {}; // no schedule published
     place(a, "ece3020", "SP27");
     expect(offeredWarning(a.courses.ece3020)).toBe(
       "Usually offered Fall, not Spring",
@@ -51,7 +47,7 @@ describe("offeredWarning", () => {
     place(a, "ece3020", "FA27");
     expect(offeredWarning(a.courses.ece3020)).toBe("");
 
-    a.courses.ece3020.termsOffered = []; // nothing known at all
+    a.courses.ece3020.termsOffered = []; // nothing known
     place(a, "ece3020", "SP27");
     expect(offeredWarning(a.courses.ece3020)).toBe("");
   });
@@ -87,35 +83,6 @@ describe("termWarning", () => {
     expect(termWarning(a, "FA27")).toBe("");
     place(a, "cs4500", "FA27", 19);
     expect(termWarning(a, "FA27")).toBe("Over 18 credits");
-  });
-});
-
-describe("planProblems and planCheckText", () => {
-  it("says nothing while nothing is planned", () => {
-    expect(planProblems(audit()).planned).toBe(0);
-    expect(planCheckText(audit())).toBe("");
-  });
-
-  it("counts each kind of problem and writes them as one line", () => {
-    const a = audit();
-    place(a, "ece3020", "SP27", 3); // before prereqs, and not offered
-    place(a, "cs4500", "FA27", 19); // before prereqs; an overloaded term
-    expect(planProblems(a)).toEqual({
-      planned: 2,
-      prereqs: 2,
-      notOffered: 1,
-      heavy: 1, // FA27
-    });
-    expect(planCheckText(a)).toBe(
-      "Plan check: 2 courses before prerequisites · 1 course in a term not offered · 1 semester over 18 credits",
-    );
-  });
-
-  it("says so when the plan has no problems", () => {
-    const a = audit();
-    a.courses.ece4891.prereqs = { groups: [], notes: [] };
-    place(a, "ece4891", "FA27", 12);
-    expect(planCheckText(a)).toBe("Plan check: no problems found");
   });
 });
 

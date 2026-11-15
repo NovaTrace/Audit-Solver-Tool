@@ -1,25 +1,22 @@
-// bookmarklet/scrape/courses.js — every course the audit mentions.
+// bookmarklet/scrape/courses.js — reads every course on the audit page.
 //
-//   scrapeCourses(doc)    attempts from the Course History block, which
-//                         lists each attempt once with full credits
-//   linkCourses(...)      ties courses to the requirements that list them,
-//                         adds courses that only appear as options, and
-//                         works out each course's status
+//   scrapeCourses(doc)   attempts from Course History, which lists each once
+//   linkCourses(...)     re-exported from src/logic/auditBuild.js
 //
-// This file only READS the page's course rows. The rules (which attempt
-// sets the credits, when a course counts as completed) live in
-// src/logic/auditBuild.js, which the PDF import shares.
+// Reads rows only; the rules are in src/logic/auditBuild.js, shared with the
+// PDF import.
+// Used by: collector.js.
 
 import { auditRoot, requirementBlocks, readTakenRow } from "./dom.js";
 import { coursesFromRows, linkCourses } from "../../src/logic/auditBuild.js";
 
-export { linkCourses }; // so the collector gets both from this one file
+export { linkCourses }; // re-exported for collector.js
 
-/** The audit page -> the `courses` object, from course history. */
+/** Audit page -> the `courses` object, from Course History. */
 export function scrapeCourses(doc) {
   const blocks = requirementBlocks(auditRoot(doc));
   const history = blocks.find((b) => b.getAttribute("rname") === "CRSHIST");
-  // Without a Course History block, fall back to every taken-course row
+  // No Course History block: use every taken-course row.
   const rows = [
     ...(history ?? auditRoot(doc)).querySelectorAll(".takenCourse"),
   ];

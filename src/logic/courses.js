@@ -1,54 +1,39 @@
-// Pure helpers for the course list: which courses to show, and the words
-// shown about each one.
-// No `document` here, so these can be tested with Vitest (see courses.test.js).
+// src/logic/courses.js — which courses the list shows, and the text for each.
+//
+// Used by: main.js, render/courseList.js, render/schedule.js.
+// Pure functions, no DOM. Tests: courses.test.js.
 
 import { isOpen } from "./credits.js";
 import { shownWarnings } from "./planChecks.js";
 import { isTermKey, termLabel } from "./courseText.js";
 
-/** True if the course matches the search text (empty search matches all). */
+/** True if the course matches the search text; an empty search matches all. */
 export function matchesQuery(course, query) {
   if (!query) return true;
   const haystack = `${course.code} ${course.title ?? ""}`.toLowerCase();
   return haystack.includes(query);
 }
 
-/** Heading for courses that aren't tied to any requirement. */
+/** Section heading for courses tied to no requirement. */
 export const UNLINKED = "Not linked to a requirement";
 
-/** The audit's section names, in audit order, each listed once. */
+/** The audit's section names, in audit order, without repeats. */
 export function sectionNames(audit) {
   return [...new Set(audit.requirements.map((r) => r.section))];
 }
 
-/**
- * The sections and courses to display, in display order.
- * Returns [{ section, courses: [course, ...] }, ...], skipping empty sections.
- *
- * Only courses the student can still plan are listed (completed courses
- * are left out). A course that counts toward requirements in several
- * sections appears under each of them.
- *
- * filterSection: "all" or one section name (the category dropdown)
- * query:         search text, already trimmed and lower-cased
- */
-export function visibleSections({ audit, filterSection, query }) {
-  return filterGroups(allSections(audit), { filterSection, query });
-}
-
-/** The course list's "Show" dropdown: [value, label] pairs, in order. */
+/** "Show" switch choices as [value, label] pairs. */
 export const SHOW_OPTIONS = [
-  ["all", "Everything left"],
+  ["all", "Everything"],
   ["attention", "Needs attention"],
-  ["unplaced", "Not in a semester yet"],
+  ["unplaced", "Unplaced"],
 ];
 
 /**
- * True if the course belongs under the "Show" choice:
+ * True if the course belongs under a "Show" choice:
  *   all        everything still to plan
- *   attention  placed somewhere it gets a warning (shownWarnings: locked
- *              and registered courses never count)
- *   unplaced   not in any semester yet
+ *   attention  has a visible warning (shownWarnings)
+ *   unplaced   not in a semester
  */
 export function matchesShow(audit, course, show) {
   if (show === "attention") return shownWarnings(audit, course).length > 0;
@@ -57,13 +42,9 @@ export function matchesShow(audit, course, show) {
 }
 
 /**
- * Narrow a list of groups (from allSections or listGroups) to one
- * section, the search text and the "Show" choice, dropping groups left
- * empty. Lets the page work the full list out once and reuse it for the
- * category dropdown and the list.
- *
- * A group from listGroups also carries `completed` courses: they're kept
- * (if they match the search) only while showing everything.
+ * Narrows groups (from allSections or listGroups) by section, search text
+ * and "Show" choice, and drops empty groups.
+ * `completed` courses are kept only when showing everything.
  */
 export function filterGroups(
   groups,
@@ -90,10 +71,9 @@ export function filterGroups(
 }
 
 /**
- * Every section for the course list, with what's left to plan AND what's
- * already completed: [{ section, courses, completed }, ...] in audit
- * order. A section shows while it has either. Completed courses sit under
- * every section whose requirements they count toward.
+ * Sections for the course list, in audit order:
+ * [{ section, courses, completed }]. A section appears while it has either.
+ * Completed courses appear under every section they count toward.
  */
 export function listGroups(audit) {
   const open = new Map(allSections(audit).map((g) => [g.section, g.courses]));
@@ -109,7 +89,7 @@ export function listGroups(audit) {
     .filter((g) => g.courses.length > 0 || g.completed.length > 0);
 }
 
-// Completed courses by section name, each list sorted by course code
+// Map of section name -> completed courses, sorted by code.
 function completedBySection(audit) {
   const sectionOf = new Map(audit.requirements.map((r) => [r.id, r.section]));
   const bySection = new Map();
@@ -128,7 +108,7 @@ function completedBySection(audit) {
   return bySection;
 }
 
-/** "B · Summer 2026": the grade and term of the attempt that counted. */
+/** "B · Summer 2026": grade and term of the last attempt. */
 export function finalGradeText(course) {
   const last = course.attempts?.at(-1);
   if (!last) return "";
@@ -136,14 +116,13 @@ export function finalGradeText(course) {
   return last.grade ? `${last.grade} · ${term}` : term;
 }
 
-/** Every section with something to plan: no category, search or Show applied. */
+/** Every section with something to plan, unfiltered. */
 export function allSections(audit) {
   const plannable = Object.values(audit.courses)
     .filter((c) => c.status !== "completed")
     .sort((a, b) => a.code.localeCompare(b.code));
 
-  // Courses the audit doesn't tie to any requirement (e.g. an F in a course
-  // no requirement lists) still need to be plannable somewhere
+  // Courses tied to no requirement go under UNLINKED.
   const sections = sectionNames(audit);
   if (plannable.some((c) => c.requirementIds.length === 0)) {
     sections.push(UNLINKED);
@@ -157,9 +136,8 @@ export function allSections(audit) {
           courses: plannable.filter((c) => c.requirementIds.length === 0),
         };
       }
-      // A course shows under a section while one of its requirements there
-      // is open (unfinished, and not switched off by the student), or once
-      // the student has placed it in a term
+      // A course appears under a section while one of its requirements there is
+      // open, or once it has been placed in a term.
       const inSection = (id) =>
         audit.requirements.some((r) => r.id === id && r.section === section);
       const reqIds = new Set(
@@ -180,7 +158,7 @@ export function allSections(audit) {
     .filter((group) => group.courses.length > 0);
 }
 
-/** "3 cr", "1–3 cr" for variable credit, or "? cr" when unknown. */
+/** "3 cr", "1–3 cr" for variable credit, "? cr" when unknown. */
 export function creditText(course) {
   const { credits, minCredits, maxCredits } = course;
   if (minCredits != null && maxCredits != null && minCredits !== maxCredits) {
@@ -189,23 +167,15 @@ export function creditText(course) {
   return credits == null ? "? cr" : `${credits} cr`;
 }
 
-/** "Counts toward: NAVIGATE · TECHNICAL ELECTIVES" (empty if none). */
-export function countsTowardText(audit, course) {
-  const titles = course.requirementIds
-    .map((id) => audit.requirements.find((r) => r.id === id)?.title)
-    .filter(Boolean);
-  return titles.length ? `Counts toward: ${titles.join(" · ")}` : "";
-}
-
-/** "Fall, Spring", or a note when the details haven't been loaded. */
+/** "Fall, Spring", or a note when the offering is unknown. */
 export function offeredText(course) {
   if (course.termsOffered.length) return course.termsOffered.join(", ");
   return course.detailsLoaded ? "Offering not listed" : "Offerings unknown";
 }
 
 /**
- * Prereq and coreq line. null means the details were never loaded, which
- * is different from a course that has none.
+ * Prerequisite and corequisite line. A null prereqText means the details
+ * were never loaded, which differs from having none.
  */
 export function prereqText(course) {
   if (course.prereqText == null) return "Prereqs unknown";
@@ -217,9 +187,9 @@ export function prereqText(course) {
 }
 
 /**
- * The short prereq line: course numbers only, without grades or notes.
- * "Prereqs: CS 2060 or ECE 1021; CS 2080". Falls back to the full text
- * when the details couldn't be read into course numbers.
+ * Short prerequisite line with course numbers only:
+ * "Prereqs: CS 2060 or ECE 1021; CS 2080".
+ * Falls back to the full text when no course numbers could be parsed.
  */
 export function prereqCodesText(course) {
   if (course.prereqText == null) return "Prereqs unknown";
@@ -232,14 +202,14 @@ export function prereqCodesText(course) {
   const parts = [];
   if (pre) parts.push(`Prereqs: ${pre}`);
   else if (course.prereqText)
-    return prereqText(course); // couldn't shorten
+    return prereqText(course); // no course numbers parsed
   else parts.push("No prereqs");
   const co = codes(course.coreqs);
   if (co) parts.push(`Coreq: ${co}`);
   return parts.join(" · ");
 }
 
-/** True when the details say the course isn't scheduled that term. */
+/** True if the schedule lists the term and the course isn't available in it. */
 export function notOfferedIn(course, termKey) {
   const status = course.availability[termKey];
   return status !== undefined && status !== "available";

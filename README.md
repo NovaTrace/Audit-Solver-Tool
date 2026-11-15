@@ -1,5 +1,5 @@
 Quinn Hackenberg - 11/11/2026
-Version 1.0.0 - Initial functionality verified
+Version 1.1.1
 Initial setup for working on this Repo, run the following:
 
 git clone https://github.com/NovaTrace/Audit-Solver-Tool

@@ -1,35 +1,29 @@
-// =====================================================================
-// ui/dragDrop.js — drag a course from one semester card to another
+// src/ui/dragDrop.js — drag a course from one semester card to another.
 //
-// Works with a mouse, a pen or a finger (Pointer Events, not the browser's
-// built-in drag and drop, which doesn't work with touch):
-//   mouse / pen  press on a course row and move a few pixels
-//   touch        press and hold a course row for a moment, then move
-//                (a quick swipe still scrolls the page as normal)
-// While dragging, a copy of the row follows the pointer and the semester
-// under it is outlined. Letting go over another semester moves the course
-// there; letting go anywhere else, or pressing Escape, puts it back.
+// Uses Pointer Events, so mouse, pen and touch all work:
+//   mouse / pen  press a course row and move a few pixels
+//   touch        press and hold, then move (a quick swipe still scrolls)
+// A copy of the row follows the pointer and the semester under it is
+// outlined. Releasing over another semester moves the course; releasing
+// elsewhere, or Escape, cancels.
 //
-// Locked and registered courses can't be dragged (render/schedule.js only
-// marks movable rows with .is-movable). The same move is always possible
-// without dragging, with the term buttons in the course list.
-//
-// This file knows nothing about the audit. main.js passes in:
-//   onMove(id, termKey)   do the move (state.js) and redraw
-//   warnFor(id, termKey)  "" or a reason the course doesn't fit that term,
-//                         shown on the outlined semester while hovering
-// =====================================================================
+// Only rows marked .is-movable (render/schedule.js) can be dragged.
+// Knows nothing about the audit. main.js passes in:
+//   onMove(id, termKey)   perform the move and redraw
+//   warnFor(id, termKey)  "" or the warning to show on the hovered semester
+// Used by: main.js.
 
-const MOVE_PX = 6; // how far a mouse moves before it counts as a drag
-const HOLD_MS = 350; // how long a finger presses before a drag starts
-const EDGE_PX = 48; // near the plan panel's top/bottom edge: scroll it
+const MOVE_PX = 6; // mouse movement that starts a drag
+const HOLD_MS = 350; // touch hold time before a drag starts
+const EDGE_PX = 48; // distance from the top/bottom edge that triggers scrolling
+const SCROLL_PX = 8; // scroll step per frame
 
 export function setupDragDrop({ onMove, warnFor }) {
   const grid = document.getElementById("sched-grid");
-  let drag = null; // the drag in progress, or a press that might become one
+  let drag = null; // the drag in progress, or a press that may become one
 
   grid.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0) return; // left button / a finger only
+    if (e.button !== 0) return; // left button or touch only
     const row = e.target.closest(".tc.is-movable");
     if (!row) return;
     drag = {
@@ -44,7 +38,7 @@ export function setupDragDrop({ onMove, warnFor }) {
       ghost: null,
       holdTimer: null,
     };
-    // A finger has to hold still first, so swipes still scroll
+    // Touch must hold still first, so swipes still scroll.
     if (e.pointerType === "touch") {
       drag.holdTimer = setTimeout(() => start(e), HOLD_MS);
     }
@@ -59,7 +53,7 @@ export function setupDragDrop({ onMove, warnFor }) {
       );
       if (moved < MOVE_PX) return;
       if (drag.holdTimer) {
-        cancel(); // a finger moved before the hold finished: it's a scroll
+        cancel(); // moved before the hold finished: a scroll
         return;
       }
       start(e);
@@ -83,7 +77,7 @@ export function setupDragDrop({ onMove, warnFor }) {
     if (e.key === "Escape" && drag?.started) finish();
   });
 
-  // While a finger drags, stop the page scrolling underneath it
+  // While a touch drag is active, stop the page scrolling under it.
   document.addEventListener(
     "touchmove",
     (e) => {
@@ -92,8 +86,7 @@ export function setupDragDrop({ onMove, warnFor }) {
     { passive: false },
   );
 
-  // A drag that began on the grip mustn't also count as a click on it
-  // (which would lock the course)
+  // A drag that began on the grip must not also count as a click on it.
   grid.addEventListener(
     "click",
     (e) => {
@@ -114,7 +107,7 @@ export function setupDragDrop({ onMove, warnFor }) {
     drag.offsetX = drag.startX - box.left;
     drag.offsetY = drag.startY - box.top;
 
-    // A copy of the row that follows the pointer
+    // Copy of the row that follows the pointer.
     const ghost = drag.row.cloneNode(true);
     ghost.classList.add("tc-ghost");
     ghost.style.width = `${box.width}px`;
@@ -125,15 +118,22 @@ export function setupDragDrop({ onMove, warnFor }) {
     drag.row.classList.add("is-dragging");
     document.body.classList.add("is-dragging-course");
     follow(e);
+    drag.scrollFrame = requestAnimationFrame(scrollLoop);
   }
 
   function follow(e) {
-    drag.ghost.style.left = `${e.clientX - drag.offsetX}px`;
-    drag.ghost.style.top = `${e.clientY - drag.offsetY}px`;
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+    drag.ghost.style.left = `${drag.x - drag.offsetX}px`;
+    drag.ghost.style.top = `${drag.y - drag.offsetY}px`;
+    updateTarget();
+  }
 
-    // Which semester is under the pointer? (The ghost ignores the pointer,
-    // so it doesn't get in the way.)
-    const under = document.elementFromPoint(e.clientX, e.clientY);
+  // Finds the semester under the pointer (the ghost ignores pointer events).
+  // Also called after scrolling, when a different semester may be under a
+  // pointer that hasn't moved.
+  function updateTarget() {
+    const under = document.elementFromPoint(drag.x, drag.y);
     const card = under?.closest(".term-card");
     const target = card?.dataset.term ?? null;
     if (target !== drag.target) {
@@ -148,17 +148,32 @@ export function setupDragDrop({ onMove, warnFor }) {
         }
       }
     }
-    autoScroll(e.clientY);
   }
 
-  // Dragging near the top or bottom of the plan panel scrolls it, so a
-  // semester further down can be reached
+  // Runs every frame during a drag, so holding a course near an edge keeps
+  // scrolling.
+  function scrollLoop() {
+    if (!drag?.started) return;
+    if (autoScroll(drag.y)) updateTarget();
+    drag.scrollFrame = requestAnimationFrame(scrollLoop);
+  }
+
+  // Scrolls one step if the pointer is near an edge; returns true if it did.
+  // The plan panel scrolls when it has its own scrollbar (wide screens);
+  // otherwise the page scrolls.
   function autoScroll(y) {
     const panel = grid.closest(".plan");
-    if (!panel || panel.scrollHeight <= panel.clientHeight) return;
-    const box = panel.getBoundingClientRect();
-    if (y < box.top + EDGE_PX) panel.scrollTop -= 12;
-    else if (y > box.bottom - EDGE_PX) panel.scrollTop += 12;
+    const panelScrolls = panel && panel.scrollHeight > panel.clientHeight;
+    const box = panelScrolls
+      ? panel.getBoundingClientRect()
+      : { top: 0, bottom: window.innerHeight };
+    let step = 0;
+    if (y < box.top + EDGE_PX) step = -SCROLL_PX;
+    else if (y > box.bottom - EDGE_PX) step = SCROLL_PX;
+    if (step === 0) return false;
+    if (panelScrolls) panel.scrollTop += step;
+    else window.scrollBy(0, step);
+    return true;
   }
 
   function clearTarget() {
@@ -175,13 +190,14 @@ export function setupDragDrop({ onMove, warnFor }) {
 
   function cancel() {
     clearTimeout(drag.holdTimer);
+    cancelAnimationFrame(drag.scrollFrame);
     clearTarget();
     drag.ghost?.remove();
     drag.row.classList.remove("is-dragging");
     document.body.classList.remove("is-dragging-course");
     drag = null;
-    // The click that ends a drag fires right after pointerup; forget the
-    // flag if it never comes (e.g. the pointer was released off the grid)
+    // The click that ends a drag fires right after pointerup; clear the flag in
+    // case it never comes.
     setTimeout(() => delete grid.dataset.justDragged, 0);
   }
 }

@@ -1,24 +1,24 @@
-// bookmarklet/send.js — getting the finished audit JSON to the planner.
+// bookmarklet/send.js — delivers the finished audit JSON to the planner.
 //
-//   sendToApp     opens the planner in a tab and hands it the JSON
-//   downloadJson  saves a .json file the student imports with Import
+//   sendToApp     opens the planner in a tab and posts the JSON to it
+//   downloadJson  saves a .json file for the planner's Import button
 //   copyJson      copies the JSON text, to paste on the planner page
 //
-// The handshake for sendToApp, using postMessage (the browser's safe way
-// for two tabs on different sites to talk):
+// sendToApp handshake (postMessage):
 //   1. this tab opens the planner
-//   2. the planner says   { type: "audit-solver:ready" }
-//   3. this tab answers   { type: "audit-solver:audit", payload: audit }
-// Each side checks who sent a message before trusting it.
+//   2. the planner posts  { type: "audit-solver:ready" }
+//   3. this tab replies   { type: "audit-solver:audit", payload: audit }
+// Both sides check the sender before trusting a message.
+// Used by: collector.js. Receiving side: src/ui/importer.js.
 
 import { downloadJsonFile } from "../src/ui/exporter.js";
 
-const WAIT_MS = 20000; // give the planner tab this long to say it's ready
+const WAIT_MS = 20000; // how long to wait for the planner's "ready"
 
 /**
- * Open the planner at appUrl and send it the audit. Resolves once sent;
- * rejects if a popup blocker stops the tab or the planner never answers.
- * Call it straight from a button click, or popup blockers step in.
+ * Opens the planner at appUrl and sends it the audit. Resolves once sent;
+ * rejects if the tab is blocked or the planner never answers. Must be
+ * called directly from a click, or popup blockers intervene.
  */
 export function sendToApp(audit, appUrl) {
   const appOrigin = new URL(appUrl).origin;
@@ -39,7 +39,7 @@ export function sendToApp(audit, appUrl) {
     }, WAIT_MS);
 
     function onMessage(event) {
-      // Only the tab we opened, on the planner's own site, counts
+      // Only the tab we opened, on the planner's origin.
       if (event.source !== planner || event.origin !== appOrigin) return;
       if (event.data?.type !== "audit-solver:ready") return;
       planner.postMessage(
@@ -59,13 +59,15 @@ export function sendToApp(audit, appUrl) {
   });
 }
 
-/** Save the audit as a .json file, for the planner's Import button. */
+/** Saves the audit as a .json file. */
 export function downloadJson(audit) {
   downloadJsonFile("my-audit.json", JSON.stringify(audit, null, 2));
 }
 
-/** Copy the audit's JSON text to the clipboard. The student then pastes it
- *  (Ctrl+V) on the planner page: see setupPaste in src/ui/importer.js. */
+/**
+ * Copies the audit's JSON to the clipboard (see setupPaste in
+ * src/ui/importer.js).
+ */
 export function copyJson(audit) {
   return navigator.clipboard.writeText(JSON.stringify(audit));
 }

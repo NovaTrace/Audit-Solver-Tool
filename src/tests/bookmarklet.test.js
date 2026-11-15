@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 // (happy-dom gives these tests a browser-like `document` to read pages with)
 
-// Tests for the bookmarklet's scrapers, run against a made-up audit page
-// with the real page's structure (fixtures/audit-page.html) and saved
-// course-details responses (fixtures/course-details.json).
+// Tests for the bookmarklet scrapers (bookmarklet/scrape/*), run against a
+// made-up audit page with the real page's structure
+// (fixtures/audit-page.html) and saved course-details responses
+// (fixtures/course-details.json).
 
 import { describe, it, expect, vi } from "vitest";
 import { scrapeStudent } from "../../bookmarklet/scrape/student.js";
@@ -29,19 +30,19 @@ import pageHtml from "./fixtures/audit-page.html?raw";
 const page = new DOMParser().parseFromString(pageHtml, "text/html");
 const BASE = "https://datc.prod.cu.edu/selfservice-cuspg/audit/read.html";
 
-// Everything the collector builds from the page, before course details
+// Everything the collector builds from the page, before course details.
 function collect() {
   const requirements = scrapeRequirements(page);
   const courses = linkCourses(scrapeCourses(page), requirements);
   return { requirements, courses };
 }
 
-// A stand-in for fetch() that answers from the saved responses
+// Stand-in for fetch() that answers from the saved responses.
 function fakeFetch() {
   return vi.fn(async (url, { body }) => {
     const dept = body.get("courseDept");
     const key = `${dept.trim()} ${body.get("courseNum")}`;
-    // Like the real site might: only the padded department finds a course
+    // As on the real site: only the padded department finds a course.
     const found = dept.length === 4 ? responses[key] : null;
     return {
       ok: true,
@@ -189,7 +190,7 @@ describe("scrapeCourses and linkCourses", () => {
   });
 
   it("counts a pass only if the audit accepted it", () => {
-    // A D in a course whose requirement wants a C- or better
+    // A D in a course whose requirement needs C- or better.
     const withD = (reqStatus) => {
       const courses = {
         cs1450: {
@@ -236,13 +237,13 @@ describe("course details", () => {
   it("keeps the audit's credits when the catalog has none, or the course is registered", () => {
     const details = toCourseDetails(responses["ECE 3020"]); // 3 credits
 
-    // Variable credit: the catalog gives no single number
+    // Variable credit: the catalog gives no single number.
     const variable = { code: "ECE 4910", credits: 2, attempts: [] };
     applyDetails(variable, { ...details, credits: null });
     expect(variable.credits).toBe(2);
     expect(variable.detailsLoaded).toBe(true); // the rest is still copied
 
-    // Registered: the hours the student signed up for win
+    // Registered: the registered hours are kept.
     const registered = {
       code: "ECE 4910",
       credits: 2,
@@ -251,7 +252,7 @@ describe("course details", () => {
     applyDetails(registered, details);
     expect(registered.credits).toBe(2);
 
-    // Otherwise the catalog's number is used
+    // Otherwise the catalog's number is used.
     const plain = { code: "ECE 3020", credits: null, attempts: [] };
     applyDetails(plain, details);
     expect(plain.credits).toBe(3);
@@ -307,19 +308,20 @@ describe("an expired login", () => {
       ok: false,
       type: "opaqueredirect",
     }));
-    // Twice as many courses as are fetched at once
+    // Twice as many courses as are fetched concurrently.
     const list = Array.from({ length: AT_ONCE * 2 }, (_, i) => ({
       code: `CS ${1000 + i}`,
     }));
     await expect(
       addCourseDetails(list, { fetchImpl, baseUrl: BASE }),
     ).rejects.toThrow(SessionExpiredError);
-    // Only the first round went out, not the rest of the list
+    // Only the first round was sent.
     expect(fetchImpl.mock.calls.length).toBeLessThanOrEqual(AT_ONCE);
   });
 
   it("stops the other workers taking new courses when one request expires", async () => {
-    // The first answer is the login redirect; the rest succeed, a bit later
+    // The first response is the login redirect; the rest succeed slightly
+    // later.
     let calls = 0;
     const fetchImpl = vi.fn(async () => {
       if (++calls === 1) return { ok: false, type: "opaqueredirect" };
@@ -337,7 +339,7 @@ describe("an expired login", () => {
 });
 
 describe("being told to slow down", () => {
-  // A 429 (Too Many Requests) answer; Retry-After: 0 keeps the test fast
+  // A 429 response; Retry-After: 0 keeps the test fast.
   const tooMany = {
     ok: false,
     status: 429,
@@ -365,7 +367,7 @@ describe("being told to slow down", () => {
     await expect(
       addCourseDetails(list, { fetchImpl, baseUrl: BASE }),
     ).rejects.toThrow(SlowDownError);
-    // One try and one retry for each worker's first course, no more
+    // One attempt and one retry for each worker's first course.
     expect(fetchImpl.mock.calls.length).toBe(AT_ONCE * 2);
   });
 });
@@ -375,7 +377,7 @@ describe("the whole collection", () => {
     const { requirements, courses } = collect();
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const fetchImpl = fakeFetch();
-    // Like collector.js: details only for courses still to plan
+    // As in collector.js: details only for courses still to plan.
     await addCourseDetails(Object.values(courses).filter(needsDetails), {
       fetchImpl,
       baseUrl: BASE,

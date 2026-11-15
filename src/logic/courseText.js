@@ -1,24 +1,22 @@
-// =====================================================================
-// logic/courseText.js — turning the audit site's text into our values
+// src/logic/courseText.js — text helpers for course codes, prerequisites and
+// terms.
 //
-// Shared by everything that reads audit data: parseAudit(), the app's
-// helpers, the bookmarklet's scrapers and (later) the PDF reader.
-// Keeping them here means "MATH1350" becomes "MATH 1350", and "Fall 2026"
-// becomes "FA26", the same way everywhere.
-//
-// Pure functions: no `document`. Tested in courseText.test.js.
-// =====================================================================
+// Converts the audit site's spellings to ours: "MATH1350" -> "MATH 1350",
+// "Fall 2026" -> "FA26".
+// Used by: parser.js, auditBuild.js, pdfAudit.js, the other logic files,
+// state.js, render/*, and the bookmarklet scrapers.
+// Pure functions, no DOM. Tests: courseText.test.js.
 
-// ---------------------------------------------------------------------
-// Course codes
-// ---------------------------------------------------------------------
+// ---------- Course codes ----------
 
-// Department (2–4 letters), optional space, 4-digit number, and an optional
-// suffix the audit uses for transfer credit ("PSY 2999TC")
+// Department (2–4 letters), optional space, 4-digit number, optional suffix
+// such as the transfer-credit "TC" in "PSY 2999TC".
 const CODE_PATTERN = /^([A-Za-z]{2,4})\s*(\d{4}[A-Za-z]*)$/;
 
-/** "MATH1350" or " math 1350 " -> "MATH 1350". Unknown shapes are only
- *  trimmed and upper-cased. */
+/**
+ * "MATH1350" or " math 1350 " -> "MATH 1350". Other shapes are trimmed and
+ * upper-cased only.
+ */
 export function normalizeCode(code) {
   const text = code.trim();
   const match = text.match(CODE_PATTERN);
@@ -30,18 +28,15 @@ export function isCourseCode(code) {
   return typeof code === "string" && CODE_PATTERN.test(code.trim());
 }
 
-/** "MATH 1350" or "MATH1350" -> "math1350" (the key in `courses`). */
+/** "MATH 1350" -> "math1350", the key used in `courses`. */
 export function idFromCode(code) {
   return code.replace(/\s+/g, "").toLowerCase();
 }
 
-// Words that look like a department but aren't one: "FALL 2026" is a term
+// Looks like a department but isn't: "FALL 2026" is a term.
 const NOT_DEPARTMENTS = new Set(["FALL"]);
 
-/**
- * Every course code in a piece of text, normalized, each listed once.
- * Allows the same letter suffix as CODE_PATTERN ("CS 1150L").
- */
+/** Every course code in the text, normalized, without repeats. */
 export function codesIn(text = "") {
   const found = [...text.matchAll(/\b([A-Z]{2,4})\s?(\d{4}[A-Z]*)\b/g)]
     .filter((m) => !NOT_DEPARTMENTS.has(m[1]))
@@ -49,24 +44,24 @@ export function codesIn(text = "") {
   return [...new Set(found)];
 }
 
-// ---------------------------------------------------------------------
-// Prerequisites and corequisites
-// ---------------------------------------------------------------------
+// ---------- Prerequisites and corequisites ----------
 
 const GRADE = /grade of\s*["“”']?([A-F][+-]?)["“”']?/i;
 
 /**
+ * Parses prerequisite text into groups.
+ *
  * "A or B with a grade of C or better; D. Engineering students only" ->
- * { groups: [{ anyOf: ["A","B"], minGrade: "C" }, { anyOf: ["D"], minGrade: null }],
+ * { groups: [{ anyOf: ["A","B"], minGrade: "C" },
+ *             { anyOf: ["D"], minGrade: null }],
  *   notes: ["Engineering students only"] }
  *
- * Every group is required; any one course inside a group satisfies it.
- * - Sentences (split on ". ") with no course code become `notes`.
- * - Groups are split on ";" and on the word "and" (with or without a
- *   comma), so "A and B" is two groups: both are required.
- * - "A and B with a grade of C": a group with no grade of its own takes
- *   the grade of the next group in the same ";" piece.
- * - null in -> null out (details never loaded); "" -> no groups.
+ * Every group is required; any one course in a group satisfies it.
+ * - Sentences with no course code become `notes`.
+ * - Groups split on ";" and on "and".
+ * - A group with no grade takes the grade of the next group in the same ";"
+ *   piece.
+ * - null -> null (details never loaded); "" -> no groups.
  */
 export function parsePrereqs(text) {
   if (text == null) return null;
@@ -87,8 +82,8 @@ export function parsePrereqs(text) {
           pieceGroups.push({ anyOf, minGrade: part.match(GRADE)?.[1] ?? null });
         }
       }
-      // Work backwards, so a grade written once at the end reaches the
-      // groups before it
+      // Backwards, so a grade written once at the end reaches the groups before
+      // it.
       for (let i = pieceGroups.length - 2; i >= 0; i--) {
         pieceGroups[i].minGrade ??= pieceGroups[i + 1].minGrade;
       }
@@ -98,15 +93,13 @@ export function parsePrereqs(text) {
   return { groups, notes };
 }
 
-// ---------------------------------------------------------------------
-// Terms
-// ---------------------------------------------------------------------
+// ---------- Terms ----------
 
 const SEASONS = ["SP", "SU", "FA"]; // order within a calendar year
 const SEASON_NAMES = { SP: "Spring", SU: "Summer", FA: "Fall" };
 const SEASON_KEYS = { Spring: "SP", Summer: "SU", Fall: "FA" };
 
-/** True for a real term key: "FA26", "SP27", "SU27". */
+/** True for a term key: "FA26", "SP27", "SU27". */
 export function isTermKey(key) {
   return typeof key === "string" && /^(SP|SU|FA)\d{2}$/.test(key);
 }
@@ -118,23 +111,18 @@ export function termIndex(key) {
   return year * 3 + season;
 }
 
-/** The reverse of termIndex. */
+/** Inverse of termIndex. */
 export function termFromIndex(index) {
   const year = Math.floor(index / 3);
   return SEASONS[index % 3] + String(year).padStart(2, "0");
 }
 
-/** The term that follows: "FA26" -> "SP27", "SP27" -> "SU27". */
+/** The next term: "FA26" -> "SP27", "SP27" -> "SU27". */
 export function termAfter(key) {
   return termFromIndex(termIndex(key) + 1);
 }
 
-/** The term just before: "SP27" -> "FA26", "FA26" -> "SU26". */
-export function termBefore(key) {
-  return termFromIndex(termIndex(key) - 1);
-}
-
-/** The most semester columns a plan can have (8 years of 3 terms). */
+/** Maximum semester columns in a plan (8 years × 3 terms). */
 export const MAX_TERMS = 24;
 
 /** "FA26" -> "Fall 2026" */
@@ -142,12 +130,7 @@ export function termLabel(key) {
   return `${SEASON_NAMES[key.slice(0, 2)]} 20${key.slice(2)}`;
 }
 
-/** "FA26" -> "Fall ’26" (short enough for a term pill) */
-export function shortTermLabel(key) {
-  return `${SEASON_NAMES[key.slice(0, 2)]} ’${key.slice(2)}`;
-}
-
-/** "Fall 2026" -> "FA26" (the site's spelling); null if it doesn't fit. */
+/** "Fall 2026" -> "FA26"; null if the name isn't a term. */
 export function termKeyFromName(name) {
   const match = name.trim().match(/^(Spring|Summer|Fall)\s+20(\d{2})$/i);
   if (!match) return null;
@@ -162,16 +145,21 @@ export function termForDate(date) {
   return season + String(date.getFullYear() % 100).padStart(2, "0");
 }
 
-/** True if the term is already over: it ended before today's term began. */
+/** The term of the course's registered ("***") attempt, or null. */
+export function registeredTerm(course) {
+  const attempt = (course.attempts ?? []).findLast((a) => a.grade === "***");
+  return attempt?.term ?? null;
+}
+
+/** True if the term ended before the current term began. */
 export function isPastTerm(key, now = new Date()) {
   return termIndex(key) < termIndex(termForDate(now));
 }
 
 /**
- * The site's courseAvailability -> our availability:
- * { "Fall 2026": "available", "Spring 2027": "unknown" } ->
- * { FA26: "available", SP27: "unknown" }, in time order.
- * Names that don't look like a term are skipped.
+ * Converts the site's courseAvailability to ours, in time order:
+ * { "Fall 2026": "available" } -> { FA26: "available" }.
+ * Names that aren't terms are skipped.
  */
 export function availabilityByTerm(siteAvailability = {}) {
   return Object.fromEntries(

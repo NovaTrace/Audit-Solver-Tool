@@ -1,5 +1,5 @@
-// Tests for ui/settings.js: the saved Settings are checked before use, and
-// "Automatic" picks light or dark. Testing only, not a site element.
+// Tests for src/ui/settings.js: validating saved settings; resolving
+// "Automatic".
 
 import { describe, it, expect } from "vitest";
 import {
@@ -17,14 +17,16 @@ describe("normalizeSettings", () => {
     const s = normalizeSettings({
       palette: "dusk",
       showNeededFor: false,
+      warnOverload: false,
       prereqs: "codes",
-      showCounts: "yes", // not a true/false: ignored
+      showOffered: "yes", // not a boolean: ignored
       extra: 1,
     });
     expect(s).toEqual({
       ...DEFAULT_SETTINGS,
       palette: "dusk",
       showNeededFor: false,
+      warnOverload: false,
       prereqs: "codes",
     });
   });
