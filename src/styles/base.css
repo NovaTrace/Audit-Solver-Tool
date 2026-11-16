@@ -225,7 +225,7 @@ footer {
 
 footer p {
   margin: 0;
-} 
+}
 
 /* Takes the width left of the Clear data button. */
 .disclaimer {
@@ -247,6 +247,20 @@ footer p {
   background: var(--surface);
   color: var(--danger);
   cursor: pointer;
+}
+
+/* Version link: its own line under the disclaimer and Clear data. */
+.app-version {
+  flex-basis: 100%;
+}
+
+.app-version a {
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.app-version a:hover {
+  color: var(--ink);
 }
 
 .clear-data-btn:hover {

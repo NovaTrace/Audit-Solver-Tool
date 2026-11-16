@@ -69,6 +69,7 @@ import {
 import { setupExport } from "./ui/exporter.js";
 import { setupDragDrop } from "./ui/dragDrop.js";
 import { setupSettings } from "./ui/settings.js";
+import { setupHelp } from "./ui/help.js";
 import { courseWarnings } from "./logic/planChecks.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
@@ -93,9 +94,13 @@ let settings = null;
 // first draw).
 let panelShowsSample = null;
 
+// "How Audit Solver works" panel (ui/help.js).
+const help = setupHelp();
+
 // Header and the get-started panel.
 function refreshHeader() {
   renderHeader(getAudit());
+  help.show(isSampleLoaded()); // help panel: sample audit only
   const panel = document.getElementById("get-started");
   panel.querySelector("h2").textContent = isSampleLoaded()
     ? "Load your degree audit"
@@ -236,6 +241,17 @@ function warnIfOldBookmark(data) {
 
 // ---------- Header ----------
 // Popups, Import / Export and the bookmarklet panel; each lives in ui/.
+// Footer version: package.json's version (put in by vite.config.js), linked
+// to its release on GitHub. The release's tag must be "v" + the version,
+// e.g. v1.2.1.
+function showVersion() {
+  const version = import.meta.env.APP_VERSION;
+  const link = document.getElementById("app-version");
+  link.textContent = `v${version}`;
+  link.href = `https://github.com/NovaTrace/Audit-Solver-Tool/releases/tag/v${version}`;
+  link.title = `Version ${version} on GitHub`;
+}
+
 function setupHeader() {
   setupPopups(); // every .info-popup
   setupImport(handleImport); // Import button: .json or audit PDF
@@ -432,6 +448,7 @@ const settingsDialog = setupSettings({
 settings = settingsDialog.settings;
 setupWarnings();
 setupHeader();
+showVersion();
 setupSemesters();
 setupDragging();
 setupRequirements();
