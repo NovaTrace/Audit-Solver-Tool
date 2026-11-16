@@ -162,6 +162,233 @@
   border-color: var(--accent);
 }
 
+/* ---------- Help panel ----------
+   "How Audit Solver works": intro, four steps in a row, a status key and
+   links to the ⓘ popups. Sample audit only. Minimized by .help-min
+   (src/ui/help.js), which collapses it with .is-collapsing.
+   Tinted with the blue status color (--plan) so it reads as a notice to
+   close, not part of the planner. --notice is its text-safe tint. */
+.help-panel {
+  --notice: color-mix(in srgb, var(--plan) 10%, var(--surface));
+  margin: 0 0 16px;
+  padding: 16px 20px 14px;
+  border-radius: 10px;
+  background: var(--notice);
+  border: 1px solid color-mix(in srgb, var(--plan) 45%, transparent);
+  overflow: hidden; /* clips the contents while collapsing */
+}
+
+.help-panel.is-collapsing {
+  transition:
+    height 0.22s ease-in,
+    opacity 0.22s ease-in,
+    margin 0.22s ease-in,
+    padding 0.22s ease-in;
+  opacity: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.help-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.help-head h2 {
+  margin: 0;
+  font: 600 16px var(--sans);
+  color: var(--ink);
+}
+
+.help-head h2:focus {
+  outline: none; /* focused by script after Settings brings it back */
+}
+
+/* Minimize: a short line in a round button, top right. */
+.help-min {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--plan) 45%, transparent);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.help-min span {
+  width: 14px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.help-min:hover {
+  border-color: var(--plan);
+  background: color-mix(in srgb, var(--plan) 18%, var(--surface));
+}
+
+.help-intro {
+  margin: 6px 0 14px;
+  max-width: 90ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Four numbered steps; two per row when narrower, one on phones. */
+.help-steps {
+  list-style: none;
+  counter-reset: help;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.help-steps li {
+  counter-increment: help;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.help-steps h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 600 14px var(--sans);
+  color: var(--ink);
+}
+
+/* Numbered circles, as in the get-started steps. */
+.help-steps h3::before {
+  content: counter(help);
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--onfill);
+  font: 600 12px var(--sans);
+}
+
+.help-steps p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.help-steps b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* "ⓘ Import tips": opens that section's popup. */
+.help-tip {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 12px var(--sans);
+  cursor: pointer;
+}
+
+.help-tip:hover {
+  border-color: var(--accent);
+}
+
+.help-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 12px;
+}
+
+/* Status key: a dot in each status color. */
+.help-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.help-key span::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.help-key .k-done::before {
+  background: var(--done);
+}
+
+.help-key .k-prog::before {
+  background: var(--prog);
+}
+
+.help-key .k-plan::before {
+  background: var(--plan);
+}
+
+.help-key .k-check::before {
+  background: var(--check);
+}
+
+.help-key .k-need::before {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+
+.help-more {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.help-i {
+  color: var(--ink);
+}
+
+@media (max-width: 980px) {
+  .help-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .help-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- Get-started panel ----------
    A <details>: the summary is the heading row with Show / Hide; the three
    steps sit in one row below. */
@@ -706,6 +933,7 @@
   }
 }
 
+.is-first-draw .help-panel,
 .is-first-draw .get-started,
 .is-first-draw .plan,
 .is-first-draw .grp {

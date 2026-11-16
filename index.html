@@ -126,6 +126,7 @@
             <button
               type="button"
               class="info-btn"
+              id="tip-import"
               aria-label="Import/export help"
               aria-expanded="false"
             >
@@ -260,6 +261,98 @@
       </dialog>
 
       <main>
+        <!-- Help panel: what the app does and how to use each part. Shown
+             only while the sample audit is loaded; the minimize button hides
+             it until the page is reloaded. Wired in src/ui/help.js. The ⓘ
+             buttons in it open the matching help popup on the page. -->
+        <section
+          class="help-panel"
+          id="help-panel"
+          aria-labelledby="help-title"
+          hidden
+        >
+          <div class="help-head">
+            <h2 id="help-title" tabindex="-1">How Audit Solver works</h2>
+            <button
+              type="button"
+              class="help-min"
+              id="help-min"
+              aria-label="Minimize help"
+              title="Minimize"
+            >
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+          <p class="help-intro">
+            Audit Solver turns your degree audit into a semester-by-semester
+            plan. It lists every course you still need, lets you place each one
+            in a future semester, and warns you when a course is missing a
+            prerequisite or is planned in a term it isn't offered. It all runs
+            in this browser and your audit is never uploaded anywhere.
+          </p>
+
+          <ol class="help-steps">
+            <li>
+              <h3>Load your audit</h3>
+              <p>
+                Until you do, the page shows a <b>sample student</b>. Use the
+                bookmark in <b>Load your degree audit</b> below for the most
+                detail (prereqs and terms offered), or <b>Import audit</b> for
+                an audit PDF or a saved plan.
+              </p>
+              <button type="button" class="help-tip" data-tip="tip-import">
+                <span aria-hidden="true">ⓘ</span> Import tips
+              </button>
+            </li>
+            <li>
+              <h3>Choose your courses</h3>
+              <p>
+                <b>Requirements</b> lists what's left. Pick a semester from a
+                course's dropdown and lock it. Narrow the list with the category
+                menu, filter or search. Missing a course? Use
+                <b>Add or link a course</b> at the bottom.
+              </p>
+              <button type="button" class="help-tip" data-tip="tip-courses">
+                <span aria-hidden="true">ⓘ</span> Course list tips
+              </button>
+            </li>
+            <li>
+              <h3>Shape your plan</h3>
+              <p>
+                <b>Your plan</b> shows your progress and every semester. Drag
+                courses between semesters and add or remove semesters. Under
+                <b>Requirement categories</b>, untick a track you aren't taking.
+              </p>
+              <button type="button" class="help-tip" data-tip="tip-plan">
+                <span aria-hidden="true">ⓘ</span> Plan tips
+              </button>
+            </li>
+            <li>
+              <h3>Keep it</h3>
+              <p>
+                Your plan automatically saves itself in this browser.
+                <b>Export plan</b> downloads a copy you can import later.
+                <b>Reset plan</b> clears your picks; <b>Clear data</b> at the
+                bottom of the page erases everything.
+              </p>
+            </li>
+          </ol>
+
+          <div class="help-foot">
+            <p class="help-key" aria-label="Course status colors">
+              <span class="k-done">Done</span>
+              <span class="k-prog">In progress</span>
+              <span class="k-plan">Planned</span>
+              <span class="k-check">Check: a warning to look at</span>
+              <span class="k-need">Needed</span>
+            </p>
+            <p class="help-more">
+              Look for <span class="help-i" aria-hidden="true">ⓘ</span> beside
+              each section for quick tips.
+            </p>
+          </div>
+        </section>
+
         <!-- Open for the demo, collapsed once an audit is loaded. main.js sets
              the
              state and the heading text. -->
@@ -360,6 +453,7 @@
                   <button
                     type="button"
                     class="info-btn"
+                    id="tip-courses"
                     aria-label="Class selection help"
                     aria-expanded="false"
                   >
@@ -555,6 +649,7 @@
                 <button
                   type="button"
                   class="info-btn"
+                  id="tip-plan"
                   aria-label="Schedule help"
                   aria-expanded="false"
                 >

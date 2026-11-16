@@ -13,7 +13,7 @@ Version 1.2.0 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
   from an audit PDF.
 - **Builds a plan**: place courses into semesters, add or remove semesters,
   add your own courses, and switch off requirements you aren't pursuing.
-- **Checks the plan**: warns about missing prerequisites, course offerings, and semesters course    limits.
+- **Checks the plan**: warns about missing prerequisites, course offerings, and semesters course limits.
 
 Full feature list: [v1.2.0 release notes](https://github.com/NovaTrace/Audit-Solver-Tool/releases/tag/v1.2.0)
 
@@ -44,12 +44,12 @@ cd Audit-Solver-Tool
 npm install
 ```
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Starts the planner at http://localhost:5173 |
-| `npm test` | Runs the tests |
-| `npm run lint` | Checks the code for mistakes (ESLint) |
-| `npm run format` | Tidies the code style (Prettier) |
+| Command          | What it does                                |
+| ---------------- | ------------------------------------------- |
+| `npm run dev`    | Starts the planner at http://localhost:5173 |
+| `npm test`       | Runs the tests                              |
+| `npm run lint`   | Checks the code for mistakes (ESLint)       |
+| `npm run format` | Tidies the code style (Prettier)            |
 
 Every push to `main` runs the tests and, if they pass, publishes the site.
 

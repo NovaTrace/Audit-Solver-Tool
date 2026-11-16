@@ -69,6 +69,7 @@ import {
 import { setupExport } from "./ui/exporter.js";
 import { setupDragDrop } from "./ui/dragDrop.js";
 import { setupSettings } from "./ui/settings.js";
+import { setupHelp } from "./ui/help.js";
 import { courseWarnings } from "./logic/planChecks.js";
 import { renderHeader } from "./render/header.js";
 import { renderSchedule } from "./render/schedule.js";
@@ -93,9 +94,13 @@ let settings = null;
 // first draw).
 let panelShowsSample = null;
 
+// "How Audit Solver works" panel (ui/help.js).
+const help = setupHelp();
+
 // Header and the get-started panel.
 function refreshHeader() {
   renderHeader(getAudit());
+  help.show(isSampleLoaded()); // help panel: sample audit only
   const panel = document.getElementById("get-started");
   panel.querySelector("h2").textContent = isSampleLoaded()
     ? "Load your degree audit"
