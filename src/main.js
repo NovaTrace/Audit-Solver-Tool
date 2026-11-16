@@ -241,6 +241,17 @@ function warnIfOldBookmark(data) {
 
 // ---------- Header ----------
 // Popups, Import / Export and the bookmarklet panel; each lives in ui/.
+// Footer version: package.json's version (put in by vite.config.js), linked
+// to its release on GitHub. The release's tag must be "v" + the version,
+// e.g. v1.2.1.
+function showVersion() {
+  const version = import.meta.env.APP_VERSION;
+  const link = document.getElementById("app-version");
+  link.textContent = `v${version}`;
+  link.href = `https://github.com/NovaTrace/Audit-Solver-Tool/releases/tag/v${version}`;
+  link.title = `Version ${version} on GitHub`;
+}
+
 function setupHeader() {
   setupPopups(); // every .info-popup
   setupImport(handleImport); // Import button: .json or audit PDF
@@ -437,6 +448,7 @@ const settingsDialog = setupSettings({
 settings = settingsDialog.settings;
 setupWarnings();
 setupHeader();
+showVersion();
 setupSemesters();
 setupDragging();
 setupRequirements();

@@ -249,6 +249,20 @@ footer p {
   cursor: pointer;
 }
 
+/* Version link: its own line under the disclaimer and Clear data. */
+.app-version {
+  flex-basis: 100%;
+}
+
+.app-version a {
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.app-version a:hover {
+  color: var(--ink);
+}
+
 .clear-data-btn:hover {
   background: var(--danger-soft);
   border-radius: 20px;
