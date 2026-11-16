@@ -25,7 +25,7 @@ export const PALETTES = [
 export const DEFAULT_SETTINGS = {
   palette: "auto",
   showOffered: true, // "Fall, Spring"
-  prereqs: "full", // "full" text, course "codes" only, or "hide"
+  prereqs: "codes", // "full" text, course "codes" only, or "hide"
   showNeededFor: false, // "Needed for: ..."
   warnOverload: true, // "Over 18 credits" warning
 };
@@ -110,6 +110,7 @@ export function setupSettings({ onChange }) {
 
   const button = document.getElementById("settings-btn");
   button.addEventListener("click", () => {
+    spin(button);
     showInForm(form, settings);
     dialog.showModal();
     growFrom(dialog, button);
@@ -155,6 +156,19 @@ export function setupSettings({ onChange }) {
   };
 }
 
+// Turns the gear icon (.icon-btn.is-spinning in layout.css).
+// With `back`, it turns the other way (.is-unspinning), for closing.
+function spin(button, back = false) {
+  button.classList.remove("is-spinning", "is-unspinning");
+  void button.offsetWidth; // restarts the animation
+  button.classList.add(back ? "is-unspinning" : "is-spinning");
+  button.addEventListener(
+    "animationend",
+    () => button.classList.remove("is-spinning", "is-unspinning"),
+    { once: true },
+  );
+}
+
 // Opens the dialog below the Settings button, growing out of it
 // (.settings.is-growing in layout.css). On a narrow screen it stays centered.
 function growFrom(dialog, button) {
@@ -196,6 +210,7 @@ function shrinkAway(dialog) {
   if (dialog.classList.contains("is-closing")) return; // already closing
   dialog.classList.remove("is-growing");
   dialog.classList.add("is-closing");
+  spin(document.getElementById("settings-btn"), true);
   const done = (e) => {
     if (e.animationName !== "settings-shrink") return; // ignore the backdrop's animation
     dialog.removeEventListener("animationend", done);

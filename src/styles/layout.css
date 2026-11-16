@@ -13,6 +13,22 @@
   margin-bottom: 16px;
   border-bottom: 1px solid var(--line);
   min-height: 64px;
+  position: relative; /* anchors the background pattern */
+}
+
+/* Pattern behind the header only (src/assets/header-pattern.svg,
+   from bookofshapes.com). Used as a mask so it takes the palette's ink
+   color; z-index -1 keeps it behind the header's contents. */
+.titleblock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ink);
+  opacity: 0.08;
+  -webkit-mask: url("../assets/header-pattern.svg") center / cover no-repeat;
+  mask: url("../assets/header-pattern.svg") center / cover no-repeat;
+  pointer-events: none;
 }
 
 /* ---------- Title block ---------- */
@@ -697,6 +713,29 @@
 
 .icon-btn:hover {
   border-color: var(--accent);
+}
+
+/* The gear turns a third of the way round when Settings opens, and back
+   when it closes. */
+.icon-btn.is-spinning svg {
+  animation: gear-spin 0.3s cubic-bezier(0.6, 0, 0.3, 1);
+}
+
+.icon-btn.is-unspinning svg {
+  animation: gear-spin 0.3s cubic-bezier(0.3, 0, 0.6, 1) reverse;
+}
+
+@keyframes gear-spin {
+  to {
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn.is-spinning svg,
+  .icon-btn.is-unspinning svg {
+    animation: none;
+  }
 }
 
 .settings {
