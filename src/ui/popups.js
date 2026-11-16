@@ -65,6 +65,15 @@ function keepOnScreen(el) {
     panel ? panel.left + panelEl.clientLeft + panelEl.clientWidth : Infinity,
   );
   const left = Math.max(0, panel?.left ?? 0);
+  // Vertical limits: the window, or the panel while it scrolls on its own.
+  const clipsY = panelEl && getComputedStyle(panelEl).overflowY !== "visible";
+  const top = Math.max(0, clipsY ? panel.top : 0);
+  // clientHeight, not innerHeight: phones count the hidden toolbar in the
+  // latter.
+  const bottom = Math.min(
+    document.documentElement.clientHeight,
+    clipsY ? panel.bottom : Infinity,
+  );
   let shift = 0;
   let drop = 0;
 
@@ -74,10 +83,16 @@ function keepOnScreen(el) {
   if (box.left + shift < left + margin) {
     shift = left + margin - box.left; // past the left edge
   }
-  if (box.top < margin) {
-    drop = margin - box.top; // above the top
+  if (box.bottom > bottom - margin) {
+    drop = bottom - margin - box.bottom; // past the bottom edge
+  }
+  if (box.top + drop < top + margin) {
+    drop = top + margin - box.top; // above the top; wins if both apply
   }
   // `translate`, not `transform`: the opening animation in popups.css uses
   // `scale`.
   el.style.translate = `${shift}px ${drop}px`;
+  // Last resort (e.g. the panel is mostly below the window): scroll just
+  // far enough to show the popup.
+  el.scrollIntoView({ block: "nearest", inline: "nearest" });
 }

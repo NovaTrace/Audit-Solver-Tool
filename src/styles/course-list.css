@@ -333,21 +333,21 @@
   cursor: default;
 }
 
-/* Narrow: status and credits on one line, then details, then the dropdown. */
+/* Narrow: status, details and credits on one line; the dropdown below. */
 @media (max-width: 760px) {
   .row {
-    grid-template-columns: 1fr auto;
-    gap: 6px 12px;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 8px 12px;
   }
 
-  .r-main,
-  .r-when {
-    grid-column: 1 / -1;
-  }
-
+  .r-status,
   .r-cr {
-    grid-row: 1;
-    grid-column: 2;
+    align-self: start;
+    margin-top: 2px; /* level with the course code */
+  }
+
+  .r-when {
+    grid-column: 2 / -1;
   }
 
   .done-list li {
