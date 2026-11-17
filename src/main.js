@@ -255,7 +255,7 @@ function showVersion() {
   const version = import.meta.env.APP_VERSION;
   const link = document.getElementById("app-version");
   link.textContent = `v${version}`;
-  link.href = `https://github.com/NovaTrace/Audit-Solver-Tool/releases/tag/v${version}`;
+  link.href = `https://github.com/NovaTrace/Audit-Solver/releases/tag/v${version}`;
   link.title = `Version ${version} on GitHub`;
 }
 
