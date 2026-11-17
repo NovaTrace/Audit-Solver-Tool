@@ -416,6 +416,37 @@
   border: 1px solid var(--line);
 }
 
+/* Intro and sample button: the empty page only. */
+.gs-intro {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin: 12px 0 4px;
+}
+
+.gs-intro p {
+  margin: 0;
+  flex: 1 1 320px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.is-empty .gs-intro {
+  display: flex;
+}
+
+/* Empty page: no audit loaded, so only the header's logo and buttons and
+   the get-started panel show. Set by main.js (refreshAll). */
+.is-empty .cols,
+.is-empty .tb-left,
+.is-empty .tb-facts,
+.is-empty #export-btn,
+.is-empty #clear-data-btn {
+  display: none;
+}
+
 .get-started summary {
   display: flex;
   align-items: center;

@@ -22,14 +22,14 @@ const STORAGE_KEY = "audit-solver-state";
 
 export { MAX_TERMS }; // maximum semester columns
 
-// The current audit.
+// The current audit; null until one is loaded (the empty first-visit page).
 let audit = null;
 
 // True while the demo audit is loaded. The demo is never saved or merged into
 // an import.
 let sampleLoaded = false;
 
-/** The current audit object. Read-only for callers. */
+/** The current audit object, or null before one is loaded. Read-only. */
 export function getAudit() {
   return audit;
 }
@@ -82,10 +82,11 @@ export function resetPlan() {
   loadAudit(parseAudit(copy));
 }
 
-/** Deletes the saved audit and loads the demo. Used by "Clear data". */
+/** Deletes the saved audit and unloads it. Used by "Clear data". */
 export function clearAllData() {
   clearSaved();
-  loadSample();
+  audit = null;
+  sampleLoaded = false;
 }
 
 // ---------- Changing the plan ----------
@@ -310,10 +311,11 @@ export function loadState() {
 }
 
 /**
- * Saves the current audit. Returns true on success. The demo is never saved.
+ * Saves the current audit. Returns true on success. The demo, and the
+ * empty page, are never saved.
  */
 export function saveState() {
-  if (sampleLoaded) return false;
+  if (sampleLoaded || !audit) return false;
   try {
     audit.plan.lastSaved = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(audit));
@@ -348,6 +350,3 @@ function isTermKey(term) {
 }
 
 export { AuditError }; // for callers of importAudit
-
-// ---------- Startup ----------
-loadSample(); // start from the demo; main.js then calls loadState()

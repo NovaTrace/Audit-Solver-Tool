@@ -57,6 +57,7 @@ import {
   importAudit,
   AuditError,
   clearAllData,
+  loadSample,
 } from "./state.js";
 import { listGroups, filterGroups } from "./logic/courses.js";
 import { coursesInTerm } from "./logic/credits.js";
@@ -90,27 +91,29 @@ let settings = null;
 
 // ---------- Redrawing ----------
 
-// Whether the get-started panel was last set for the demo (null before the
-// first draw).
-let panelShowsSample = null;
+// Whether the get-started panel was last set for a real audit (null before
+// the first draw).
+let panelShowsOwn = null;
 
 // "How Audit Solver works" panel (ui/help.js).
 const help = setupHelp();
 
 // Header and the get-started panel.
 function refreshHeader() {
-  renderHeader(getAudit());
+  const audit = getAudit();
+  if (audit) renderHeader(audit);
   help.show(isSampleLoaded()); // help panel: sample audit only
+  const own = audit !== null && !isSampleLoaded(); // the student's own audit
   const panel = document.getElementById("get-started");
-  panel.querySelector("h2").textContent = isSampleLoaded()
-    ? "Load your degree audit"
-    : "Update your audit or get the bookmarklet again";
+  panel.querySelector("h2").textContent = own
+    ? "Update your audit or get the bookmarklet again"
+    : "Load your degree audit";
 
-  // Open for the demo, collapsed for a real audit. Changed only when
-  // switching between the two, so a panel the student opened stays open.
-  if (panelShowsSample !== isSampleLoaded()) {
-    panelShowsSample = isSampleLoaded();
-    panel.open = panelShowsSample;
+  // Open until the student loads their own audit, then collapsed. Changed
+  // only when switching, so a panel the student opened stays open.
+  if (panelShowsOwn !== own) {
+    panelShowsOwn = own;
+    panel.open = !own;
   }
 }
 
@@ -148,9 +151,13 @@ function refreshList() {
   });
 }
 
-// Everything.
+// Everything. With no audit loaded, body.is-empty hides the header details,
+// course list and plan (layout.css), leaving the get-started panel.
 function refreshAll() {
+  const empty = getAudit() === null;
+  document.body.classList.toggle("is-empty", empty);
   refreshHeader();
+  if (empty) return;
   refreshList();
   refreshSchedule();
 }
@@ -259,6 +266,13 @@ function setupHeader() {
   setupReceiver(handleImport); // bookmarklet's Send button
   setupBookmarkletPanel(); // "Grab my audit" link, Copy code
   setupExport(getAudit); // Export button
+
+  // "Try it with a sample student" on the empty page.
+  document.getElementById("try-sample").addEventListener("click", () => {
+    loadSample();
+    setSaveStatus(SAMPLE_STATUS);
+    refreshAll();
+  });
 }
 
 // ---------- Semesters (#sched-grid) ----------
@@ -341,15 +355,16 @@ function setupPlanButtons() {
     saveAndRefresh();
   });
 
-  // Delete the saved audit and settings, and return to the demo.
+  // Delete the saved audit and settings, and return to the empty page.
   document.getElementById("clear-data-btn").addEventListener("click", () => {
     const ok = confirm(
-      "Delete your saved audit, plan and settings from this browser and go back to the sample data?\n\nExport first if you want to keep a copy.",
+      "Delete your saved audit, plan and settings from this browser and start over?\n\nExport first if you want to keep a copy.",
     );
     if (!ok) return;
     clearAllData();
-    setSaveStatus(SAMPLE_STATUS);
+    setSaveStatus("");
     settingsDialog.reset(); // redraws the page through onChange
+    window.scrollTo({ top: 0 });
   });
 }
 
@@ -456,8 +471,8 @@ setupPlanButtons();
 setupCourseList();
 setupAddCourse();
 
-loadState(); // replaces the demo with a saved audit, if any
-setSaveStatus(isSampleLoaded() ? SAMPLE_STATUS : "Autosaves in browser");
+// A saved audit, if any; otherwise the empty page.
+if (loadState()) setSaveStatus("Autosaves in browser");
 refreshAll(); // first draw
 
 // Entrance animation for the first draw only (layout.css); later redraws
