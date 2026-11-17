@@ -2,7 +2,7 @@
 // config, bookmarklet/vite.config.js.
 //
 // `base` is the path the site is served from. GitHub Pages serves this
-// project at https://<user>.github.io/Audit-Solver-Tool/; `npm run dev`
+// project at https://<user>.github.io/Audit-Solver/; `npm run dev`
 // serves it at http://localhost:5173/.
 //
 // `define` puts the version from package.json into the code as
@@ -16,7 +16,7 @@ const { version } = JSON.parse(
 );
 
 export default defineConfig(({ command }) => ({
-  base: command === "build" ? "/Audit-Solver-Tool/" : "/",
+  base: command === "build" ? "/Audit-Solver/" : "/",
   define: {
     "import.meta.env.APP_VERSION": JSON.stringify(version),
   },
