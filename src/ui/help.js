@@ -1,7 +1,7 @@
 // src/ui/help.js — the "How Audit Solver works" panel (#help-panel).
 //
-// Shown only while the sample audit is loaded (main.js calls show() on every
-// redraw). The minimize button hides it until the page is reloaded. The
+// Shown only while the sample audit is loaded, which the student picks on
+// the empty page (main.js calls show() on every redraw). The minimize button hides it until the page is reloaded. The
 // panel's ⓘ buttons (data-tip) open the matching help popup on the page.
 // Used by: main.js.
 

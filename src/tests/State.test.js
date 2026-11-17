@@ -460,18 +460,37 @@ describe("saving and loading", () => {
 });
 
 describe("clearAllData", () => {
-  it("deletes the save and goes back to the demo, columns included", () => {
+  it("deletes the save and leaves no audit loaded", () => {
     setTerm("cs4500", "FA27");
-    removeTerm("FA26");
-    addTerm();
     saveState();
 
     clearAllData();
 
-    expect(isSampleLoaded()).toBe(true);
+    expect(getAudit()).toBeNull();
+    expect(isSampleLoaded()).toBe(false);
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-    expect(course("cs4500").plannedTerm).toBeNull();
-    expect(getAudit().plan.terms).toEqual(sample.plan.terms);
+    // Nothing to save: refused up front, not by a failed write.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(saveState()).toBe(false);
+    expect(warn).not.toHaveBeenCalled();
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it("then accepts an import with nothing to merge", () => {
+    clearAllData();
+    importAudit(structuredClone(sample));
+    expect(getAudit().student.name).toBe(sample.student.name);
+    expect(isSampleLoaded()).toBe(false);
+  });
+});
+
+describe("a fresh page", () => {
+  it("starts with no audit, not the demo", async () => {
+    vi.resetModules(); // a new copy of state.js, as on page load
+    const fresh = await import("../state.js");
+    expect(fresh.getAudit()).toBeNull();
+    expect(fresh.isSampleLoaded()).toBe(false);
+    expect(fresh.saveState()).toBe(false);
   });
 });
 

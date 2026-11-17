@@ -38,8 +38,8 @@ export function setupBookmarkletPanel() {
   const label = labelBox.textContent;
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    labelBox.textContent = "Drag me to your bookmarks bar ↑";
-    setTimeout(() => (labelBox.textContent = label), 1500);
+    labelBox.textContent = "Drag this box to your bookmarks bar ↑";
+    setTimeout(() => (labelBox.textContent = label), 2000);
   });
 
   // Fallback when dragging doesn't work: copy the URL into a new bookmark.

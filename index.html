@@ -285,19 +285,17 @@
           </div>
           <p class="help-intro">
             Audit Solver turns your degree audit into a semester-by-semester
-            plan. It lists every course you still need, lets you place each one
-            in a future semester, and warns you when a course is missing a
-            prerequisite or is planned in a term it isn't offered. It all runs
-            in this browser and your audit is never uploaded anywhere.
+            plan by listing courses with their term offerings, prerequisites and
+            requirements. It all runs in this browser and your audit is never
+            uploaded anywhere.
           </p>
 
           <ol class="help-steps">
             <li>
               <h3>Load your audit</h3>
               <p>
-                Until you do, the page shows a <b>sample student</b>. Use the
-                bookmark in <b>Load your degree audit</b> below for the most
-                detail (prereqs and terms offered), or <b>Import audit</b> for
+                This is a <b>sample student</b>. Use the bookmark in
+                <b>Load your degree audit</b> below or <b>Import audit</b> for
                 an audit PDF or a saved plan.
               </p>
               <button type="button" class="help-tip" data-tip="tip-import">
@@ -308,9 +306,8 @@
               <h3>Choose your courses</h3>
               <p>
                 <b>Requirements</b> lists what's left. Pick a semester from a
-                course's dropdown and lock it. Narrow the list with the category
-                menu, filter or search. Missing a course? Use
-                <b>Add or link a course</b> at the bottom.
+                course's dropdown or use <b>Add or link a course</b> at the
+                bottom for missing courses.
               </p>
               <button type="button" class="help-tip" data-tip="tip-courses">
                 <span aria-hidden="true">ⓘ</span> Course list tips
@@ -320,8 +317,8 @@
               <h3>Shape your plan</h3>
               <p>
                 <b>Your plan</b> shows your progress and every semester. Drag
-                courses between semesters and add or remove semesters. Under
-                <b>Requirement categories</b>, untick a track you aren't taking.
+                courses and add or remove semesters.
+                <b>Requirement categories</b> can be toggled off.
               </p>
               <button type="button" class="help-tip" data-tip="tip-plan">
                 <span aria-hidden="true">ⓘ</span> Plan tips
@@ -331,9 +328,8 @@
               <h3>Keep it</h3>
               <p>
                 Your plan automatically saves itself in this browser.
-                <b>Export plan</b> downloads a copy you can import later.
-                <b>Reset plan</b> clears your picks; <b>Clear data</b> at the
-                bottom of the page erases everything.
+                <b>Export plan</b> downloads your plan; <b>Reset plan</b> clears
+                your picks; <b>Clear data</b> erases everything.
               </p>
             </li>
           </ol>
@@ -353,9 +349,8 @@
           </div>
         </section>
 
-        <!-- Open for the demo, collapsed once an audit is loaded. main.js sets
-             the
-             state and the heading text. -->
+        <!-- Open until the student loads their own audit, then collapsed.
+             main.js sets the state and the heading text. -->
         <details class="get-started" id="get-started">
           <summary>
             <h2>Load your degree audit</h2>
@@ -375,6 +370,17 @@
               </svg>
             </span>
           </summary>
+          <!-- Empty page only (body.is-empty): what the site does, and a way
+               to look around without an audit. -->
+          <div class="gs-intro">
+            <p>
+              Audit Solver turns your degree audit into a semester-by-semester
+              plan. It runs in this browser; your audit is never uploaded.
+            </p>
+            <button type="button" class="btn btn-secondary" id="try-sample">
+              Try it with a sample student
+            </button>
+          </div>
           <ol class="gs-steps">
             <li>
               Drag

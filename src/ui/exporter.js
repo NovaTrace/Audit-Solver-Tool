@@ -19,7 +19,9 @@ export function exportFile(audit, now = new Date()) {
 /** Wires the Export button. `getAudit` returns the audit to export. */
 export function setupExport(getAudit) {
   document.getElementById("export-btn").addEventListener("click", () => {
-    const { filename, text } = exportFile(getAudit());
+    const audit = getAudit();
+    if (!audit) return; // empty page; the button is hidden anyway
+    const { filename, text } = exportFile(audit);
     downloadJsonFile(filename, text);
   });
 }
