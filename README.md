@@ -3,7 +3,7 @@
 A degree planner for students attending schools belonging to the University of Colorado. Import your degree audit, then plan
 your remaining courses semester by semester to find hidden conflicts.
 
-**Use it here: https://novatrace.github.io/Audit-Solver-Tool/**
+**Use it here: https://novatrace.github.io/Audit-Solver/**
 
 Version 1.2.3 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
 
@@ -15,7 +15,7 @@ Version 1.2.3 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
   add your own courses, and switch off requirements you aren't pursuing.
 - **Checks the plan**: warns about missing prerequisites, course offerings, and semesters course limits.
 
-Full feature list: [v1.2.3 release notes](https://github.com/NovaTrace/Audit-Solver-Tool/releases/tag/v1.2.3)
+Full feature list: [v1.2.3 release notes](https://github.com/NovaTrace/Audit-Solver/releases/tag/v1.2.3)
 
 ## How to use it
 
@@ -39,8 +39,8 @@ Needs [Node.js](https://nodejs.org) 22 or newer.
 Clone the repository and install Node.js
 
 ```bash
-git clone https://github.com/NovaTrace/Audit-Solver-Tool
-cd Audit-Solver-Tool
+git clone https://github.com/NovaTrace/Audit-Solver
+cd Audit-Solver
 npm install
 ```
 
