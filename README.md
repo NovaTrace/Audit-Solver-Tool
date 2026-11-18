@@ -16,6 +16,7 @@ Version 1.2.4 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
 - **Checks the plan**: warns about missing prerequisites, course offerings, and semesters course limits.
 
 Full feature list: [v1.2.4 release notes](https://github.com/NovaTrace/Audit-Solver/releases/tag/v1.2.4)
+Most Resent Code Map and Performance Report: [v1.2.0 release notes](https://github.com/NovaTrace/Audit-Solver/releases/tag/v1.2.0)
 
 ## How to use it
 
