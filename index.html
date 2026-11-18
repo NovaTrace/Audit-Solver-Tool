@@ -472,6 +472,14 @@
             this browser.
           </p>
         </details>
+        <!-- Opens the panel before the first paint on the empty start page, so
+             the page does not jump when main.js opens it (Lighthouse: layout
+             shift). body.is-empty comes from the script at the top of <body>. -->
+        <script>
+          if (document.body.classList.contains("is-empty")) {
+            document.getElementById("get-started").open = true;
+          }
+        </script>
         <!-- Two columns: course list, then "Your plan", which stays in view
              while
              the list scrolls (layout.css). When narrow, the plan moves below

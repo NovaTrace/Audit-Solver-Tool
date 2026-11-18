@@ -88,10 +88,14 @@
 }
 
 /* Animated title (src/ui/titleAnimation.js). Height follows width; color
-   follows `color`. */
+   follows `color`. aspect-ratio matches the title's viewBox
+   (667.179 x 141.265), so its space is kept before the script draws it and
+   the header doesn't grow when it appears (Lighthouse: layout shift). */
 .title-anim {
+  display: block;
   width: 200px;
   max-width: 100%;
+  aspect-ratio: 667.179 / 141.265;
   color: var(--ink);
 }
 
