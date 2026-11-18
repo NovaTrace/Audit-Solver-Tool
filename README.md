@@ -19,8 +19,6 @@ Full feature list: [Release notes](https://github.com/NovaTrace/Audit-Solver/rel
 
 Most Resent Code Map and Performance Report: [v1.2.0 binaries](https://github.com/NovaTrace/Audit-Solver/releases/tag/V1.2.0)
 
-Most Resent Code Map and Performance Report: [v1.2.0 binaries](https://github.com/NovaTrace/Audit-Solver/releases/tag/V1.2.0)
-
 ## How to use it
 
 1. Open the planner and drag the **Grab my audit** button to your bookmarks bar.
