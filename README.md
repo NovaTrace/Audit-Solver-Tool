@@ -5,7 +5,7 @@ your remaining courses semester by semester to find hidden conflicts.
 
 **Use it here: https://novatrace.github.io/Audit-Solver/**
 
-Version 1.2.4 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
+See Releases for the current version - Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
 
 ## What it does
 
@@ -15,7 +15,9 @@ Version 1.2.4 · Quinn Hackenberg, Zoe Hall, Bryson Nguyen​
   add your own courses, and switch off requirements you aren't pursuing.
 - **Checks the plan**: warns about missing prerequisites, course offerings, and semesters course limits.
 
-Full feature list: [v1.2.4 release notes](https://github.com/NovaTrace/Audit-Solver/releases/tag/v1.2.4)
+Full feature list: [Release notes](https://github.com/NovaTrace/Audit-Solver/releases/latest)
+
+Most Resent Code Map and Performance Report: [v1.2.0 binaries](https://github.com/NovaTrace/Audit-Solver/releases/tag/V1.2.0)
 
 ## How to use it
 
