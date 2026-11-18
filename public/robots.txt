@@ -1,0 +1,6 @@
+# public/robots.txt — lets search engines index the site and points them
+# to the sitemap.
+User-agent: *
+Allow: /
+
+Sitemap: https://novatrace.github.io/Audit-Solver/sitemap.xml

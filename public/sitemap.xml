@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- public/sitemap.xml — the site's one page, for search engines. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://novatrace.github.io/Audit-Solver/</loc>
+  </url>
+</urlset>
