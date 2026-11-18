@@ -61,6 +61,9 @@ const GRADE = /grade of\s*["“”']?([A-F][+-]?)["“”']?/i;
  * - Groups split on ";" and on "and".
  * - A group with no grade takes the grade of the next group in the same ";"
  *   piece.
+ * - "A and B or C and D" (two "and" lists joined by "or", with or without
+ *   parentheses) means either whole list. It becomes one group per way of
+ *   picking a course from each list: A or C, A or D, B or C, B or D.
  * - null -> null (details never loaded); "" -> no groups.
  */
 export function parsePrereqs(text) {
@@ -75,22 +78,55 @@ export function parsePrereqs(text) {
       continue;
     }
     for (const piece of sentence.split(";")) {
-      const pieceGroups = [];
-      for (const part of piece.split(/,?\s+and\s+/i)) {
-        const anyOf = codesIn(part);
-        if (anyOf.length) {
-          pieceGroups.push({ anyOf, minGrade: part.match(GRADE)?.[1] ?? null });
-        }
-      }
-      // Backwards, so a grade written once at the end reaches the groups before
-      // it.
-      for (let i = pieceGroups.length - 2; i >= 0; i--) {
-        pieceGroups[i].minGrade ??= pieceGroups[i + 1].minGrade;
-      }
-      groups.push(...pieceGroups);
+      // "or" between whole "and" lists; "or better" belongs to a grade.
+      const branches = piece.split(/\s+or\s+(?!better)/i);
+      const isList = (b) => /\s+and\s+/i.test(b) && codesIn(b).length > 1;
+      groups.push(
+        ...(branches.filter(isList).length >= 2
+          ? eitherList(branches.map(andGroups))
+          : andGroups(piece)),
+      );
     }
   }
   return { groups, notes };
+}
+
+// One ";" piece split on "and": a group per part, each an OR of its codes.
+function andGroups(piece) {
+  const groups = [];
+  for (const part of piece.split(/,?\s+and\s+/i)) {
+    const anyOf = codesIn(part);
+    if (anyOf.length) {
+      groups.push({ anyOf, minGrade: part.match(GRADE)?.[1] ?? null });
+    }
+  }
+  // Backwards, so a grade written once at the end reaches the groups before
+  // it.
+  for (let i = groups.length - 2; i >= 0; i--) {
+    groups[i].minGrade ??= groups[i + 1].minGrade;
+  }
+  return groups;
+}
+
+// Either of several group lists (an OR of ANDs) as one list of groups (an
+// AND of ORs): a group for each way of taking one group from every list.
+// A grade is kept only when all the picked groups agree on it.
+function eitherList(lists) {
+  let combos = [[]];
+  for (const list of lists.filter((l) => l.length)) {
+    combos = combos.flatMap((picked) => list.map((g) => [...picked, g]));
+  }
+  const groups = [];
+  const seen = new Set();
+  for (const picked of combos) {
+    const anyOf = [...new Set(picked.flatMap((g) => g.anyOf))];
+    const key = [...anyOf].sort().join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const grades = new Set(picked.map((g) => g.minGrade));
+    groups.push({ anyOf, minGrade: grades.size === 1 ? [...grades][0] : null });
+  }
+  return groups;
 }
 
 // ---------- Terms ----------
