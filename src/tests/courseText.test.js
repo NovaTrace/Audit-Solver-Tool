@@ -95,6 +95,22 @@ describe("parsePrereqs", () => {
     ]);
   });
 
+  it("reads 'A and B or C and D' as either pair", () => {
+    const either = [
+      { anyOf: ["CHEM 1311", "CHEM 1511"], minGrade: null },
+      { anyOf: ["CHEM 1311", "CHEM 1512"], minGrade: null },
+      { anyOf: ["CHEM 1312", "CHEM 1511"], minGrade: null },
+      { anyOf: ["CHEM 1312", "CHEM 1512"], minGrade: null },
+    ];
+    expect(
+      parsePrereqs("CHEM 1311 and CHEM 1312 or CHEM 1511 and CHEM 1512").groups,
+    ).toEqual(either);
+    expect(
+      parsePrereqs("(CHEM 1311 and CHEM 1312) or (CHEM 1511 and CHEM 1512)")
+        .groups,
+    ).toEqual(either);
+  });
+
   it("shares a grade written once after 'and', but not across ';'", () => {
     const text =
       "CS 2060 and CS 2080 with a grade of C or better; MATH 1350; PES 1110 with a grade of B";
